@@ -95,7 +95,6 @@ exports.controller = {
     },
     // MOI OUT ALL ----
     moiOutAll: async (req, res) => {
-        // const userId = req.params.userId;
         try {
             const list = await Model.moiOutAll();
             if (!list) {
