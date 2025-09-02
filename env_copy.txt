@@ -1,0 +1,15 @@
+# MYSQL CONNECTION
+# DB_HOST=duexhoods.com
+# DB_USER=hellonew_moi_kanakku
+# DB_PASSWORD=Renzo@1995
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=hellonew_moi_kanakku
+JWT_SECRET=mysonnameisrenzo
+PORT=3000
+# for email purpose
+EMAIL_HOST=hellonewschannel.com
+EMAIL_USER=gp@hellonewschannel.com
+EMAIL_PASS=Renzo@1995
+EMAIL_PORT=465
