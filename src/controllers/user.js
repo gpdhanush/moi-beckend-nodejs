@@ -1,15 +1,21 @@
+// User controllers: authentication, account management, and notifications
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
-const tokenService = require('../middlewares/tokenService'); // Import the tokenService
+const tokenService = require('../middlewares/tokenService');
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
+// Common response messages
 const userError = "The specified user does not exist!";
 const mobileError = "A mobile number is already registered to another user.";
 
 exports.userController = {
 
 
+    /**
+     * Authenticate user and issue JWT.
+     * Body: { email, password }
+     */
     login: async (req, res) => {
         const { email, password } = req.body;
 
@@ -25,6 +31,7 @@ exports.userController = {
             }
 
             const userID = user.um_id;
+            // Invalidate old token (single-session policy) and generate a new one
             tokenService.invalidatePreviousToken(userID);
             const jwtToken = tokenService.generateToken(userID);
 
@@ -37,7 +44,7 @@ exports.userController = {
                 token: jwtToken
             };
 
-            // UPDATE LAST LOGIN TIMESTAMP
+            // Update last login timestamp
             await User.updateLastLogin(userID);
 
             return res.status(200).json({ responseType: "S", responseValue: response });
@@ -45,27 +52,31 @@ exports.userController = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    /**
+     * Register a new user, send welcome email and admin notification.
+     * Body: { name, email, mobile, password }
+     */
     create: async (req, res) => {
         var { name, email, mobile, password } = req.body;
         try {
-            // CHECK BY EMAIL
+            // Check duplicates by email
             const mail = await User.findByEmail(email);
             if (mail) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'This email is already registered!' } });
             }
-            // CHECK BY MOBILE NUMBER
+            // Check duplicates by mobile number
             const mbl = await User.findByMobile(mobile);
             if (mbl) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'This mobile is already registered!' } });
             }
-            // HASHED PASSWORD
+            // Hash the password
             password = await bcrypt.hash(password, 10);
             var newUser = { name, email, mobile, password };
 
-            // SAVE USER DETAILS
+            // Save user details
             var query = await User.create(newUser);
             if (query) {
-                // WELCOME EMAIL CONTENT
+                // Welcome email content (HTML)
                 const emailContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #ddd;border-radius:8px">
     <h2 style=color:#2f3490;text-align:center>Welcome to Moi Kanakku!</h2>
     <p>Hi <strong style=color:#2f3490>${name}</strong>,
@@ -82,6 +93,7 @@ exports.userController = {
       <hr style="margin:20px 0"><small style=display:block;text-align:center;color:#888>If you did not sign up for Moi Kanakku, please ignore this email.</small>
   </div>`;
 
+                // Create SMTP transporter
                 const transporter = nodemailer.createTransport({
                     host: process.env.EMAIL_HOST,
                     port: process.env.EMAIL_PORT,
@@ -101,7 +113,23 @@ exports.userController = {
                     html: emailContent,
                 };
                 await transporter.sendMail(mailOptions);
-                // EOF EMAIL CONTENT --------------
+
+                // Admin notification email
+                const adminEmailContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #ddd;border-radius:8px">
+	<h3 style=color:#2f3490;text-align:center>New user registered successfully</h3>
+	<p><strong style=color:#2f3490>Name:</strong> ${name}</p>
+	<p><strong style=color:#2f3490>Email:</strong> ${email}</p>
+	<p><strong style=color:#2f3490>Mobile:</strong> ${mobile}</p>
+	<p style=color:#666;font-size:12px>Time: ${new Date().toLocaleString()}</p>
+	</div>`;
+                const adminMailOptions = {
+                    from: `"Info - Moi Kanakku" <${process.env.EMAIL_USER}>`,
+                    to: 'agprakash406@gmail.com',
+                    subject: 'New user registered successfully',
+                    html: adminEmailContent,
+                };
+                await transporter.sendMail(adminMailOptions);
+                // EOF email content --------------
 
                 return res.status(200).json({ responseType: "S", responseValue: { message: "User registered successfully." } });
             } else {
@@ -112,10 +140,14 @@ exports.userController = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    /**
+     * Update user profile.
+     * Body: { id, name, mobile }
+     */
     update: async (req, res) => {
         const { id, name, mobile } = req.body;
         try {
-            /// CHECK MOBILE NUMBER
+            // Check that mobile number is unique (excluding current user)
             const chkMobile = await User.checkMobileNo(mobile, id);
             if (chkMobile) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: mobileError } });
@@ -134,6 +166,10 @@ exports.userController = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    /**
+     * Get a user's profile by ID.
+     * Params: { id }
+     */
     getUser: async (req, res) => {
         const userId = parseInt(req.params.id);
         try {
@@ -154,6 +190,10 @@ exports.userController = {
         }
     },
 
+    /**
+     * Update password after verifying current password.
+     * Body: { id, password, newPassword }
+     */
     updatePassword: async (req, res) => {
         const { id, password, newPassword } = req.body;
 
@@ -167,7 +207,7 @@ exports.userController = {
             return res.status(404).json({ responseType: "F", responseValue: { message: "The password doesn't match our records." } });
         }
 
-        // PASSWORD AND USER VERIFIED
+        // Password and user verified; hash new password
         var hashedPassword = await bcrypt.hash(newPassword, 10);
 
         var para = {
@@ -186,6 +226,10 @@ exports.userController = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    /**
+     * Permanently delete a user.
+     * Body: { userId }
+     */
     deleteUser: async (req, res) => {
         const { userId } = req.body;
         try {
@@ -203,6 +247,10 @@ exports.userController = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    /**
+     * Reset password by email (admin/forgot password flow).
+     * Body: { email, password }
+     */
     resetPassword: async (req, res) => {
         const { email, password } = req.body;
 
@@ -211,7 +259,7 @@ exports.userController = {
             return res.status(404).json({ responseType: "F", responseValue: { message: userError } });
         }
 
-        // PASSWORD AND USER VERIFIED
+        // Hash the provided password
         var hashedPassword = await bcrypt.hash(password, 10);
 
         var para = {
@@ -231,6 +279,10 @@ exports.userController = {
         }
     },
 
+    /**
+     * Update push notification token for a user.
+     * Body: { userId, token }
+     */
     updateNotificationToken: async (req, res) => {
         const { userId, token } = req.body;
 
@@ -238,7 +290,7 @@ exports.userController = {
         if (!user) {
             return res.status(404).json({ responseType: "F", responseValue: { message: userError } });
         }
-        // await User.updateToken(userId, token);
+        // Persist the token for future notifications
         try {
             var query = await User.updateToken(userId, token);
             if (query) {
