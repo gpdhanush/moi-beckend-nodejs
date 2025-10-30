@@ -77,21 +77,7 @@ exports.userController = {
             var query = await User.create(newUser);
             if (query) {
                 // Welcome email content (HTML)
-                const emailContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #ddd;border-radius:8px">
-    <h2 style=color:#2f3490;text-align:center>Welcome to Moi Kanakku!</h2>
-    <p>Hi <strong style=color:#2f3490>${name}</strong>,
-    <p>We\'re excited to have you join our community! Moi Kanakku is designed to make your experience seamless, productive, and enjoyable.
-    <p>Here\'s how you can get started:
-    <ul style=list-style-type:none>
-      <li>😊 <strong style=color:#2f3490;font-size:14px>Create & Maintain the special events, relations, functions gifts in cash.</strong>
-      <li>😊 <strong style=color:#2f3490;font-size:14px>Create & manage the guest who attend those event along with gift details.</strong>
-      <li>😊 <strong style=color:#2f3490;font-size:14px>View function based records.</strong>
-      <li>😊 <strong style=color:#2f3490;font-size:14px>All the datas export in excel is available.</strong>
-    </ul>
-    <p>Thank you for choosing Moi Kanakku. We\'re here to help you every step of the way!
-    <p>Best regards,<br><strong>Moi Kanakku Team</strong>
-      <hr style="margin:20px 0"><small style=display:block;text-align:center;color:#888>If you did not sign up for Moi Kanakku, please ignore this email.</small>
-  </div>`;
+                const emailContent = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;padding:30px;background:linear-gradient(180deg,#fff 0,#f9faff 100%);border:1px solid #e5e7f2;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.06)"><div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #eee"><h2 style="color:#2f3490;margin:0;font-size:24px">🎉 Welcome to<span style="color:#4346d2">Moi Kanakku!</span></h2><p style="margin-top:8px;color:#555;font-size:14px">Your personal event & relation manager</p></div><div style="padding:20px 10px"><p style="font-size:16px;color:#333;margin:0 0 10px">Hi<strong style="color:#2f3490">${name}</strong>,</p><p style="color:#444;margin:0 0 16px;line-height:1.6">We're excited to have you join our community! Moi Kanakku is built to make your experience<strong>seamless, productive, and enjoyable.</strong></p><div style="background-color:#f4f6ff;border-left:4px solid #2f3490;border-radius:8px;padding:15px 18px;margin:18px 0"><p style="margin:0 0 10px;color:#2f3490;font-weight:700">Here’s how you can get started:</p><ul style="list-style:none;padding-left:0;margin:0"><li style="margin-bottom:10px">✨<strong style="color:#2f3490;font-size:15px">Create & maintain special events, relations, and gift records (cash or kind).</strong></li><li style="margin-bottom:10px">📋<strong style="color:#2f3490;font-size:15px">Manage guests attending your events with detailed gift tracking.</strong></li><li style="margin-bottom:10px">📊<strong style="color:#2f3490;font-size:15px">View and filter records easily by function or relation.</strong></li><li>📁<strong style="color:#2f3490;font-size:15px">Export your data anytime in Excel format.</strong></li></ul></div><p style="color:#444;margin-top:20px;line-height:1.6">Thank you for choosing<strong>Moi Kanakku</strong>. We’re here to help you every step of the way!</p><p style="margin-top:15px;color:#333">Best regards,<br><strong style="color:#2f3490">Moi Kanakku Team</strong></p></div><hr style="border:none;border-top:1px solid #eee;margin:25px 0"><small style="display:block;text-align:center;color:#888;font-size:13px;line-height:1.5">© 2025 Moi Kanakku. All rights reserved.<br>If you did not sign up for Moi Kanakku, please ignore this email.</small></div>`;
 
                 // Create SMTP transporter
                 const transporter = nodemailer.createTransport({
@@ -115,13 +101,7 @@ exports.userController = {
                 await transporter.sendMail(mailOptions);
 
                 // Admin notification email
-                const adminEmailContent = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #ddd;border-radius:8px">
-	<h3 style=color:#2f3490;text-align:center>New user registered successfully</h3>
-	<p><strong style=color:#2f3490>Name:</strong> ${name}</p>
-	<p><strong style=color:#2f3490>Email:</strong> ${email}</p>
-	<p><strong style=color:#2f3490>Mobile:</strong> ${mobile}</p>
-	<p style=color:#666;font-size:12px>Time: ${new Date().toLocaleString()}</p>
-	</div>`;
+                const adminEmailContent = `<div style="margin:0;padding:40px 0;background-color:#f7f9fc"><table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background-color:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.08)"><tr><td style="background:linear-gradient(135deg,#007bff,#00c6ff);color:#fff;text-align:center;padding:28px 20px"><h1 style="margin:0;font-size:24px;letter-spacing:.5px">🎉 New User Registered Successfully</h1></td></tr><tr><td style="padding:30px 35px;color:#333;font-size:16px;line-height:1.7"><p style="margin-top:0">Hello<strong>Admin</strong>,</p><p style="margin-bottom:20px">A new user has just registered successfully. Here are the details:</p><table width="100%" cellspacing="0" cellpadding="10" style="border-collapse:collapse;font-size:15px;background-color:#f9fbfc;border-radius:8px"><tr><td style="width:35%;font-weight:600;color:#555">Name</td><td style="color:#222">${name}</td></tr><tr style="border-top:1px solid #e5eaf0"><td style="font-weight:600;color:#555">Email</td><td><a href="mailto:${email}" style="color:#007bff;text-decoration:none">${email}</a></td></tr><tr style="border-top:1px solid #e5eaf0"><td style="font-weight:600;color:#555">Mobile</td><td style="color:#222">${mobile}</td></tr><tr style="border-top:1px solid #e5eaf0"><td style="font-weight:600;color:#555">Time</td><td style="color:#222">${new Date().toLocaleString()}</td></tr></table><div style="margin-top:30px;background-color:#f1f5ff;border-left:4px solid #007bff;padding:14px 18px;border-radius:6px"><p style="margin:0;color:#333"><strong>Note:</strong>Please verify the user details in the admin panel for confirmation.</p></div></td></tr><tr><td style="background-color:#f1f4f7;text-align:center;color:#777;font-size:13px;padding:14px">© 2025 Moi Kanakku. All rights reserved.</td></tr></table></div>`;
                 const adminMailOptions = {
                     from: `"Info - Moi Kanakku" <${process.env.EMAIL_USER}>`,
                     to: 'agprakash406@gmail.com',
