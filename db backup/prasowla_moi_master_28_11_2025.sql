@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Sep 04, 2025 at 10:47 AM
+-- Generation Time: Nov 28, 2025 at 01:09 PM
 -- Server version: 10.11.14-MariaDB-cll-lve
--- PHP Version: 8.4.10
+-- PHP Version: 8.4.14
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -60,6 +60,14 @@ CREATE TABLE `gp_moi_feedbacks` (
   `active` char(1) NOT NULL DEFAULT 'Y'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
+--
+-- Dumping data for table `gp_moi_feedbacks`
+--
+
+INSERT INTO `gp_moi_feedbacks` (`id`, `user_id`, `feedbacks`, `created_time`, `updated_time`, `active`) VALUES
+(1, 1, 'test', '2025-11-26 05:54:03', '2025-11-26 05:54:03', 'Y'),
+(2, 1, 'how are you', '2025-11-27 06:37:51', '2025-11-27 06:37:51', 'Y');
+
 -- --------------------------------------------------------
 
 --
@@ -90,13 +98,10 @@ INSERT INTO `gp_moi_functions` (`f_id`, `f_um_id`, `function_name`, `function_da
 (2, 1, 'PRIYA MARRIAGE', '2023-05-21', 'வேத ஜஸ்டின்', 'கேத்ரின் பிரியா', 'பிரியா வீட்டில்', 'திண்டுக்கல்', '', '2024-07-18 08:34:32', '2025-01-29 18:17:21', 'Y'),
 (23, 18, 'MARRIAGE ', '2019-10-30', 'LOGANATHAN ', 'MADHUMITHA ', 'K Venkata subba Naidu Kalyana Mandapam ', 'Pulliyamarathu Kottai ', '', '2024-09-21 10:25:08', '2024-09-21 10:25:08', 'Y'),
 (31, 19, 'MARRIAGE ', '2024-11-17', 'SARAVANAN ', 'SANDHIYA ', 'Samuthayakudam', 'Ottupatti ', 'uploads/invitation_uploads/19/Invitation_2024_11_18_08_17_26.jpg', '2024-11-18 02:47:32', '2024-11-18 02:47:32', 'Y'),
-(43, 7, 'கல்யாணம்', '2024-03-01', 'பிரகாஷ்', 'சௌந்தர்யா மேரி', 'ஆர் ஆர் மண்டபம்', 'ஆர் ஆர் மண்டபம்', '', '2025-01-05 08:06:13', '2025-01-05 08:06:13', 'Y'),
-(47, 30, 'கிருபா கல்யாணம்', '2021-09-10', 'கிருபா', 'ஞானபிரகாஷ்', 'இந்திரா கம்யூனிட்டி ஹால்', 'திண்டுக்கல்', '', '2025-01-14 15:28:16', '2025-01-14 15:28:16', 'Y'),
-(48, 8, 'TEST', '2025-01-16', 'FIRST NAME', 'SECOND NAME', 'MAHAL NANE', 'DINDIGUL', '', '2025-01-16 16:25:56', '2025-01-16 16:25:56', 'Y'),
 (49, 32, 'நாமகரணம் எ பெயர் சூட்டும்  விழா', '2025-02-02', 'தினேஷ் அபிநயா', '', 'பெத்தான் ஆண்டவர் கோவில்', '', '', '2025-02-04 06:14:30', '2025-02-04 06:14:30', 'Y'),
 (50, 36, 'காதணி விழா', '2025-09-14', 'விவேக்', 'சுவேதா/ஷன்விகா/கிரிஷ்விக்', 'TPS', 'MARRIAGE HALL', '', '2025-03-03 03:30:39', '2025-03-03 03:30:39', 'Y'),
 (58, 47, 'மொய் விருந்து', '2021-10-20', 'குமரேசன்', '', '', '', '', '2025-07-31 04:13:04', '2025-07-31 04:13:04', 'Y'),
-(59, 31, 'MARRIAGE', '2025-09-04', 'PERSON A', 'PERSON B', 'MARRIAGE HALL', 'PLACE OF FUNCTION', '', '2025-09-03 18:16:38', '2025-09-03 18:16:38', 'Y');
+(60, 52, 'காது குத்து', '2025-10-31', 'சுபா', '', 'TEST', 'TEST', '', '2025-10-31 03:08:54', '2025-10-31 03:08:54', 'Y');
 
 -- --------------------------------------------------------
 
@@ -553,10 +558,34 @@ INSERT INTO `gp_moi_master_records` (`mr_id`, `mr_um_id`, `mr_function_id`, `mr_
 (447, 19, 31, 'காந்திபுரம்', 'முருகன் (டிரைவர்)', 'செல்வி', '1000', '', '', '2024-11-22 10:38:16', '2024-11-22 10:38:16', 'Y'),
 (448, 19, 31, 'ஒட்டுப்பட்டி', 'அழகுராஜா (POLICE)', 'பாண்டி செல்வி', '500', '', '', '2024-11-22 10:39:03', '2024-11-22 10:39:03', 'Y'),
 (449, 19, 31, 'சித்தரேவு', 'K.சிவசாமி', 'லட்சுமி', '1000', '', '', '2024-11-22 10:40:34', '2024-11-22 10:40:34', 'Y'),
-(503, 7, 43, 'காவேரி நகர்', 'லட்சுமி கார்த்திக்', 'பால்ராஜ்', '5000', 'ஐடி பிசினஸ்', 'நண்பன்', '2025-01-05 08:07:14', '2025-01-05 08:07:14', 'Y'),
 (518, 47, 58, 'வடகாடு', 'ந.முத்துராசு செட்டியார்', '', '5000', '', '', '2025-07-31 04:14:56', '2025-07-31 04:17:50', 'Y'),
 (519, 47, 58, 'வடகாடு', 'கோ. காசி ராமலிங்கம்', '', '250', '', '', '2025-07-31 04:18:40', '2025-07-31 04:18:40', 'Y'),
-(520, 31, 59, 'DINDIGUL', 'TEST', '', '1001', 'Occupation', 'Remarks', '2025-09-03 18:17:12', '2025-09-03 18:17:44', 'Y');
+(521, 52, 60, 'திண்டுக்கல்', 'தன்விகா', '', '5000', 'பால்வாடி', '', '2025-10-31 03:09:22', '2025-10-31 03:09:22', 'Y');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `gp_moi_notifications`
+--
+
+CREATE TABLE `gp_moi_notifications` (
+  `n_id` int(10) NOT NULL,
+  `n_um_id` int(10) NOT NULL COMMENT 'User ID from gp_moi_user_master table',
+  `n_title` varchar(255) NOT NULL COMMENT 'Notification title',
+  `n_body` text NOT NULL COMMENT 'Notification body/content',
+  `n_is_read` char(1) NOT NULL DEFAULT 'N' COMMENT 'Read status: Y=Read, N=Unread',
+  `n_read_time` timestamp NULL DEFAULT NULL COMMENT 'Timestamp when notification was read',
+  `n_create_dt` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Notification creation timestamp',
+  `n_update_dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Last update timestamp',
+  `n_active` char(1) NOT NULL DEFAULT 'Y' COMMENT 'Active status: Y=Active, N=Deleted/Inactive'
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `gp_moi_notifications`
+--
+
+INSERT INTO `gp_moi_notifications` (`n_id`, `n_um_id`, `n_title`, `n_body`, `n_is_read`, `n_read_time`, `n_create_dt`, `n_update_dt`, `n_active`) VALUES
+(1, 1, 'Title', 'Notification Desc', 'N', NULL, '2025-11-28 07:35:56', '2025-11-28 07:35:56', 'Y');
 
 -- --------------------------------------------------------
 
@@ -593,12 +622,10 @@ INSERT INTO `gp_moi_out_master` (`mom_id`, `mom_user_id`, `mom_first_name`, `mom
 (8, 1, 'சைமன் ராஜ்', 'அமலா', 'புகையிலைப்பட்டி', '2024-09-10', 'புது நன்மை', '1501', '', '2024-08-30 15:24:40', '2025-01-05 13:49:40', 'Y'),
 (9, 1, 'ராஜு', 'சாருமதி', 'Ymr பட்டி', '2024-09-10', 'காது குத்து', '1001', '', '2024-08-30 15:25:51', '2025-01-05 13:45:48', 'Y'),
 (10, 1, 'சைமன் ராஜ்', 'அமலா', 'புகையிலைப்பட்டி', '2024-07-11', 'புது நன்மை', '500', 'அமலா மகனின் புது நன்மை', '2024-08-31 18:09:47', '2025-01-05 13:45:02', 'Y'),
-(17, 7, 'லக்ஷ்மி கார்த்திக் ', 'திலகவதி ', 'மணப்பாறை', '2023-02-11', 'கல்யாணம்', '5000', 'Moi', '2025-01-05 08:11:10', '2025-01-05 08:11:10', 'Y'),
 (24, 34, 'கண்ணன் ', 'சுந்தரபாண்டியன் ', 'V.naduvur', '2025-02-16', 'விழா ', '500', '', '2025-02-16 14:14:00', '2025-02-16 14:14:00', 'Y'),
 (25, 35, 'Jegaan ', '', 'Pugalur Four Road', '2025-01-27', 'New Home', '200', '', '2025-02-20 04:36:40', '2025-02-20 04:36:40', 'Y'),
 (26, 35, 'Muruganatham', '', 'Pugalur Four Road', '2025-01-27', 'New Home', '500', '', '2025-02-20 04:39:42', '2025-02-20 04:39:42', 'Y'),
 (27, 1, 'அறிவு', 'பால்காரர் மகன்', 'முத்துராஜ் நகர்', '2025-03-10', 'கல்யாணம்', '300', '', '2025-03-11 05:36:21', '2025-03-11 05:36:21', 'Y'),
-(29, 24, 'ரன் சோ', '', 'திண்டுக்கல்', '2025-03-31', 'கல்யாணம்', '5000', 'குறிப்புகள்', '2025-03-29 07:17:50', '2025-03-29 07:17:50', 'Y'),
 (31, 1, 'ஸ்டெல்லா', 'ஜெயப்பிரகாஷ்', 'முத்துராஜ் நகர்', '2025-05-18', 'ஜான்சி', '500', 'ஜான்சி புது நன்மை', '2025-05-21 18:39:52', '2025-05-21 18:39:52', 'Y'),
 (32, 35, 'madhesh', '', 'தொழிற்பேட்டை', '2025-06-08', 'marriage ', '1000', '', '2025-06-17 08:56:15', '2025-06-17 08:56:15', 'Y'),
 (33, 46, 'moorthi sithapa', '', 'THIRUMANGALAKKOTTAI KEELAIYUR ', '2025-06-27', 'kadhani vizha', '1000', 'new', '2025-06-28 02:11:29', '2025-06-28 02:11:29', 'Y'),
@@ -649,28 +676,23 @@ CREATE TABLE `gp_moi_user_master` (
 --
 
 INSERT INTO `gp_moi_user_master` (`um_id`, `um_full_name`, `um_password`, `um_mobile`, `um_email`, `um_last_login`, `um_otp`, `um_notification_token`, `um_otp_exp`, `um_create_dt`, `um_update_dt`, `um_status`) VALUES
-(1, 'GNANA PRAKASAM A', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '7845456609', 'agprakash406@gmail.com', '2025-09-03 18:20:21', '7777', 'dMXkudt8QkWq17N4qwllBA:APA91bGv5FwM03XUeryViIlWugaKtp3Rp6HXJxfFpi5xI2oH2unfKRp_iz6PaJa2rwrvdlq2oFlEhk8u6n45IighH_13xi_nhgMEslZ0aeodgXSTRXyvSaE', '1756815698', '2024-07-18 08:27:23', '2025-09-03 18:20:21', 'Y'),
-(7, 'PRAKASH', '$2y$10$CQ8udXbMGlcuJ1opWyP1geJG3gEn5tcX6.Q.mlrJvrZs5zwjQsnjO', '8870658164', 'prakash.m004@gmail.com', '2025-01-18 11:31:59', '5016', '', '1736107110', '2024-09-09 09:57:24', '2025-01-18 11:31:59', 'Y'),
-(8, 'KIRUBA THEPORAL J', '$2a$10$hHrvYYssl6mfdtIAYHKKvek92LOfFZhPYoyKJg43U4.nWjP1ds3Pa', '9597883290', 'jkirubatheporal@gmail.com', '2025-07-06 04:13:00', '6682', 'cCz8uzeyQhO_ADKGtP8mvA:APA91bFIdf5hAAeNZJSMl6cSv7nMcQ-59HDS9SI6AJGVIf05xrcsB87W7uxDQxTAYYT58jpItakeD8i-dnxOnE1j6OjEMXZQNubb2kTOfMt9OZ5LG7EqOtI', '1736875567', '2024-09-13 07:13:34', '2025-07-06 04:13:00', 'Y'),
+(1, 'GNANA PRAKASAM', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '7845456609', 'agprakash406@gmail.com', '2025-11-27 15:53:25', '6634', 'co6e_OXTRtiBPZsgIqklzo:APA91bFhERmx_aqINglqTOEZxD7Zi2duRs48jsSUbwdVGDZmkLlxvGxHddoCtHP_M95nJDTaR8BmitBMZNRKdUosv-wqyLJiwOQNXL44hjuW6PJ2i_AqBvg', '1764242503', '2024-07-18 08:27:23', '2025-11-27 15:53:25', 'Y'),
 (10, 'DINESH', '$2y$10$eDTyVMHMuzQcM/szIzpfYODo0kWnKOpKKY.ArdjFvjZBBzvb.HNKq', '8122675801', 'dineshkumar25.ddk@gmail.com', '2024-09-13 15:23:37', NULL, '', NULL, '2024-09-13 12:23:46', '2024-09-13 17:13:42', 'Y'),
-(16, 'KIKI', '$2y$10$zr4RNkuHBM.nMlhgUYvNf./796foLiChWom2vFxFxAf/QtF1q7gLK', '9698464406', 'kiruthika576@gmail.com', '2024-09-17 10:50:51', NULL, '', NULL, '2024-09-17 10:50:25', '2024-09-17 10:50:51', 'Y'),
 (17, 'P SANTHOSHRAJ', '$2y$10$ctQqAqLktyqo1pkQPqR8veocodi27vPJ06HDHjlLXIT2UM.KbS0/K', '9087471277', 'bccnmart@gmail.com', '2024-09-18 13:50:25', NULL, '', NULL, '2024-09-18 13:50:25', '2024-09-18 13:50:25', 'Y'),
 (18, 'LOGU', '$2y$10$UvrPcm0FeIcVR02l1iJdW.IEyFWBdXM25ypLiNOPlNji5et5aEwoO', '9976791028', 'eeelogu11490@gmail.com', '2024-09-21 10:20:23', NULL, '', NULL, '2024-09-21 10:19:28', '2024-09-21 10:20:23', 'Y'),
 (19, 'SARAVANAN', '$2y$10$OM1gkqj07ugGibS2nNVbT.gPKaFo.4Kz3Zci4.UI/m1SMzghZygam', '8220105076', 'saravanan0894@gmail.com', '2024-11-22 07:21:32', '778630', '', '1731897968', '2024-10-03 02:54:52', '2024-11-22 07:21:32', 'Y'),
 (22, 'KOWSALYA', '$2a$10$VWnSl0g0YTQm13bljDqx6udRrrGLMVJ2i5LDmyby4Z7cseN6IpDmK', '6381377512', 'kowsalya25071996@gmail.com', '2025-01-02 00:02:01', NULL, '', NULL, '2025-01-02 00:01:41', '2025-01-02 00:02:01', 'Y'),
 (23, 'JAYAPRAKASH B', '$2a$10$CZdOs8EWtLVNQ4OzqoABlO4ou4brqXWPoigDHJFkfTtFr.ywQWwIa', '8098985612', 'bjayaprakash75@gmail.com', '2025-01-02 06:21:15', NULL, '', NULL, '2025-01-02 06:20:59', '2025-01-02 06:21:15', 'Y'),
-(24, 'DHARMENDHIRAN', '$2a$10$pJ9SoABMLl3u9yipO1GhRepVuvFyCza6PKZbgc4gHCLw6zIiZdrii', '8072053727', 'dharmendhiran810@gmail.com', '2025-07-25 07:41:33', NULL, 'dMZ_GBG1SDKAaVl9HKaaPj:APA91bEd0keFGwy_Dj8IUDavuOFfusUL726ttX6IUYvXRAl_Kp4QYL4TpJ0G3MjHY3YO6GzUec583elwJkkGkIHCOj6UgLs9ykFgbeTPB2CR0Vq678Nm_aw', NULL, '2025-01-05 09:31:44', '2025-07-25 07:41:39', 'Y'),
-(28, 'SYED FARZANA', '$2a$10$FUOVj09OZPRND0xi0shlBuXDRSIC8SdxqKiJIGEPtpQi7Z89w3Qi2', '6383524637', 'farzanashabo@naethra.com', '2025-09-03 14:41:01', '8479', 'dx5DcEraQI6q0V7lbnkQVY:APA91bEaXeROMEXSIkKSsdoGwUQ6zc_XI9dwmT1EdTOxENvboktiq7HfK1iAU5UzHVNzmMhDwNzyOoRF80Un4HwRRW6hrghWQQmWaU42Z3hi_HPx6-_LDpM', '1756910524', '2025-01-06 06:59:08', '2025-09-03 14:41:09', 'Y'),
-(29, 'YOUNUS', '$2a$10$IS6XUq2Av6UwRVXbMYy84.oaDNpvyXicAVKqXp/0JZP/PXFxHihiu', '9042748494', 'mdyounus2004@gmail.com', '2025-01-14 15:20:28', NULL, '', NULL, '2025-01-14 15:19:46', '2025-01-14 15:20:28', 'Y'),
-(30, 'KIRENA', '$2a$10$Z3ydxDuKRJp1vag2HN3Gc.GSG9VwMKiZpqD3wnJnD2TUFO1rYmOSK', '8072427471', 'jkirena@gmail.com', '2025-01-14 15:27:14', NULL, '', NULL, '2025-01-14 15:26:47', '2025-01-14 15:27:14', 'Y'),
-(31, 'RENZO ROWAN', '$2a$10$wwE89VQzgT/57OfBb0o8IOInvIv3VPQLk3mOzg4i3lwBsaPZMbVYC', '9876543210', 'renzorowan1@gmail.com', '2025-09-03 18:15:17', NULL, 'dMXkudt8QkWq17N4qwllBA:APA91bGv5FwM03XUeryViIlWugaKtp3Rp6HXJxfFpi5xI2oH2unfKRp_iz6PaJa2rwrvdlq2oFlEhk8u6n45IighH_13xi_nhgMEslZ0aeodgXSTRXyvSaE', NULL, '2025-01-18 18:40:19', '2025-09-03 18:15:53', 'Y'),
+(31, 'RENZO ROWAN', '$2a$10$wwE89VQzgT/57OfBb0o8IOInvIv3VPQLk3mOzg4i3lwBsaPZMbVYC', '9876543210', 'renzorowan1@gmail.com', '2025-11-28 07:35:06', NULL, 'co6e_OXTRtiBPZsgIqklzo:APA91bFhERmx_aqINglqTOEZxD7Zi2duRs48jsSUbwdVGDZmkLlxvGxHddoCtHP_M95nJDTaR8BmitBMZNRKdUosv-wqyLJiwOQNXL44hjuW6PJ2i_AqBvg', NULL, '2025-01-18 18:40:19', '2025-11-28 07:35:06', 'Y'),
 (32, 'ABI ARJU', '$2a$10$Xu5WxH.Atx7xyIH.cDaL8OU09ueDjys4b1B7a40N5jN2Ww24KIyXu', '9789402227', 'abiarju36@gmail.com', '2025-02-04 06:05:32', NULL, 'eFeBnyM8SCKbJu2lnSPcbK:APA91bH09BQUgwxKdKu6NTLJo31kgd4xvmvzQDKextleIepi8hmrlU9cc3oAdVMwQc3VVd1roTjIt3UTBSKwP5a44x-nQH2lpII9br03DzlTxmH-mN-h_k8', NULL, '2025-02-04 06:04:58', '2025-02-04 06:05:34', 'Y'),
 (33, 'KARTHIKEYAN', '$2a$10$NWa0DiABAWuwMXnO8LHPA.CVWLc8mNfT9JNsFlxrhtGL/7fTKKN0i', '8056511475', 'tkarthik8656@gmail.com', '2025-02-04 20:47:39', NULL, 'd8qEEi1MTRCTwXbk40RJty:APA91bHdM7TZ8mRSSyH2GyPQlcTWAmkQ61vSFuUo2qaCNTRfBDOxykF_Pr3qJmWB3fhs6qGZVSHqctrw_M8ciWa3ooIouxkyVFh5UBZqNnsLFu1k4mPskAc', NULL, '2025-02-04 20:47:10', '2025-02-04 20:47:40', 'Y'),
 (34, 'JEGADEESAN', '$2a$10$FQJdd8O0meH1MHJIfZnpseHx5xry22yUiwa.Zmo/vSXxGOxUmbM4y', '9487639047', 'jegadeesan528@gmail.com', '2025-02-19 13:04:43', NULL, 'dXFE1r9rSVCk4kn2G9UbZD:APA91bE2q8bIzrgVNqs1eMKtMkbBL4RdUPl3Lz34JdS1uvTa7uRnW_JAbHuMDg3hQPdRalhna5YZWR6r2yiIjVAjDmGdxm33GBSBU-VpXAgjHqHSdcSO1Ig', NULL, '2025-02-16 14:09:56', '2025-02-19 13:04:43', 'Y'),
 (35, 'BOOPATHI', '$2a$10$k17mvz9ZZuQ4TyQRYns3yeyXXcG4D.UTVLDomI5vh/qMPsdI25tPW', '8608505183', 'boopathibaskar1104@gmail.com', '2025-06-17 08:54:34', '7537', 'dk-WEMGgTqGGwWcMgf9xIQ:APA91bEWZgPdP_QAtw9ECyRRgdADAPVojFbY5ihIZyhur6fy8b0aJ14MckN3tMnGL5LbDegB05vF4gvdIKUKAF996LSqFFs8ra_62HkqaZOtj4QMvmLbo4A', '1746342509', '2025-02-20 04:34:49', '2025-06-17 08:54:34', 'Y'),
 (36, 'VIVEK', '$2a$10$2b/tycxBWslcSITObnwVoOvvu0mOnv/Xbx4Tqko2LVMt5ch.eYaky', '7397004496', 'suvekavivek@gmail.com', '2025-03-10 03:35:32', NULL, 'e9Bw6pf6RNqdOnBOgRFy0P:APA91bG4K8MbOU2bZTPSEDkAm0UDQbufAsDs7l7cL7TIBTO15o0DedoH8yNT5Rao8TjNgAocpJlPBLPbgl0YWv4Tbgacf1WEJEEhGD3VIB3yRJENzNenUdw', NULL, '2025-03-03 03:19:45', '2025-03-10 03:35:32', 'Y'),
 (46, 'PRIYANGA', '$2a$10$J1dS5YyFbPZqbC/XF.Tx.uMKAVZyHGUxbLaQbYftzWO5mloZxO6Jq', '9345089270', 'bpriyanga2013@gmail.com', '2025-06-28 02:09:51', NULL, 'einHjPrtS-GQx38mftQtse:APA91bFr54Ah_i6WcHEOG08NnrwRPth5-5rEAyZ9Xn1FXar0wZENSbBlCFavK6PZIUZWDBEsb5oxYoMdbyiyK3W9lXfMfpNM1ROUzRWN3aDtmt2MBxt22D4', NULL, '2025-06-28 02:08:44', '2025-06-28 02:10:06', 'Y'),
-(47, 'B KRISHNA', '$2a$10$TwnKA0li8DQcX0SHsMh3BeBDSi2B72Vckt14H5ZxlL6dP6FBdCwle', '9940955808', 'kmoorthy362@gmail.com', '2025-07-31 04:09:45', NULL, 'd9fkO37jTZSsKq_NPInpa9:APA91bHL4l7xP9sJ4GsDT8pkZj6_-8p9-mvk5JRNHFVDDFPKRelq2u1mS2rrY0JFD8o-Y1rARUROi7IkFdqsmwsoxdAhvTtlZ-Eo0PTeOvQvAn3ZmGoaWf4', NULL, '2025-07-31 04:09:12', '2025-07-31 04:09:53', 'Y');
+(47, 'B KRISHNA', '$2a$10$TwnKA0li8DQcX0SHsMh3BeBDSi2B72Vckt14H5ZxlL6dP6FBdCwle', '9940955808', 'kmoorthy362@gmail.com', '2025-07-31 04:09:45', NULL, 'd9fkO37jTZSsKq_NPInpa9:APA91bHL4l7xP9sJ4GsDT8pkZj6_-8p9-mvk5JRNHFVDDFPKRelq2u1mS2rrY0JFD8o-Y1rARUROi7IkFdqsmwsoxdAhvTtlZ-Eo0PTeOvQvAn3ZmGoaWf4', NULL, '2025-07-31 04:09:12', '2025-07-31 04:09:53', 'Y'),
+(48, 'KARUNAMOORTHY', '$2a$10$ejk9/daHXdoOgaqkIJjiWORhekzy24VGNnP3Et1/vvohS2yvJkKUy', '9042833328', 'karunarajaram33@gmail.com', '2025-09-17 17:40:07', NULL, 'fUi-hMQsSoOGicpG3D6Rg7:APA91bFsQNFHnFVNux6aDPQumYY_APtEBRIg55J1ON21nrpCcIcdgQMxYC8eYtTXF07MkSlEkVGdIQ6cdUdce2vJ0jR64iKS65N7VNygYGVtWCI2CpUJlT0', NULL, '2025-09-17 17:39:17', '2025-09-17 17:40:24', 'Y'),
+(52, 'SUBA', '$2a$10$u9EWaTtx03BSDFsWF9N6yO7gA2Yr/Nx8mssTlT.K2t2KTikeffOIu', '9095237353', 'kshankar08091974@gmail.com', '2025-10-31 03:07:30', NULL, 'eufbFYQLQ6uDxcgCv_vSqL:APA91bFYvpGQaeh5CQWUAmnH6DcRDZgkSZBa6eIwLINKUkcpBQgVigtPOUrqB0O0v55rdsDqEby-76atwxA0upZlft0kdjcszKD3eBlVG74GLmSwtgpbO0M', NULL, '2025-10-31 03:06:52', '2025-10-31 03:07:34', 'Y');
 
 --
 -- Indexes for dumped tables
@@ -703,6 +725,13 @@ ALTER TABLE `gp_moi_master_records`
   ADD PRIMARY KEY (`mr_id`),
   ADD KEY `fk_mr_function_id` (`mr_function_id`),
   ADD KEY `fk_mr_user_id` (`mr_um_id`);
+
+--
+-- Indexes for table `gp_moi_notifications`
+--
+ALTER TABLE `gp_moi_notifications`
+  ADD PRIMARY KEY (`n_id`),
+  ADD KEY `fk_n_user_id` (`n_um_id`);
 
 --
 -- Indexes for table `gp_moi_out_master`
@@ -738,19 +767,25 @@ ALTER TABLE `gp_moi_admin_master`
 -- AUTO_INCREMENT for table `gp_moi_feedbacks`
 --
 ALTER TABLE `gp_moi_feedbacks`
-  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_functions`
 --
 ALTER TABLE `gp_moi_functions`
-  MODIFY `f_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
+  MODIFY `f_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_master_records`
 --
 ALTER TABLE `gp_moi_master_records`
-  MODIFY `mr_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=521;
+  MODIFY `mr_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=522;
+
+--
+-- AUTO_INCREMENT for table `gp_moi_notifications`
+--
+ALTER TABLE `gp_moi_notifications`
+  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_out_master`
@@ -768,7 +803,7 @@ ALTER TABLE `gp_moi_upcoming_functions`
 -- AUTO_INCREMENT for table `gp_moi_user_master`
 --
 ALTER TABLE `gp_moi_user_master`
-  MODIFY `um_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `um_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 
 --
 -- Constraints for dumped tables
@@ -793,6 +828,12 @@ ALTER TABLE `gp_moi_master_records`
   ADD CONSTRAINT `fk_mr_function_id` FOREIGN KEY (`mr_function_id`) REFERENCES `gp_moi_functions` (`f_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_mr_user_id` FOREIGN KEY (`mr_um_id`) REFERENCES `gp_moi_user_master` (`um_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user` FOREIGN KEY (`mr_um_id`) REFERENCES `gp_moi_user_master` (`um_id`);
+
+--
+-- Constraints for table `gp_moi_notifications`
+--
+ALTER TABLE `gp_moi_notifications`
+  ADD CONSTRAINT `fk_n_user_id` FOREIGN KEY (`n_um_id`) REFERENCES `gp_moi_user_master` (`um_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `gp_moi_out_master`

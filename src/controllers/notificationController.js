@@ -125,4 +125,223 @@ exports.controller = {
             });
         }
     },
+
+    /**
+     * Get all notifications for the authenticated user
+     * Uses userId from req.user (set by authenticateToken middleware)
+     */
+    getAllNotifications: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            
+            if (!userId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'User ID is required.' }
+                });
+            }
+
+            const notifications = await Notification.findByUserId(userId);
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: {
+                    notifications: notifications,
+                    count: notifications.length
+                }
+            });
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Mark notification as read
+     * Params: { id } - Notification ID
+     */
+    markAsRead: async (req, res) => {
+        try {
+            const notificationId = parseInt(req.params.id);
+
+            if (!notificationId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification ID is required.' }
+                });
+            }
+
+            // Check if notification exists
+            const notification = await Notification.findById(notificationId);
+            if (!notification) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification not found.' }
+                });
+            }
+
+            // Check if notification belongs to the authenticated user
+            const userId = req.user.userId;
+            if (notification.n_um_id !== userId) {
+                return res.status(403).json({
+                    responseType: "F",
+                    responseValue: { message: 'You do not have permission to access this notification.' }
+                });
+            }
+
+            // Update read status
+            const result = await Notification.markAsRead(notificationId);
+
+            if (result && result.affectedRows > 0) {
+                // Fetch updated notification
+                const updatedNotification = await Notification.findById(notificationId);
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: 'Notification marked as read successfully.',
+                        notification: updatedNotification
+                    }
+                });
+            } else {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Failed to update notification status.' }
+                });
+            }
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Mark notification as unread
+     * Params: { id } - Notification ID
+     */
+    markAsUnread: async (req, res) => {
+        try {
+            const notificationId = parseInt(req.params.id);
+
+            if (!notificationId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification ID is required.' }
+                });
+            }
+
+            // Check if notification exists
+            const notification = await Notification.findById(notificationId);
+            if (!notification) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification not found.' }
+                });
+            }
+
+            // Check if notification belongs to the authenticated user
+            const userId = req.user.userId;
+            if (notification.n_um_id !== userId) {
+                return res.status(403).json({
+                    responseType: "F",
+                    responseValue: { message: 'You do not have permission to access this notification.' }
+                });
+            }
+
+            // Update read status
+            const result = await Notification.markAsUnread(notificationId);
+
+            if (result && result.affectedRows > 0) {
+                // Fetch updated notification
+                const updatedNotification = await Notification.findById(notificationId);
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: 'Notification marked as unread successfully.',
+                        notification: updatedNotification
+                    }
+                });
+            } else {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Failed to update notification status.' }
+                });
+            }
+        } catch (error) {
+            console.error('Error marking notification as unread:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Delete/Deactivate a notification (soft delete)
+     * Params: { id } - Notification ID
+     */
+    delete: async (req, res) => {
+        try {
+            const notificationId = parseInt(req.params.id);
+
+            if (!notificationId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification ID is required.' }
+                });
+            }
+
+            // Check if notification exists
+            const notification = await Notification.findById(notificationId);
+            if (!notification) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification not found.' }
+                });
+            }
+
+            // Check if notification belongs to the authenticated user
+            const userId = req.user.userId;
+            if (notification.n_um_id !== userId) {
+                return res.status(403).json({
+                    responseType: "F",
+                    responseValue: { message: 'You do not have permission to delete this notification.' }
+                });
+            }
+
+            // Check if notification is already deleted
+            if (notification.n_active === 'N') {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'Notification is already deleted.' }
+                });
+            }
+
+            // Soft delete notification
+            const result = await Notification.delete(notificationId);
+
+            if (result && result.affectedRows > 0) {
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: { message: 'Notification deleted successfully.' }
+                });
+            } else {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'Failed to delete notification.' }
+                });
+            }
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
 }

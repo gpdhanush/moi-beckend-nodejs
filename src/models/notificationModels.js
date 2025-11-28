@@ -55,6 +55,19 @@ const Notification = {
     },
 
     /**
+     * Mark notification as unread
+     * @param {number} notificationId - The notification ID
+     * @returns {Promise} Database result
+     */
+    async markAsUnread(notificationId) {
+        const [result] = await db.query(
+            `UPDATE ${table} SET n_is_read = 'N', n_read_time = NULL WHERE n_id = ?`,
+            [notificationId]
+        );
+        return result;
+    },
+
+    /**
      * Delete/Deactivate a notification
      * @param {number} notificationId - The notification ID
      * @returns {Promise} Database result
