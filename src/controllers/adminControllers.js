@@ -93,6 +93,29 @@ exports.controller = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    replyToFeedback: async (req, res) => {
+        try {
+            const { feedbackId, reply } = req.body;
+            
+            if (!feedbackId) {
+                return res.status(400).json({ responseType: "F", responseValue: { message: 'Feedback ID is required.' } });
+            }
+            
+            if (!reply || reply.trim() === '') {
+                return res.status(400).json({ responseType: "F", responseValue: { message: 'Reply text is required.' } });
+            }
+            
+            const result = await Model.updateFeedbackReply(feedbackId, reply);
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'Feedback not found.' } });
+            }
+            
+            return res.status(200).json({ responseType: "S", responseValue: { message: 'Reply has been successfully added.' } });
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
     // MOI OUT ALL ----
     moiOutAll: async (req, res) => {
         try {
@@ -100,7 +123,7 @@ exports.controller = {
             if (!list) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
             }
-            return res.status(200).json({ responseType: "S", responseValue: list });
+            return res.status(200).json({ responseType: "S", count: list.length, responseValue: list });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
@@ -112,7 +135,7 @@ exports.controller = {
             if (!list) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
             }
-            return res.status(200).json({ responseType: "S", responseValue: list });
+            return res.status(200).json({ responseType: "S", count: list.length, responseValue: list });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }

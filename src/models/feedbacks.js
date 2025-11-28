@@ -6,5 +6,9 @@ const Model = {
         const [result] = await db.query(`INSERT INTO ${table} (user_id, feedbacks) VALUES (?, ?)`, [list.userId, list.feedbacks]);
         return result;
     },
+    async readAll() {
+        const [result] = await db.query(`SELECT * FROM ${table} WHERE active = 'Y' ORDER BY created_time DESC`, []);
+        return result;
+    },
 }
 module.exports = Model;

@@ -30,6 +30,10 @@ const Model = {
         const [result] = await db.query(`SELECT * FROM gp_moi_feedbacks`, []);
         return result;
     },
+    async updateFeedbackReply(feedbackId, reply) {
+        const [result] = await db.query(`UPDATE gp_moi_feedbacks SET reply = ?, updated_time = CURRENT_TIMESTAMP WHERE id = ?`, [reply, feedbackId]);
+        return result;
+    },
     async moiOutAll() {
         const [result] = await db.query(`SELECT * FROM gp_moi_out_master`, []);
         return result;

@@ -20,4 +20,29 @@ exports.controller = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    list: async (req, res) => {
+        try {
+            const feedbacks = await Model.readAll();
+            if (!feedbacks || feedbacks.length === 0) {
+                return res.status(200).json([]);
+            }
+            
+            const formattedFeedbacks = feedbacks.map(feedback => {
+                const createdAt = moment(feedback.created_time).utc().toISOString();
+                // Use updated_time as repliedAt if reply exists, otherwise null
+                const repliedAt = feedback.reply ? moment(feedback.updated_time).utc().toISOString() : null;
+                
+                return {
+                    feedbacks: feedback.feedbacks || '',
+                    reply: feedback.reply || null,
+                    createdAt: createdAt,
+                    repliedAt: repliedAt
+                };
+            });
+            
+            return res.status(200).json({ responseType: "S", count: formattedFeedbacks.length, responseValue: formattedFeedbacks });
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
 }

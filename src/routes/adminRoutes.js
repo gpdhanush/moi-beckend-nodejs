@@ -11,6 +11,7 @@ router.get('/moi-user-list/:id', controller.moiUserListId);
 router.get('/moi-user-function', controller.moiUserFunction);
 router.get('/moi-user-function/:userId', controller.moiFunctionsUserId);
 router.get('/feedbacks', controller.feedbacks);
+router.post('/feedbacks/reply', authenticateToken, controller.replyToFeedback);
 router.get('/moi-out-all', controller.moiOutAll);
 router.get('/moi-out-all/:userId', controller.moiOutAllUser);
 

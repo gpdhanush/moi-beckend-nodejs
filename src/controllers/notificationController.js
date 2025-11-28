@@ -157,10 +157,8 @@ exports.controller = {
             
             return res.status(200).json({
                 responseType: "S",
-                responseValue: {
-                    notifications: notifications,
-                    count: notifications.length
-                }
+                count: notifications.length,
+                responseValue: notifications
             });
         } catch (error) {
             console.error('Error fetching notifications:', error);

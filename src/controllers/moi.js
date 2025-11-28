@@ -35,13 +35,13 @@ exports.controller = {
                     .map(event => {
                         return {
                             ...event,
-                            functionDate: moment(event.functionDate).local().format('DD-MMM-YYYY')
+                            functionDate: moment(event.functionDate).local().format('DD-MMM-YYYY')  
                         };
                     });
             };
             const transformKeys = changeKeyNames(result);
 
-            return res.status(200).json({ responseType: "S", responseValue: transformKeys });
+            return res.status(200).json({ responseType: "S", count: transformKeys.length, responseValue: transformKeys });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
