@@ -24,7 +24,7 @@ exports.controller = {
         try {
             const feedbacks = await Model.readAll();
             if (!feedbacks || feedbacks.length === 0) {
-                return res.status(200).json([]);
+                return res.status(200).json({ responseType: "S", count: 0, responseValue: [] });
             }
             
             const formattedFeedbacks = feedbacks.map(feedback => {

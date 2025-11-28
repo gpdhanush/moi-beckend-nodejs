@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 28, 2025 at 01:21 PM
+-- Generation Time: Nov 28, 2025 at 02:01 PM
 -- Server version: 10.11.14-MariaDB-cll-lve
 -- PHP Version: 8.4.14
 
@@ -55,18 +55,11 @@ CREATE TABLE `gp_moi_feedbacks` (
   `id` int(5) NOT NULL,
   `user_id` int(5) NOT NULL,
   `feedbacks` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `reply` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_time` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_time` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `active` char(1) NOT NULL DEFAULT 'Y'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
---
--- Dumping data for table `gp_moi_feedbacks`
---
-
-INSERT INTO `gp_moi_feedbacks` (`id`, `user_id`, `feedbacks`, `created_time`, `updated_time`, `active`) VALUES
-(1, 1, 'test', '2025-11-26 05:54:03', '2025-11-26 05:54:03', 'Y'),
-(2, 1, 'how are you', '2025-11-27 06:37:51', '2025-11-27 06:37:51', 'Y');
 
 -- --------------------------------------------------------
 
@@ -571,8 +564,8 @@ INSERT INTO `gp_moi_master_records` (`mr_id`, `mr_um_id`, `mr_function_id`, `mr_
 CREATE TABLE `gp_moi_notifications` (
   `n_id` int(10) NOT NULL,
   `n_um_id` int(10) NOT NULL COMMENT 'User ID from gp_moi_user_master table',
-  `n_title` varchar(255) NOT NULL COMMENT 'Notification title',
-  `n_body` text NOT NULL COMMENT 'Notification body/content',
+  `n_title` varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
+  `n_body` text CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `n_type` varchar(20) NOT NULL DEFAULT 'general' COMMENT 'Notification type: moi, moiOut, function, account, settings, general',
   `n_is_read` char(1) NOT NULL DEFAULT 'N' COMMENT 'Read status: Y=Read, N=Unread',
   `n_read_time` timestamp NULL DEFAULT NULL COMMENT 'Timestamp when notification was read',
@@ -580,14 +573,6 @@ CREATE TABLE `gp_moi_notifications` (
   `n_update_dt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Last update timestamp',
   `n_active` char(1) NOT NULL DEFAULT 'Y' COMMENT 'Active status: Y=Active, N=Deleted/Inactive'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
-
---
--- Dumping data for table `gp_moi_notifications`
---
-
-INSERT INTO `gp_moi_notifications` (`n_id`, `n_um_id`, `n_title`, `n_body`, `n_type`, `n_is_read`, `n_read_time`, `n_create_dt`, `n_update_dt`, `n_active`) VALUES
-(1, 1, 'Title', 'Notification Desc', 'general', 'N', NULL, '2025-11-28 07:35:56', '2025-11-28 07:35:56', 'Y'),
-(2, 1, 'Function Reminder', 'Moi vanthathu pathivu seiyapattuthu.', 'general', 'N', NULL, '2025-11-28 07:45:45', '2025-11-28 07:45:45', 'Y');
 
 -- --------------------------------------------------------
 
@@ -678,7 +663,7 @@ CREATE TABLE `gp_moi_user_master` (
 --
 
 INSERT INTO `gp_moi_user_master` (`um_id`, `um_full_name`, `um_password`, `um_mobile`, `um_email`, `um_last_login`, `um_otp`, `um_notification_token`, `um_otp_exp`, `um_create_dt`, `um_update_dt`, `um_status`) VALUES
-(1, 'GNANA PRAKASAM', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '7845456609', 'agprakash406@gmail.com', '2025-11-27 15:53:25', '6634', 'co6e_OXTRtiBPZsgIqklzo:APA91bFhERmx_aqINglqTOEZxD7Zi2duRs48jsSUbwdVGDZmkLlxvGxHddoCtHP_M95nJDTaR8BmitBMZNRKdUosv-wqyLJiwOQNXL44hjuW6PJ2i_AqBvg', '1764242503', '2024-07-18 08:27:23', '2025-11-27 15:53:25', 'Y'),
+(1, 'GNANA PRAKASAM', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '7845456609', 'agprakash406@gmail.com', '2025-11-28 07:57:50', '6634', 'co6e_OXTRtiBPZsgIqklzo:APA91bFhERmx_aqINglqTOEZxD7Zi2duRs48jsSUbwdVGDZmkLlxvGxHddoCtHP_M95nJDTaR8BmitBMZNRKdUosv-wqyLJiwOQNXL44hjuW6PJ2i_AqBvg', '1764242503', '2024-07-18 08:27:23', '2025-11-28 07:57:50', 'Y'),
 (10, 'DINESH', '$2y$10$eDTyVMHMuzQcM/szIzpfYODo0kWnKOpKKY.ArdjFvjZBBzvb.HNKq', '8122675801', 'dineshkumar25.ddk@gmail.com', '2024-09-13 15:23:37', NULL, '', NULL, '2024-09-13 12:23:46', '2024-09-13 17:13:42', 'Y'),
 (17, 'P SANTHOSHRAJ', '$2y$10$ctQqAqLktyqo1pkQPqR8veocodi27vPJ06HDHjlLXIT2UM.KbS0/K', '9087471277', 'bccnmart@gmail.com', '2024-09-18 13:50:25', NULL, '', NULL, '2024-09-18 13:50:25', '2024-09-18 13:50:25', 'Y'),
 (18, 'LOGU', '$2y$10$UvrPcm0FeIcVR02l1iJdW.IEyFWBdXM25ypLiNOPlNji5et5aEwoO', '9976791028', 'eeelogu11490@gmail.com', '2024-09-21 10:20:23', NULL, '', NULL, '2024-09-21 10:19:28', '2024-09-21 10:20:23', 'Y'),
@@ -770,7 +755,7 @@ ALTER TABLE `gp_moi_admin_master`
 -- AUTO_INCREMENT for table `gp_moi_feedbacks`
 --
 ALTER TABLE `gp_moi_feedbacks`
-  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_functions`
@@ -788,7 +773,7 @@ ALTER TABLE `gp_moi_master_records`
 -- AUTO_INCREMENT for table `gp_moi_notifications`
 --
 ALTER TABLE `gp_moi_notifications`
-  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_out_master`
