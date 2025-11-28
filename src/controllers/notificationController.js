@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const Notification = require('../models/notificationModels');
 
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE,
@@ -21,10 +22,26 @@ if (!admin.apps.length) {
 }
 
 exports.controller = {
+    /**
+     * Send push notification via FCM and save notification to database
+     * Body: { userId, title, body, token }
+     */
     sendNotification: async (req, res) => {
-        const { title, body, token } = req.body;
+        const { userId, title, body, token } = req.body;
+        
+        // Validate required fields
         if (!token || !title || !body) {
-            return res.status(400).json({ responseType: "F", responseValue: { message: 'Token, title, and body are required.' } });
+            return res.status(400).json({ 
+                responseType: "F", 
+                responseValue: { message: 'Token, title, and body are required.' } 
+            });
+        }
+
+        if (!userId) {
+            return res.status(400).json({ 
+                responseType: "F", 
+                responseValue: { message: 'User ID is required.' } 
+            });
         }
 
         const message = {
@@ -32,14 +49,37 @@ exports.controller = {
                 title: title,
                 body: body,
             },
-            token: token, // Target device token
+            token: token, // Target device FCM token
         };
 
         try {
+            // Send notification via FCM
             await admin.messaging().send(message);
-            return res.status(200).json({ responseType: "S", responseValue: { message: 'Notification sent successfully' } });
+            
+            // If FCM send is successful, save notification to database
+            try {
+                await Notification.create({
+                    userId: userId,
+                    title: title,
+                    body: body
+                });
+            } catch (dbError) {
+                // Log database error but don't fail the request since FCM send was successful
+                console.error('Error saving notification to database:', dbError);
+                // Continue - notification was sent successfully
+            }
+
+            return res.status(200).json({ 
+                responseType: "S", 
+                responseValue: { message: 'Notification sent successfully' } 
+            });
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            // FCM send failed, don't save to database
+            console.error('FCM send error:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
 }
