@@ -12,8 +12,10 @@ function generateToken(userId) {
     if (!userId) {
         throw new Error('User ID is required to generate token');
     }
-    const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7 days' });
-    userTokens[userId] = token;
+    // Ensure userId is consistently stored as a number
+    const normalizedUserId = Number(userId);
+    const token = jwt.sign({ userId: normalizedUserId }, process.env.JWT_SECRET, { expiresIn: '30 days' });
+    userTokens[normalizedUserId] = token;
     return token;
 }
 
@@ -22,8 +24,11 @@ function generateToken(userId) {
  * @param {number} userId - The user ID
  */
 function invalidatePreviousToken(userId) {
-    if (userId && userTokens[userId]) {
-        delete userTokens[userId];
+    if (userId) {
+        const normalizedUserId = Number(userId);
+        if (userTokens[normalizedUserId]) {
+            delete userTokens[normalizedUserId];
+        }
     }
 }
 
@@ -36,7 +41,9 @@ function getTokenForUser(userId) {
     if (!userId) {
         return undefined;
     }
-    return userTokens[userId];
+    // Ensure userId is consistently retrieved as a number
+    const normalizedUserId = Number(userId);
+    return userTokens[normalizedUserId];
 }
 
 /**
@@ -44,8 +51,11 @@ function getTokenForUser(userId) {
  * @param {number} userId - The user ID
  */
 function removeToken(userId) {
-    if (userId && userTokens[userId]) {
-        delete userTokens[userId];
+    if (userId) {
+        const normalizedUserId = Number(userId);
+        if (userTokens[normalizedUserId]) {
+            delete userTokens[normalizedUserId];
+        }
     }
 }
 
@@ -55,7 +65,11 @@ function removeToken(userId) {
  * @returns {boolean} - True if token exists, false otherwise
  */
 function hasToken(userId) {
-    return userId ? userTokens[userId] !== undefined : false;
+    if (!userId) {
+        return false;
+    }
+    const normalizedUserId = Number(userId);
+    return userTokens[normalizedUserId] !== undefined;
 }
 
 module.exports = {

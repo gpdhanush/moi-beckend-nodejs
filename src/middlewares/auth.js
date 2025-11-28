@@ -32,8 +32,16 @@ function authenticateToken(req, res, next) {
             });
         }
 
-        // Extract user ID from decoded token
-        const userId = decoded.userId;
+        // Extract user ID from decoded token and normalize to number
+        const userId = Number(decoded.userId);
+        
+        // Validate userId exists
+        if (!userId || isNaN(userId)) {
+            return res.status(401).json({ 
+                responseType: "F", 
+                responseValue: { message: "Invalid token. Please login to continue." } 
+            });
+        }
         
         // Check if token matches the stored token (enforces single-session policy)
         // This ensures only the latest login token is valid
@@ -48,7 +56,11 @@ function authenticateToken(req, res, next) {
         }
 
         // Token is valid, attach user info to request and proceed
-        req.user = decoded;
+        // Ensure userId is normalized in the request object
+        req.user = {
+            ...decoded,
+            userId: userId
+        };
         next();
     });
 }
