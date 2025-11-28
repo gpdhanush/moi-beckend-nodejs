@@ -1,16 +1,33 @@
 const db = require('../config/database');
 const table = "gp_moi_notifications";
 
+// Notification Type Enum
+const NotificationType = {
+    MOI: 'moi',
+    MOI_OUT: 'moiOut',
+    FUNCTION: 'function',
+    ACCOUNT: 'account',
+    SETTINGS: 'settings',
+    GENERAL: 'general'
+};
+
+// Helper function to validate notification type
+function isValidNotificationType(type) {
+    return Object.values(NotificationType).includes(type);
+}
+
 const Notification = {
     /**
      * Create a new notification record
-     * @param {Object} notificationData - { userId, title, body }
+     * @param {Object} notificationData - { userId, title, body, type }
      * @returns {Promise} Database result
      */
     async create(notificationData) {
+        const type = notificationData.type || NotificationType.GENERAL; // Default to 'general' if not provided
+        
         const [result] = await db.query(
-            `INSERT INTO ${table} (n_um_id, n_title, n_body) VALUES (?, ?, ?)`,
-            [notificationData.userId, notificationData.title, notificationData.body]
+            `INSERT INTO ${table} (n_um_id, n_title, n_body, n_type) VALUES (?, ?, ?, ?)`,
+            [notificationData.userId, notificationData.title, notificationData.body, type]
         );
         return result;
     },
@@ -81,4 +98,8 @@ const Notification = {
     },
 }
 
-module.exports = Notification;
+module.exports = {
+    Notification,
+    NotificationType,
+    isValidNotificationType
+};

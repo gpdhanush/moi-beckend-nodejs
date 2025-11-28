@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 28, 2025 at 01:09 PM
+-- Generation Time: Nov 28, 2025 at 01:21 PM
 -- Server version: 10.11.14-MariaDB-cll-lve
 -- PHP Version: 8.4.14
 
@@ -573,6 +573,7 @@ CREATE TABLE `gp_moi_notifications` (
   `n_um_id` int(10) NOT NULL COMMENT 'User ID from gp_moi_user_master table',
   `n_title` varchar(255) NOT NULL COMMENT 'Notification title',
   `n_body` text NOT NULL COMMENT 'Notification body/content',
+  `n_type` varchar(20) NOT NULL DEFAULT 'general' COMMENT 'Notification type: moi, moiOut, function, account, settings, general',
   `n_is_read` char(1) NOT NULL DEFAULT 'N' COMMENT 'Read status: Y=Read, N=Unread',
   `n_read_time` timestamp NULL DEFAULT NULL COMMENT 'Timestamp when notification was read',
   `n_create_dt` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Notification creation timestamp',
@@ -584,8 +585,9 @@ CREATE TABLE `gp_moi_notifications` (
 -- Dumping data for table `gp_moi_notifications`
 --
 
-INSERT INTO `gp_moi_notifications` (`n_id`, `n_um_id`, `n_title`, `n_body`, `n_is_read`, `n_read_time`, `n_create_dt`, `n_update_dt`, `n_active`) VALUES
-(1, 1, 'Title', 'Notification Desc', 'N', NULL, '2025-11-28 07:35:56', '2025-11-28 07:35:56', 'Y');
+INSERT INTO `gp_moi_notifications` (`n_id`, `n_um_id`, `n_title`, `n_body`, `n_type`, `n_is_read`, `n_read_time`, `n_create_dt`, `n_update_dt`, `n_active`) VALUES
+(1, 1, 'Title', 'Notification Desc', 'general', 'N', NULL, '2025-11-28 07:35:56', '2025-11-28 07:35:56', 'Y'),
+(2, 1, 'Function Reminder', 'Moi vanthathu pathivu seiyapattuthu.', 'general', 'N', NULL, '2025-11-28 07:45:45', '2025-11-28 07:45:45', 'Y');
 
 -- --------------------------------------------------------
 
@@ -731,7 +733,8 @@ ALTER TABLE `gp_moi_master_records`
 --
 ALTER TABLE `gp_moi_notifications`
   ADD PRIMARY KEY (`n_id`),
-  ADD KEY `fk_n_user_id` (`n_um_id`);
+  ADD KEY `fk_n_user_id` (`n_um_id`),
+  ADD KEY `idx_n_type` (`n_type`);
 
 --
 -- Indexes for table `gp_moi_out_master`
@@ -785,7 +788,7 @@ ALTER TABLE `gp_moi_master_records`
 -- AUTO_INCREMENT for table `gp_moi_notifications`
 --
 ALTER TABLE `gp_moi_notifications`
-  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_out_master`

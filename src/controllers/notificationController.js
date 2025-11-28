@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const Notification = require('../models/notificationModels');
+const { Notification, NotificationType, isValidNotificationType } = require('../models/notificationModels');
 
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE,
@@ -24,10 +24,11 @@ if (!admin.apps.length) {
 exports.controller = {
     /**
      * Send push notification via FCM and save notification to database
-     * Body: { userId, title, body, token }
+     * Body: { userId, title, body, token, type }
+     * type: moi, moiOut, function, account, settings, general (default: general)
      */
     sendNotification: async (req, res) => {
-        const { userId, title, body, token } = req.body;
+        const { userId, title, body, token, type } = req.body;
         
         // Validate required fields
         if (!token || !title || !body) {
@@ -41,6 +42,16 @@ exports.controller = {
             return res.status(400).json({ 
                 responseType: "F", 
                 responseValue: { message: 'User ID is required.' } 
+            });
+        }
+
+        // Validate notification type if provided
+        if (type && !isValidNotificationType(type)) {
+            return res.status(400).json({ 
+                responseType: "F", 
+                responseValue: { 
+                    message: `Invalid notification type. Allowed types: ${Object.values(NotificationType).join(', ')}` 
+                } 
             });
         }
 
@@ -61,7 +72,8 @@ exports.controller = {
                 await Notification.create({
                     userId: userId,
                     title: title,
-                    body: body
+                    body: body,
+                    type: type || NotificationType.GENERAL // Use provided type or default to 'general'
                 });
             } catch (dbError) {
                 // Log database error but don't fail the request since FCM send was successful
