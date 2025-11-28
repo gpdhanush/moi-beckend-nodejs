@@ -21,6 +21,62 @@ if (!admin.apps.length) {
     });
 }
 
+/**
+ * Helper function to send push notification (can be called directly without HTTP request/response)
+ * @param {Object} params - { userId, title, body, token, type }
+ * @returns {Promise<Object>} - { success: boolean, message: string }
+ */
+async function sendPushNotification({ userId, title, body, token, type }) {
+    // Validate required fields
+    if (!token || !title || !body) {
+        throw new Error('Token, title, and body are required.');
+    }
+
+    if (!userId) {
+        throw new Error('User ID is required.');
+    }
+
+    // Validate notification type if provided
+    if (type && !isValidNotificationType(type)) {
+        throw new Error(`Invalid notification type. Allowed types: ${Object.values(NotificationType).join(', ')}`);
+    }
+
+    const message = {
+        notification: {
+            title: title,
+            body: body,
+        },
+        token: token, // Target device FCM token
+    };
+
+    try {
+        // Send notification via FCM
+        await admin.messaging().send(message);
+        
+        // If FCM send is successful, save notification to database
+        try {
+            await Notification.create({
+                userId: userId,
+                title: title,
+                body: body,
+                type: type || NotificationType.GENERAL // Use provided type or default to 'general'
+            });
+        } catch (dbError) {
+            // Log database error but don't fail the request since FCM send was successful
+            console.error('Error saving notification to database:', dbError);
+            // Continue - notification was sent successfully
+        }
+
+        return { success: true, message: 'Notification sent successfully' };
+    } catch (error) {
+        // FCM send failed, don't save to database
+        console.error('FCM send error:', error);
+        throw error;
+    }
+}
+
+exports.sendPushNotification = sendPushNotification;
+
 exports.controller = {
     /**
      * Send push notification via FCM and save notification to database
@@ -30,60 +86,11 @@ exports.controller = {
     sendNotification: async (req, res) => {
         const { userId, title, body, token, type } = req.body;
         
-        // Validate required fields
-        if (!token || !title || !body) {
-            return res.status(400).json({ 
-                responseType: "F", 
-                responseValue: { message: 'Token, title, and body are required.' } 
-            });
-        }
-
-        if (!userId) {
-            return res.status(400).json({ 
-                responseType: "F", 
-                responseValue: { message: 'User ID is required.' } 
-            });
-        }
-
-        // Validate notification type if provided
-        if (type && !isValidNotificationType(type)) {
-            return res.status(400).json({ 
-                responseType: "F", 
-                responseValue: { 
-                    message: `Invalid notification type. Allowed types: ${Object.values(NotificationType).join(', ')}` 
-                } 
-            });
-        }
-
-        const message = {
-            notification: {
-                title: title,
-                body: body,
-            },
-            token: token, // Target device FCM token
-        };
-
         try {
-            // Send notification via FCM
-            await admin.messaging().send(message);
-            
-            // If FCM send is successful, save notification to database
-            try {
-                await Notification.create({
-                    userId: userId,
-                    title: title,
-                    body: body,
-                    type: type || NotificationType.GENERAL // Use provided type or default to 'general'
-                });
-            } catch (dbError) {
-                // Log database error but don't fail the request since FCM send was successful
-                console.error('Error saving notification to database:', dbError);
-                // Continue - notification was sent successfully
-            }
-
+            const result = await sendPushNotification({ userId, title, body, token, type });
             return res.status(200).json({ 
                 responseType: "S", 
-                responseValue: { message: 'Notification sent successfully' } 
+                responseValue: { message: result.message } 
             });
         } catch (error) {
             // FCM send failed, don't save to database

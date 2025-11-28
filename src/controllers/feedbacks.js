@@ -1,6 +1,8 @@
 const Model = require('../models/feedbacks');
 const User = require('../models/user');
 const moment = require('moment');
+const { sendPushNotification } = require('./notificationController');
+const { NotificationType } = require('../models/notificationModels');
 
 
 exports.controller = {
@@ -12,6 +14,21 @@ exports.controller = {
             }
             var query = await Model.create(req.body);
             if (query) {
+                // Send push notification if user has a device token
+                if (user.um_notification_token) {
+                    try {
+                        await sendPushNotification({
+                            userId: req.body.userId,
+                            title: 'புதிய கருத்து சமர்ப்பிக்கப்பட்டது',
+                            body: 'உங்கள் கருத்து வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. நாங்கள் விரைவில் மதிப்பாய்வு செய்வோம்.',
+                            token: user.um_notification_token,
+                            type: NotificationType.GENERAL
+                        });
+                    } catch (notificationError) {
+                        // Log error but don't fail the request since feedback was saved successfully
+                        console.error('Error sending push notification for feedback:', notificationError);
+                    }
+                }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "Your data has been successfully stored." } });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "Data saving failed. Please try again later." } });

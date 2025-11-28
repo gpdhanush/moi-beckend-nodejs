@@ -38,6 +38,10 @@ const Model = {
         `, []);
         return result;
     },
+    async getFeedbackById(feedbackId) {
+        const [result] = await db.query(`SELECT * FROM gp_moi_feedbacks WHERE id = ?`, [feedbackId]);
+        return result[0];
+    },
     async updateFeedbackReply(feedbackId, reply) {
         const [result] = await db.query(`UPDATE gp_moi_feedbacks SET reply = ?, updated_time = CURRENT_TIMESTAMP WHERE id = ?`, [reply, feedbackId]);
         return result;

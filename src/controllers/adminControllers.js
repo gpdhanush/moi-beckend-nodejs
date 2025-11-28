@@ -1,4 +1,7 @@
 const Model = require('../models/adminModels');
+const User = require('../models/user');
+const { sendPushNotification } = require('./notificationController');
+const { NotificationType } = require('../models/notificationModels');
 
 
 exports.controller = {
@@ -105,10 +108,35 @@ exports.controller = {
                 return res.status(400).json({ responseType: "F", responseValue: { message: 'Reply text is required.' } });
             }
             
+            // Get feedback to retrieve user_id before updating
+            const feedback = await Model.getFeedbackById(feedbackId);
+            if (!feedback) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'Feedback not found.' } });
+            }
+            
             const result = await Model.updateFeedbackReply(feedbackId, reply);
             
             if (result.affectedRows === 0) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'Feedback not found.' } });
+            }
+            
+            // Send push notification to the user if they have a device token
+            if (feedback.user_id) {
+                try {
+                    const user = await User.findById(feedback.user_id);
+                    if (user && user.um_notification_token) {
+                        await sendPushNotification({
+                            userId: feedback.user_id,
+                            title: 'உங்கள் கருத்துக்கு பதில்',
+                            body: 'உங்கள் கருத்துக்கு பதில் வழங்கப்பட்டது. தயவுசெய்து பார்க்கவும்.',
+                            token: user.um_notification_token,
+                            type: NotificationType.GENERAL
+                        });
+                    }
+                } catch (notificationError) {
+                    // Log error but don't fail the request since reply was saved successfully
+                    console.error('Error sending push notification for feedback reply:', notificationError);
+                }
             }
             
             return res.status(200).json({ responseType: "S", responseValue: { message: 'Reply has been successfully added.' } });
