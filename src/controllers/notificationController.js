@@ -76,9 +76,52 @@ exports.controller = {
         } catch (error) {
             // FCM send failed, don't save to database
             console.error('FCM send error:', error);
-            return res.status(500).json({ 
+            
+            // Handle FCM-specific errors
+            let errorMessage = 'Failed to send notification.';
+            let statusCode = 500;
+
+            if (error.code) {
+                switch (error.code) {
+                    case 'messaging/invalid-registration-token':
+                    case 'messaging/registration-token-not-registered':
+                        errorMessage = 'Invalid or expired device token. The user may have uninstalled the app or the token is no longer valid.';
+                        statusCode = 400;
+                        break;
+                    case 'messaging/invalid-argument':
+                        errorMessage = 'Invalid notification data provided.';
+                        statusCode = 400;
+                        break;
+                    case 'messaging/unavailable':
+                        errorMessage = 'FCM service is temporarily unavailable. Please try again later.';
+                        statusCode = 503;
+                        break;
+                    case 'messaging/internal-error':
+                        errorMessage = 'Internal FCM error occurred. Please try again later.';
+                        statusCode = 500;
+                        break;
+                    default:
+                        // Check error message for common patterns
+                        if (error.message && error.message.includes('Requested entity was not found')) {
+                            errorMessage = 'Invalid or expired device token. The device may have been uninstalled or the token is no longer valid.';
+                            statusCode = 400;
+                        } else if (error.message) {
+                            errorMessage = error.message;
+                        }
+                }
+            } else if (error.message) {
+                // Handle error messages directly
+                if (error.message.includes('Requested entity was not found')) {
+                    errorMessage = 'Invalid or expired device token. The device may have been uninstalled or the token is no longer valid.';
+                    statusCode = 400;
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+
+            return res.status(statusCode).json({ 
                 responseType: "F", 
-                responseValue: { message: error.toString() } 
+                responseValue: { message: errorMessage } 
             });
         }
     },
