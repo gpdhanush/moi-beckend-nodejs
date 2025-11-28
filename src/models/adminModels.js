@@ -27,7 +27,15 @@ const Model = {
         return result;
     },
     async feedbacks() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_feedbacks`, []);
+        const [result] = await db.query(`
+            SELECT 
+                f.*,
+                f.user_id as userID,
+                u.um_full_name as userName
+            FROM gp_moi_feedbacks f
+            LEFT JOIN gp_moi_user_master u ON f.user_id = u.um_id
+            ORDER BY f.created_time DESC
+        `, []);
         return result;
     },
     async updateFeedbackReply(feedbackId, reply) {
