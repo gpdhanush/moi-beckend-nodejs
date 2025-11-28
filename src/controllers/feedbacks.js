@@ -33,10 +33,13 @@ exports.controller = {
                 const repliedAt = feedback.reply ? moment(feedback.updated_time).utc().toISOString() : null;
                 
                 return {
+                    id: feedback.id,
+                    userId: feedback.user_id,
                     feedbacks: feedback.feedbacks || '',
-                    reply: feedback.reply || null,
+                    reply: feedback.reply || '',
                     createdAt: createdAt,
-                    repliedAt: repliedAt
+                    repliedAt: repliedAt,
+                    active: feedback.active,
                 };
             });
             
