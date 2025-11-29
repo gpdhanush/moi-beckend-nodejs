@@ -84,13 +84,109 @@ exports.controller = {
                 const tempFilePath = req.file.path;
                 const finalFilePath = path.join(categoryDir, req.file.filename);
                 
-                fs.renameSync(tempFilePath, finalFilePath);
+                console.log('Upload Debug:', {
+                    tempFilePath,
+                    finalFilePath,
+                    fileExists: fs.existsSync(tempFilePath),
+                    userId,
+                    filePath,
+                    filename: req.file.filename
+                });
+                
+                // Verify temp file exists before moving
+                if (!fs.existsSync(tempFilePath)) {
+                    console.error('Temp file not found:', tempFilePath);
+                    return res.status(500).json({ 
+                        responseType: "F", 
+                        responseValue: { message: 'Temporary file not found after upload!' } 
+                    });
+                }
 
-                const fullFilePath = `${uploadDir}/${userId}/${filePath}/${req.file.filename}`;
-                return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
+                try {
+                    // Move the file
+                    fs.renameSync(tempFilePath, finalFilePath);
+                    
+                    // Verify file was moved successfully
+                    if (!fs.existsSync(finalFilePath)) {
+                        console.error('File not found after move:', finalFilePath);
+                        return res.status(500).json({ 
+                            responseType: "F", 
+                            responseValue: { message: 'File was not saved successfully!' } 
+                        });
+                    }
+
+                    // Use forward slashes for the response path (URL-friendly)
+                    const fullFilePath = `uploads/${userId}/${filePath}/${req.file.filename}`;
+                    console.log('File saved successfully:', fullFilePath);
+                    return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
+                } catch (moveError) {
+                    console.error('Error moving file:', moveError);
+                    // If move fails, try to clean up temp file
+                    try {
+                        if (fs.existsSync(tempFilePath)) {
+                            fs.unlinkSync(tempFilePath);
+                        }
+                    } catch (cleanupError) {
+                        console.error('Error cleaning up temp file:', cleanupError);
+                    }
+                    
+                    return res.status(500).json({ 
+                        responseType: "F", 
+                        responseValue: { message: `Failed to save file: ${moveError.message}` } 
+                    });
+                }
             });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
+
+    getImage: async (req, res) => {
+        try {
+            const { userId, path: filePath, filename } = req.query;
+
+            if (!userId || !filePath || !filename) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'userId, path, and filename are required!' } 
+                });
+            }
+
+            const fullFilePath = path.join(uploadDir, userId, filePath, filename);
+
+            // Check if file exists
+            if (!fs.existsSync(fullFilePath)) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'File not found!' } 
+                });
+            }
+
+            // Get file extension to set content type
+            const ext = path.extname(filename).toLowerCase();
+            const contentTypes = {
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.gif': 'image/gif',
+                '.webp': 'image/webp',
+                '.svg': 'image/svg+xml',
+                '.pdf': 'application/pdf'
+            };
+
+            const contentType = contentTypes[ext] || 'application/octet-stream';
+
+            // Set headers and send file
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+            
+            // Send the file
+            res.sendFile(path.resolve(fullFilePath));
+        } catch (error) {
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
 
