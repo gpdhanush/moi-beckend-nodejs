@@ -12,5 +12,6 @@ router.post('/updatePassword', authenticateToken, userController.updatePassword)
 router.post('/deleteUser', authenticateToken, userController.deleteUser);
 router.post('/resetPassword', userController.resetPassword);
 router.post('/updateNotificationToken', userController.updateNotificationToken);
+router.post('/updateProfilePicture', authenticateToken, userController.updateProfilePicture);
 
 module.exports = router;

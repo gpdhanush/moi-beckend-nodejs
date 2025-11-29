@@ -69,5 +69,10 @@ const User = {
         const [result] = await db.query(`UPDATE ${table} SET um_notification_token =? WHERE um_id=?`, [token, id]);
         return result;
     },
+
+    async updateProfileImage(userId, imagePath) {
+        const [result] = await db.query(`UPDATE ${table} SET um_profile_image =? WHERE um_id=?`, [imagePath, userId]);
+        return result;
+    },
 }
 module.exports = User;

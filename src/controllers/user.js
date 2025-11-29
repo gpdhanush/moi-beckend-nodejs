@@ -6,6 +6,9 @@ const { sendPushNotification } = require('./notificationController');
 const { NotificationType } = require('../models/notificationModels');
 require('dotenv').config();
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // Common response messages
 const userError = "The specified user does not exist!";
@@ -43,6 +46,7 @@ exports.userController = {
                 mobile: user.um_mobile,
                 email: user.um_email,
                 last_login: user.um_last_login,
+                profile_image: user.um_profile_image || null,
                 token: jwtToken
             };
 
@@ -227,7 +231,8 @@ exports.userController = {
                 name: user.um_full_name,
                 email: user.um_email,
                 mobile: user.um_mobile,
-                last_login: user.um_last_login
+                last_login: user.um_last_login,
+                profile_image: user.um_profile_image || null
             };
             return res.status(200).json({ responseType: "S", responseValue: response });
         } catch (error) {
@@ -378,5 +383,203 @@ exports.userController = {
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
+    },
+
+    /**
+     * Update user profile picture.
+     * Body: { userId }
+     * File: profile image file (multipart/form-data with field name 'profileImage')
+     */
+    updateProfilePicture: async (req, res) => {
+        const uploadDir = './../gp.prasowlabs.in/uploads';
+        const tempDir = path.join(uploadDir, 'temp');
+
+        // Ensure directories exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        const storage = multer.diskStorage({
+            destination: (req, file, cb) => {
+                cb(null, tempDir);
+            },
+            filename: (req, file, cb) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+                cb(null, `profile-${uniqueSuffix}${path.extname(file.originalname)}`);
+            }
+        });
+
+        const upload = multer({ 
+            storage, 
+            limits: { fileSize: 5 * 1024 * 1024 },
+            fileFilter: (req, file, cb) => {
+                // Accept only image files
+                const allowedTypes = /jpeg|jpg|png|gif|webp/;
+                const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+                const mimetype = allowedTypes.test(file.mimetype);
+                
+                if (extname && mimetype) {
+                    return cb(null, true);
+                } else {
+                    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+                }
+            }
+        }).single('profileImage');
+
+        upload(req, res, async (err) => {
+            try {
+                if (err) {
+                    if (err instanceof multer.MulterError) {
+                        if (err.code === 'LIMIT_FILE_SIZE') {
+                            return res.status(400).json({ 
+                                responseType: "F", 
+                                responseValue: { message: 'File size too large! Maximum size is 5MB.' } 
+                            });
+                        }
+                    }
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: err.message || 'File upload error' } 
+                    });
+                }
+
+                if (!req.file) {
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: 'No file uploaded! Please upload a profile image.' } 
+                    });
+                }
+
+                const { userId } = req.body;
+
+                if (!userId) {
+                    // Clean up temp file if validation fails
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (cleanupError) {
+                            // Ignore cleanup errors
+                        }
+                    }
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: 'userId is required!' } 
+                    });
+                }
+
+                // Verify user exists
+                const user = await User.findById(userId);
+                if (!user) {
+                    // Clean up temp file
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (cleanupError) {
+                            // Ignore cleanup errors
+                        }
+                    }
+                    return res.status(404).json({ 
+                        responseType: "F", 
+                        responseValue: { message: userError } 
+                    });
+                }
+
+                // Create profile directory for user
+                const userProfileDir = path.join(uploadDir, userId, 'profile');
+                if (!fs.existsSync(userProfileDir)) {
+                    fs.mkdirSync(userProfileDir, { recursive: true });
+                }
+
+                // Delete old profile image if it exists
+                if (user.um_profile_image) {
+                    try {
+                        // Extract filename from path (assuming format: uploads/userId/profile/filename)
+                        const oldImagePath = path.join(uploadDir, user.um_profile_image.replace('uploads/', ''));
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                        }
+                    } catch (deleteError) {
+                        console.error('Error deleting old profile image:', deleteError);
+                        // Continue even if old image deletion fails
+                    }
+                }
+
+                // Move file from temp to final location
+                const tempFilePath = req.file.path;
+                const finalFilePath = path.join(userProfileDir, req.file.filename);
+                
+                try {
+                    // Move the file
+                    fs.renameSync(tempFilePath, finalFilePath);
+                    
+                    // Verify file was moved successfully
+                    if (!fs.existsSync(finalFilePath)) {
+                        return res.status(500).json({ 
+                            responseType: "F", 
+                            responseValue: { message: 'File was not saved successfully!' } 
+                        });
+                    }
+
+                    // Save path to database (use forward slashes for URL-friendly path)
+                    const imagePath = `uploads/${userId}/profile/${req.file.filename}`;
+                    const updateResult = await User.updateProfileImage(userId, imagePath);
+                    
+                    if (updateResult) {
+                        return res.status(200).json({ 
+                            responseType: "S", 
+                            responseValue: { 
+                                message: "Profile picture updated successfully.",
+                                profile_image: imagePath
+                            } 
+                        });
+                    } else {
+                        // If database update fails, try to clean up the uploaded file
+                        try {
+                            if (fs.existsSync(finalFilePath)) {
+                                fs.unlinkSync(finalFilePath);
+                            }
+                        } catch (cleanupError) {
+                            console.error('Error cleaning up file after DB update failure:', cleanupError);
+                        }
+                        return res.status(500).json({ 
+                            responseType: "F", 
+                            responseValue: { message: 'Failed to update profile picture in database.' } 
+                        });
+                    }
+                } catch (moveError) {
+                    console.error('Error moving file:', moveError);
+                    // Clean up temp file
+                    try {
+                        if (fs.existsSync(tempFilePath)) {
+                            fs.unlinkSync(tempFilePath);
+                        }
+                    } catch (cleanupError) {
+                        console.error('Error cleaning up temp file:', cleanupError);
+                    }
+                    
+                    return res.status(500).json({ 
+                        responseType: "F", 
+                        responseValue: { message: `Failed to save file: ${moveError.message}` } 
+                    });
+                }
+            } catch (error) {
+                // Clean up temp file on error
+                if (req.file && req.file.path) {
+                    try {
+                        fs.unlinkSync(req.file.path);
+                    } catch (cleanupError) {
+                        // Ignore cleanup errors
+                    }
+                }
+                console.error('Error in updateProfilePicture:', error);
+                return res.status(500).json({ 
+                    responseType: "F", 
+                    responseValue: { message: error.toString() } 
+                });
+            }
+        });
     },
 }
