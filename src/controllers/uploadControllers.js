@@ -59,6 +59,15 @@ exports.controller = {
                 
                 const userId = req.body.userId;
                 const filePath = req.body.path;
+
+                if (!userId) {
+                    return res.status(400).json({ responseType: "F", responseValue: { message: 'userId is required!' } });
+                }
+
+                if (!filePath) {
+                    return res.status(400).json({ responseType: "F", responseValue: { message: 'path is required!' } });
+                }
+
                 const fullFilePath = `${uploadDir}/${userId}/${filePath}/${req.file.filename}`;
                 return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
             });
