@@ -9,32 +9,16 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
+// Temporary directory for initial upload
+const tempDir = path.join(uploadDir, 'temp');
+if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-
-        const userId = req.body.userId;
-        const filePath = req.body.path; // path like 'profile', 'invitations', 'upcoming-functions', etc.
-
-        if (!userId) {
-            return cb(new Error('userId is required'), false);
-        }
-
-        if (!filePath) {
-            return cb(new Error('path is required'), false);
-        }
-
-        const userDir = path.join(uploadDir, userId);
-        const categoryDir = path.join(userDir, filePath);
-
-        if (!fs.existsSync(userDir)) {
-            fs.mkdirSync(userDir, { recursive: true });
-        }
-
-        if (!fs.existsSync(categoryDir)) {
-            fs.mkdirSync(categoryDir, { recursive: true });
-        }
-
-        cb(null, categoryDir);
+        // Save to temp directory first, then move after validation
+        cb(null, tempDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -61,12 +45,46 @@ exports.controller = {
                 const filePath = req.body.path;
 
                 if (!userId) {
+                    // Clean up temp file if validation fails
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (cleanupError) {
+                            // Ignore cleanup errors
+                        }
+                    }
                     return res.status(400).json({ responseType: "F", responseValue: { message: 'userId is required!' } });
                 }
 
                 if (!filePath) {
+                    // Clean up temp file if validation fails
+                    if (req.file && req.file.path) {
+                        try {
+                            fs.unlinkSync(req.file.path);
+                        } catch (cleanupError) {
+                            // Ignore cleanup errors
+                        }
+                    }
                     return res.status(400).json({ responseType: "F", responseValue: { message: 'path is required!' } });
                 }
+
+                // Create the final destination directory
+                const userDir = path.join(uploadDir, userId);
+                const categoryDir = path.join(userDir, filePath);
+
+                if (!fs.existsSync(userDir)) {
+                    fs.mkdirSync(userDir, { recursive: true });
+                }
+
+                if (!fs.existsSync(categoryDir)) {
+                    fs.mkdirSync(categoryDir, { recursive: true });
+                }
+
+                // Move file from temp to final location
+                const tempFilePath = req.file.path;
+                const finalFilePath = path.join(categoryDir, req.file.filename);
+                
+                fs.renameSync(tempFilePath, finalFilePath);
 
                 const fullFilePath = `${uploadDir}/${userId}/${filePath}/${req.file.filename}`;
                 return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
