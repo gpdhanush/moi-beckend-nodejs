@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const uploadDir = './../gp.prasowlabs.in/apis/uploads';
+const uploadDir = './../gp.prasowlabs.in/uploads';
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -137,7 +137,7 @@ exports.controller = {
                     }
 
                     // Use forward slashes for the response path (URL-friendly)
-                    const fullFilePath = `../gp.prasowlabs.in/apis/uploads/${userId}/${filePath}/${req.file.filename}`;
+                    const fullFilePath = `gp.prasowlabs.in/uploads/${userId}/${filePath}/${req.file.filename}`;
                     console.log('File saved successfully:', fullFilePath);
                     return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
                 } catch (moveError) {
