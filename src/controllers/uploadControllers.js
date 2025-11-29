@@ -13,17 +13,28 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
 
         const userId = req.body.userId;
+        const filePath = req.body.path; // path like 'profile', 'invitations', 'upcoming-functions', etc.
+
         if (!userId) {
             return cb(new Error('userId is required'), false);
         }
 
-        const userDir = path.join(uploadDir, userId);
-
-        if (!fs.existsSync(userDir)) {
-            fs.mkdirSync(userDir);
+        if (!filePath) {
+            return cb(new Error('path is required'), false);
         }
 
-        cb(null, userDir);
+        const userDir = path.join(uploadDir, userId);
+        const categoryDir = path.join(userDir, filePath);
+
+        if (!fs.existsSync(userDir)) {
+            fs.mkdirSync(userDir, { recursive: true });
+        }
+
+        if (!fs.existsSync(categoryDir)) {
+            fs.mkdirSync(categoryDir, { recursive: true });
+        }
+
+        cb(null, categoryDir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -47,8 +58,9 @@ exports.controller = {
                 }
                 
                 const userId = req.body.userId;
-                const filePath = `${uploadDir}/${userId}/${req.file.filename}`;
-                return res.status(200).json({ responseType: "S", responseValue: filePath });
+                const filePath = req.body.path;
+                const fullFilePath = `${uploadDir}/${userId}/${filePath}/${req.file.filename}`;
+                return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
             });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -57,19 +69,19 @@ exports.controller = {
 
     deleteImage: async (req, res) => {
         try {
-            const { userId, filename } = req.body;
+            const { userId, path: filePath, filename } = req.body;
 
-            if (!userId || !filename) {
+            if (!userId || !filePath || !filename) {
                 return res.status(400).json({ 
                     responseType: "F", 
-                    responseValue: { message: 'userId and filename are required!' } 
+                    responseValue: { message: 'userId, path, and filename are required!' } 
                 });
             }
 
-            const filePath = path.join(uploadDir, userId, filename);
+            const fullFilePath = path.join(uploadDir, userId, filePath, filename);
 
             // Check if file exists
-            if (!fs.existsSync(filePath)) {
+            if (!fs.existsSync(fullFilePath)) {
                 return res.status(404).json({ 
                     responseType: "F", 
                     responseValue: { message: 'File not found!' } 
@@ -77,7 +89,7 @@ exports.controller = {
             }
 
             // Delete the file
-            fs.unlinkSync(filePath);
+            fs.unlinkSync(fullFilePath);
 
             return res.status(200).json({ 
                 responseType: "S", 
