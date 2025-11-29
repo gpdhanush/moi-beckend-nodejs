@@ -34,6 +34,28 @@ exports.controller = {
         try {
             upload(req, res, async (err) => {
                 if (err) {
+                    // Handle multer errors with better messages
+                    if (err instanceof multer.MulterError) {
+                        if (err.code === 'LIMIT_FILE_SIZE') {
+                            return res.status(400).json({ 
+                                responseType: "F", 
+                                responseValue: { message: 'File size too large! Maximum size is 5MB.' } 
+                            });
+                        }
+                        if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                            return res.status(400).json({ 
+                                responseType: "F", 
+                                responseValue: { message: 'Unexpected field. Please use field name "file" for the file upload.' } 
+                            });
+                        }
+                    }
+                    // Handle "Unexpected field" error
+                    if (err.message && err.message.includes('Unexpected field')) {
+                        return res.status(400).json({ 
+                            responseType: "F", 
+                            responseValue: { message: 'Unexpected field. Please use field name "file" for the file upload in form-data.' } 
+                        });
+                    }
                     return res.status(400).json({ responseType: "F", responseValue: { message: err.message } });
                 }
 
