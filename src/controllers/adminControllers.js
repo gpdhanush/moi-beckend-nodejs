@@ -28,7 +28,7 @@ exports.controller = {
         try {
             const moiUsers = await Model.moiUsers();
             if (!moiUsers) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: moiUsers });
         } catch (error) {
@@ -39,7 +39,7 @@ exports.controller = {
         try {
             const list = await Model.moiUserList();
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
@@ -51,7 +51,7 @@ exports.controller = {
         try {
             const list = await Model.moiUserListId(userId);
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
@@ -64,7 +64,7 @@ exports.controller = {
         try {
             const list = await Model.moiUserFunction();
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
@@ -76,7 +76,7 @@ exports.controller = {
         try {
             const list = await Model.moiFunctionsUserId(userId);
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
@@ -89,7 +89,7 @@ exports.controller = {
         try {
             const list = await Model.feedbacks();
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
@@ -111,13 +111,13 @@ exports.controller = {
             // Get feedback to retrieve user_id before updating
             const feedback = await Model.getFeedbackById(feedbackId);
             if (!feedback) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'Feedback not found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             
             const result = await Model.updateFeedbackReply(feedbackId, reply);
             
             if (result.affectedRows === 0) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'Feedback not found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             
             // Send push notification to the user if they have a device token
@@ -149,7 +149,7 @@ exports.controller = {
         try {
             const list = await Model.moiOutAll();
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", count: list.length, responseValue: list });
         } catch (error) {
@@ -161,7 +161,7 @@ exports.controller = {
         try {
             const list = await Model.moiOutAllUser(userId);
             if (!list) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No Data Found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             return res.status(200).json({ responseType: "S", count: list.length, responseValue: list });
         } catch (error) {

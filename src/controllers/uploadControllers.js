@@ -119,7 +119,7 @@ exports.controller = {
                     console.error('Temp file not found:', tempFilePath);
                     return res.status(500).json({ 
                         responseType: "F", 
-                        responseValue: { message: 'Temporary file not found after upload!' } 
+                        responseValue: { message: 'No details found.' } 
                     });
                 }
 
@@ -137,7 +137,7 @@ exports.controller = {
                     }
 
                     // Use forward slashes for the response path (URL-friendly)
-                    const fullFilePath = `gp.prasowlabs.in/uploads/${userId}/${filePath}/${req.file.filename}`;
+                    const fullFilePath = `uploads/${userId}/${filePath}/${req.file.filename}`;
                     console.log('File saved successfully:', fullFilePath);
                     return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
                 } catch (moveError) {
@@ -179,7 +179,7 @@ exports.controller = {
             if (!fs.existsSync(fullFilePath)) {
                 return res.status(404).json({ 
                     responseType: "F", 
-                    responseValue: { message: 'File not found!' } 
+                    responseValue: { message: 'No details found.' } 
                 });
             }
 

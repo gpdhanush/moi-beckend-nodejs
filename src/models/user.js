@@ -32,8 +32,8 @@ const User = {
     },
 
     async create(users) {
-        const [result] = await db.query(`INSERT INTO ${table} (um_full_name, um_password, um_mobile, um_email) VALUES (?, ?, ?, ?)`,
-            [users.name, users.password, users.mobile, users.email]);
+        const [result] = await db.query(`INSERT INTO ${table} (um_full_name, um_password, um_mobile, um_email, um_password_changed_at) VALUES (?, ?, ?, ?, ?)`,
+            [users.name, users.password, users.mobile, users.email, new Date()]);
         return result;
     },
 
@@ -43,8 +43,22 @@ const User = {
         return result;
     },
     async updatePassword(users) {
-        const [result] = await db.query(`UPDATE ${table} SET um_password =? WHERE um_id=?`, [users.password, users.id]);
+        const [result] = await db.query(`UPDATE ${table} SET um_password =?, um_password_changed_at =? WHERE um_id=?`, [users.password, new Date(), users.id]);
         return result;
+    },
+    // Find users with passwords older than specified months
+    async findUsersWithOldPasswords(months = 3) {
+        const [rows] = await db.query(
+            `SELECT * FROM ${table} 
+             WHERE um_status = 'Y' 
+             AND um_notification_token IS NOT NULL 
+             AND (
+                 um_password_changed_at IS NULL 
+                 OR um_password_changed_at < DATE_SUB(NOW(), INTERVAL ? MONTH)
+             )`,
+            [months]
+        );
+        return rows;
     },
     async deleteUser(userId) {
         const [result] = await db.query(`DELETE FROM ${table} WHERE um_id=?`, [userId]);

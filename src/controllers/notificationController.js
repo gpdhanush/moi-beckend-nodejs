@@ -196,7 +196,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification not found.' }
+                    responseValue: { message: 'No details found.' }
                 });
             }
 
@@ -257,7 +257,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification not found.' }
+                    responseValue: { message: 'No details found.' }
                 });
             }
 
@@ -318,7 +318,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification not found.' }
+                    responseValue: { message: 'No details found.' }
                 });
             }
 

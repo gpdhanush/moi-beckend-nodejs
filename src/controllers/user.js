@@ -2,6 +2,8 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
 const tokenService = require('../middlewares/tokenService');
+const { sendPushNotification } = require('./notificationController');
+const { NotificationType } = require('../models/notificationModels');
 require('dotenv').config();
 const nodemailer = require('nodemailer');
 
@@ -261,6 +263,21 @@ exports.userController = {
         try {
             var query = await User.updatePassword(para);
             if (query) {
+                // Send push notification when password is changed
+                if (user.um_notification_token) {
+                    try {
+                        await sendPushNotification({
+                            userId: id,
+                            title: 'கடவுச்சொல் மாற்றப்பட்டது',
+                            body: 'உங்கள் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, வழக்கமாக கடவுச்சொல்லை மாற்றவும்.',
+                            token: user.um_notification_token,
+                            type: NotificationType.ACCOUNT
+                        });
+                    } catch (notificationError) {
+                        // Log error but don't fail the request since password was changed successfully
+                        console.error('Error sending push notification for password change:', notificationError);
+                    }
+                }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "Your password has been changed successfully." } });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "Failed to change password. Please try again." } });
@@ -315,6 +332,21 @@ exports.userController = {
         try {
             var query = await User.updatePassword(para);
             if (query) {
+                // Send push notification when password is reset
+                if (user.um_notification_token) {
+                    try {
+                        await sendPushNotification({
+                            userId: user.um_id,
+                            title: 'கடவுச்சொல் மீட்டமைக்கப்பட்டது',
+                            body: 'உங்கள் கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, வழக்கமாக கடவுச்சொல்லை மாற்றவும்.',
+                            token: user.um_notification_token,
+                            type: NotificationType.ACCOUNT
+                        });
+                    } catch (notificationError) {
+                        // Log error but don't fail the request since password was reset successfully
+                        console.error('Error sending push notification for password reset:', notificationError);
+                    }
+                }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "Your password has been reset successfully." } });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "Failed to reset password." } });

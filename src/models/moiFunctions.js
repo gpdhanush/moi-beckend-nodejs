@@ -27,5 +27,19 @@ const Model = {
         const [result] = await db.query(`DELETE FROM ${table} WHERE f_id=?`, [id]);
         return result;
     },
+    // Find functions that are 1 day away (tomorrow) and join with user to get notification token
+    async findFunctionsOneDayAway() {
+        const [rows] = await db.query(
+            `SELECT f.*, u.um_id, u.um_notification_token, u.um_email, u.um_full_name
+             FROM ${table} f
+             INNER JOIN gp_moi_user_master u ON f.f_um_id = u.um_id
+             WHERE f.f_active = 'Y' 
+             AND u.um_status = 'Y'
+             AND u.um_notification_token IS NOT NULL
+             AND f.function_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)`,
+            []
+        );
+        return rows;
+    },
 }
 module.exports = Model;

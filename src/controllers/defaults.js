@@ -6,7 +6,7 @@ exports.controller = {
         try {
             const result = await Model.readAllPayment();
             if (result.length === 0) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No records available.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             const change = (arr) => { return arr.map(({ dp_id: id, dp_mode: mode }) => ({ id, mode })); };
             const transform = change(result);
@@ -20,7 +20,7 @@ exports.controller = {
         try {
             const result = await Model.totalAmount(req.body.userId);
             if (result.length === 0) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No records available.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             const change = (arr) => { return arr.map(({ moi_out_total: moiOutTotal, moi_total: moiTotal }) => ({ moiOutTotal, moiTotal })); };
             const transform = change(result);
