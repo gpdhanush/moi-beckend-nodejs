@@ -2,8 +2,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
-const uploadDir = './uploads';
-// const uploadDir = './../../public_html/gp/moi/uploads';
+const uploadDir = './gp.prasowlabs.in/apis/uploads';
 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
@@ -138,7 +137,7 @@ exports.controller = {
                     }
 
                     // Use forward slashes for the response path (URL-friendly)
-                    const fullFilePath = `uploads/${userId}/${filePath}/${req.file.filename}`;
+                    const fullFilePath = `gp.prasowlabs.in/apis/uploads/${userId}/${filePath}/${req.file.filename}`;
                     console.log('File saved successfully:', fullFilePath);
                     return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
                 } catch (moveError) {
@@ -160,55 +159,6 @@ exports.controller = {
             });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
-        }
-    },
-
-    getImage: async (req, res) => {
-        try {
-            const { userId, path: filePath, filename } = req.query;
-
-            if (!userId || !filePath || !filename) {
-                return res.status(400).json({ 
-                    responseType: "F", 
-                    responseValue: { message: 'userId, path, and filename are required!' } 
-                });
-            }
-
-            const fullFilePath = path.join(uploadDir, userId, filePath, filename);
-
-            // Check if file exists
-            if (!fs.existsSync(fullFilePath)) {
-                return res.status(404).json({ 
-                    responseType: "F", 
-                    responseValue: { message: 'File not found!' } 
-                });
-            }
-
-            // Get file extension to set content type
-            const ext = path.extname(filename).toLowerCase();
-            const contentTypes = {
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.gif': 'image/gif',
-                '.webp': 'image/webp',
-                '.svg': 'image/svg+xml',
-                '.pdf': 'application/pdf'
-            };
-
-            const contentType = contentTypes[ext] || 'application/octet-stream';
-
-            // Set headers and send file
-            res.setHeader('Content-Type', contentType);
-            res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
-            
-            // Send the file
-            res.sendFile(path.resolve(fullFilePath));
-        } catch (error) {
-            return res.status(500).json({ 
-                responseType: "F", 
-                responseValue: { message: error.toString() } 
-            });
         }
     },
 

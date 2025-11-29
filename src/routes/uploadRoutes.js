@@ -5,7 +5,6 @@ const { authenticateToken } = require('../middlewares/auth'); // Middleware for 
 const router = express.Router();
 
 router.post('/saveFiles', controller.saveFiles);
-router.get('/getImage', controller.getImage);
 router.delete('/deleteImage', controller.deleteImage);
 
 module.exports = router;
