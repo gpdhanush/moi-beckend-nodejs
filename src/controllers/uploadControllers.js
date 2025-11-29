@@ -45,17 +45,49 @@ exports.controller = {
                 if (!req.file) {
                     return res.status(400).json({ responseType: "F", responseValue: { message: 'No file uploaded!' } });
                 }
+                
                 const userId = req.body.userId;
                 const filePath = `${uploadDir}/${userId}/${req.file.filename}`;
                 return res.status(200).json({ responseType: "S", responseValue: filePath });
-
             });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
 
-   
+    deleteImage: async (req, res) => {
+        try {
+            const { userId, filename } = req.body;
 
+            if (!userId || !filename) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'userId and filename are required!' } 
+                });
+            }
 
+            const filePath = path.join(uploadDir, userId, filename);
+
+            // Check if file exists
+            if (!fs.existsSync(filePath)) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'File not found!' } 
+                });
+            }
+
+            // Delete the file
+            fs.unlinkSync(filePath);
+
+            return res.status(200).json({ 
+                responseType: "S", 
+                responseValue: { message: 'File deleted successfully!' } 
+            });
+        } catch (error) {
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
+        }
+    }
 };
