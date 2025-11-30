@@ -13,5 +13,6 @@ router.post('/deleteUser', authenticateToken, userController.deleteUser);
 router.post('/resetPassword', userController.resetPassword);
 router.post('/updateNotificationToken', userController.updateNotificationToken);
 router.post('/updateProfilePicture', authenticateToken, userController.updateProfilePicture);
+router.get('/importantDetails/:id', authenticateToken, userController.getImportantUserDetails);
 
 module.exports = router;

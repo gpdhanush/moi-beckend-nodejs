@@ -528,11 +528,22 @@ exports.userController = {
                     const updateResult = await User.updateProfileImage(userId, imagePath);
                     
                     if (updateResult) {
+                        // Fetch updated user data to return complete profile
+                        const updatedUser = await User.findById(userId);
+                        const userProfile = {
+                            id: updatedUser.um_id,
+                            name: updatedUser.um_full_name,
+                            email: updatedUser.um_email,
+                            mobile: updatedUser.um_mobile,
+                            last_login: updatedUser.um_last_login,
+                            profile_image: updatedUser.um_profile_image || null
+                        };
+                        
                         return res.status(200).json({ 
                             responseType: "S", 
                             responseValue: { 
                                 message: "Profile picture updated successfully.",
-                                profile_image: imagePath
+                                user: userProfile
                             } 
                         });
                     } else {
@@ -581,5 +592,33 @@ exports.userController = {
                 });
             }
         });
+    },
+
+    /**
+     * Get important user details from gp_moi_user_master table.
+     * Params: { id }
+     */
+    getImportantUserDetails: async (req, res) => {
+        const userId = parseInt(req.params.id);
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: userError } });
+            }
+            const response = {
+                id: user.um_id,
+                name: user.um_full_name,
+                email: user.um_email,
+                mobile: user.um_mobile,
+                last_login: user.um_last_login,
+                profile_image: user.um_profile_image || null,
+                create_date: user.um_create_dt,
+                update_date: user.um_update_dt,
+                status: user.um_status
+            };
+            return res.status(200).json({ responseType: "S", responseValue: response });
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
     },
 }
