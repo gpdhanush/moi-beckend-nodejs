@@ -9,12 +9,12 @@ exports.controller = {
         try {
             const user = await User.findById(userId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "The specified user does not exist!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
 
             const result = await Model.readAll(userId);
             if (result.length === 0) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } });
             }
 
             const changeKeyNames = (arr) => {
@@ -39,13 +39,13 @@ exports.controller = {
         try {
             const user = await User.findById(req.body.userId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "The specified user does not exist!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
             var query = await Model.create(req.body);
             if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "Your data has been successfully stored." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Data saving failed. Please try again later." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு சேமிப்பு தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -55,18 +55,18 @@ exports.controller = {
         try {
             const user = await User.findById(req.body.userId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "The specified user does not exist!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
             const moidata = await Model.readById(req.body.id);
             if (!moidata) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "The specified records does not exist!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } });
             }
 
             var query = await Model.update(req.body);
             if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "Your data has been successfully updated." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Data updated failed. Please try again later." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -82,9 +82,9 @@ exports.controller = {
 
             var del = await Model.delete(id);
             if (del) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "The item has been successfully removed." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "பொருள் வெற்றிகரமாக நீக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Unable to delete this records!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "இந்த பதிவுகளை நீக்க முடியவில்லை!" } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });

@@ -67,7 +67,7 @@ async function sendPushNotification({ userId, title, body, token, type }) {
             // Continue - notification was sent successfully
         }
 
-        return { success: true, message: 'Notification sent successfully' };
+        return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };
     } catch (error) {
         // FCM send failed, don't save to database
         console.error('FCM send error:', error);
@@ -97,32 +97,32 @@ exports.controller = {
             console.error('FCM send error:', error);
             
             // Handle FCM-specific errors
-            let errorMessage = 'Failed to send notification.';
+            let errorMessage = 'அறிவிப்பை அனுப்ப முடியவில்லை.';
             let statusCode = 500;
 
             if (error.code) {
                 switch (error.code) {
                     case 'messaging/invalid-registration-token':
                     case 'messaging/registration-token-not-registered':
-                        errorMessage = 'Invalid or expired device token. The user may have uninstalled the app or the token is no longer valid.';
+                        errorMessage = 'தவறான அல்லது காலாவதியான சாதன டோக்கன். பயனர் பயன்பாட்டை நிறுவல் நீக்கியிருக்கலாம் அல்லது டோக்கன் இனி செல்லுபடியாகாது.';
                         statusCode = 400;
                         break;
                     case 'messaging/invalid-argument':
-                        errorMessage = 'Invalid notification data provided.';
+                        errorMessage = 'தவறான அறிவிப்பு தரவு வழங்கப்பட்டது.';
                         statusCode = 400;
                         break;
                     case 'messaging/unavailable':
-                        errorMessage = 'FCM service is temporarily unavailable. Please try again later.';
+                        errorMessage = 'FCM சேவை தற்காலிகமாக கிடைக்கவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.';
                         statusCode = 503;
                         break;
                     case 'messaging/internal-error':
-                        errorMessage = 'Internal FCM error occurred. Please try again later.';
+                        errorMessage = 'உள் FCM பிழை ஏற்பட்டது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.';
                         statusCode = 500;
                         break;
                     default:
                         // Check error message for common patterns
                         if (error.message && error.message.includes('Requested entity was not found')) {
-                            errorMessage = 'Invalid or expired device token. The device may have been uninstalled or the token is no longer valid.';
+                            errorMessage = 'தவறான அல்லது காலாவதியான சாதன டோக்கன். சாதனம் நிறுவல் நீக்கப்பட்டிருக்கலாம் அல்லது டோக்கன் இனி செல்லுபடியாகாது.';
                             statusCode = 400;
                         } else if (error.message) {
                             errorMessage = error.message;
@@ -156,7 +156,7 @@ exports.controller = {
             if (!userId) {
                 return res.status(400).json({
                     responseType: "F",
-                    responseValue: { message: 'User ID is required.' }
+                    responseValue: { message: 'பயனர் ஐடி தேவையானது.' }
                 });
             }
 
@@ -187,7 +187,7 @@ exports.controller = {
             if (!notificationId) {
                 return res.status(400).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification ID is required.' }
+                    responseValue: { message: 'அறிவிப்பு ஐடி தேவையானது.' }
                 });
             }
 
@@ -196,7 +196,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'No details found.' }
+                    responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' }
                 });
             }
 
@@ -205,7 +205,7 @@ exports.controller = {
             if (notification.n_um_id !== userId) {
                 return res.status(403).json({
                     responseType: "F",
-                    responseValue: { message: 'You do not have permission to access this notification.' }
+                    responseValue: { message: 'இந்த அறிவிப்பை அணுக உங்களுக்கு அனுமதி இல்லை.' }
                 });
             }
 
@@ -218,14 +218,14 @@ exports.controller = {
                 return res.status(200).json({
                     responseType: "S",
                     responseValue: {
-                        message: 'Notification marked as read successfully.',
+                        message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்பட்டதாக குறிக்கப்பட்டது.',
                         notification: updatedNotification
                     }
                 });
             } else {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Failed to update notification status.' }
+                    responseValue: { message: 'அறிவிப்பு நிலையை புதுப்பிக்க முடியவில்லை.' }
                 });
             }
         } catch (error) {
@@ -248,7 +248,7 @@ exports.controller = {
             if (!notificationId) {
                 return res.status(400).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification ID is required.' }
+                    responseValue: { message: 'அறிவிப்பு ஐடி தேவையானது.' }
                 });
             }
 
@@ -257,7 +257,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'No details found.' }
+                    responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' }
                 });
             }
 
@@ -266,7 +266,7 @@ exports.controller = {
             if (notification.n_um_id !== userId) {
                 return res.status(403).json({
                     responseType: "F",
-                    responseValue: { message: 'You do not have permission to access this notification.' }
+                    responseValue: { message: 'இந்த அறிவிப்பை அணுக உங்களுக்கு அனுமதி இல்லை.' }
                 });
             }
 
@@ -279,14 +279,14 @@ exports.controller = {
                 return res.status(200).json({
                     responseType: "S",
                     responseValue: {
-                        message: 'Notification marked as unread successfully.',
+                        message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்படாததாக குறிக்கப்பட்டது.',
                         notification: updatedNotification
                     }
                 });
             } else {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Failed to update notification status.' }
+                    responseValue: { message: 'அறிவிப்பு நிலையை புதுப்பிக்க முடியவில்லை.' }
                 });
             }
         } catch (error) {
@@ -309,7 +309,7 @@ exports.controller = {
             if (!notificationId) {
                 return res.status(400).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification ID is required.' }
+                    responseValue: { message: 'அறிவிப்பு ஐடி தேவையானது.' }
                 });
             }
 
@@ -318,7 +318,7 @@ exports.controller = {
             if (!notification) {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'No details found.' }
+                    responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' }
                 });
             }
 
@@ -327,7 +327,7 @@ exports.controller = {
             if (notification.n_um_id !== userId) {
                 return res.status(403).json({
                     responseType: "F",
-                    responseValue: { message: 'You do not have permission to delete this notification.' }
+                    responseValue: { message: 'இந்த அறிவிப்பை நீக்க உங்களுக்கு அனுமதி இல்லை.' }
                 });
             }
 
@@ -335,7 +335,7 @@ exports.controller = {
             if (notification.n_active === 'N') {
                 return res.status(400).json({
                     responseType: "F",
-                    responseValue: { message: 'Notification is already deleted.' }
+                    responseValue: { message: 'அறிவிப்பு ஏற்கனவே நீக்கப்பட்டது.' }
                 });
             }
 
@@ -345,12 +345,12 @@ exports.controller = {
             if (result && result.affectedRows > 0) {
                 return res.status(200).json({
                     responseType: "S",
-                    responseValue: { message: 'Notification deleted successfully.' }
+                    responseValue: { message: 'அறிவிப்பு வெற்றிகரமாக நீக்கப்பட்டது.' }
                 });
             } else {
                 return res.status(404).json({
                     responseType: "F",
-                    responseValue: { message: 'Failed to delete notification.' }
+                    responseValue: { message: 'அறிவிப்பை நீக்க முடியவில்லை.' }
                 });
             }
         } catch (error) {

@@ -9,7 +9,7 @@ exports.controller = {
         const { emailId } = req.body;
         const user = await User.findByEmail(emailId);
         if (!user) {
-            return res.status(404).json({ responseType: "F", responseValue: { message: 'Invalid Email ID!' } });
+            return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான மின்னஞ்சல் ஐடி!' } });
         }
         const userName = user.um_full_name;
         // RANDOM NUMBER
@@ -48,7 +48,7 @@ exports.controller = {
                 html: emailContent,
             };
             await transporter.sendMail(mailOptions);
-            return res.status(200).json({ responseType: "S", responseValue: { message: 'Email sent successfully.' } });
+            return res.status(200).json({ responseType: "S", responseValue: { message: 'மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது.' } });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
@@ -59,18 +59,18 @@ exports.controller = {
         try {
             const user = await User.findByEmail(emailId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'Invalid Email ID!' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான மின்னஞ்சல் ஐடி!' } });
             }
             const tempOtp = user.um_otp;
             const otpExp = user.um_otp_exp;
             if (tempOtp == otp) {
                 if ((Date.now() / 1000) - otpExp <= 120) {
-                    return res.status(200).json({ responseType: "S", responseValue: { message: 'OTP Verified Successfully.' } });
+                    return res.status(200).json({ responseType: "S", responseValue: { message: 'OTP வெற்றிகரமாக சரிபார்க்கப்பட்டது.' } });
                 } else {
-                    return res.status(404).json({ responseType: "F", responseValue: { message: 'OTP Verified Failed!' } });
+                    return res.status(404).json({ responseType: "F", responseValue: { message: 'OTP சரிபார்ப்பு தோல்வியடைந்தது!' } });
                 }
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'Invalid OTP!' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான OTP!' } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -100,7 +100,7 @@ exports.controller = {
                 html: emailContent,
             };
             await transporter.sendMail(mailOptions);
-            return res.status(200).json({ responseType: "S", responseValue: { message: 'Email sent successfully.' } });
+            return res.status(200).json({ responseType: "S", responseValue: { message: 'மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது.' } });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }

@@ -27,7 +27,7 @@ async function checkAndNotifyUpcomingFunctions() {
                     await sendPushNotification({
                         userId: functionData.f_um_id,
                         title: 'விழா நினைவூட்டல்',
-                        body: 'நாளை உங்களுக்கு ஒரு முக்கிய விழா உள்ளது. தயவுசெய்து தயாராக இருங்கள்.',
+                        body: `நாளை உங்களுக்கு ${functionData.function_name} விழா உள்ளது. இடம்: ${functionData.place || 'இடம் குறிப்பிடப்படவில்லை'}. தயவுசெய்து தயாராக இருங்கள்.`,
                         token: functionData.um_notification_token,
                         type: NotificationType.FUNCTION
                     });

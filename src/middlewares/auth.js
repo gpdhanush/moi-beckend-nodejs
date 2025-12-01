@@ -13,7 +13,7 @@ function authenticateToken(req, res, next) {
     if (!token) {
         return res.status(401).json({ 
             responseType: "F", 
-            responseValue: { message: "Access denied. Please login to continue." } 
+            responseValue: { message: "அணுகல் மறுக்கப்பட்டது. தயவுசெய்து தொடர உள்நுழையவும்." } 
         });
     }
 
@@ -23,12 +23,12 @@ function authenticateToken(req, res, next) {
             if (err.name === 'TokenExpiredError') {
                 return res.status(401).json({ 
                     responseType: "F", 
-                    responseValue: { message: 'Token expired. Please login to continue.' } 
+                    responseValue: { message: 'டோக்கன் காலாவதியாகிவிட்டது. தயவுசெய்து தொடர உள்நுழையவும்.' } 
                 });
             }
             return res.status(401).json({ 
                 responseType: "F", 
-                responseValue: { message: 'Invalid token. Please login to continue.' } 
+                responseValue: { message: 'தவறான டோக்கன். தயவுசெய்து தொடர உள்நுழையவும்.' } 
             });
         }
 
@@ -51,7 +51,7 @@ function authenticateToken(req, res, next) {
         if (!storedToken || storedToken !== token) {
             return res.status(401).json({ 
                 responseType: "F", 
-                responseValue: { message: "Session expired. Please login to continue." } 
+                responseValue: { message: "அமர்வு காலாவதியாகிவிட்டது. தயவுசெய்து தொடர உள்நுழையவும்." } 
             });
         }
 

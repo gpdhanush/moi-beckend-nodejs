@@ -10,7 +10,7 @@ exports.controller = {
         try {
             const user = await User.findById(req.body.userId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "The specified user does not exist!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
             var query = await Model.create(req.body);
             if (query) {
@@ -29,9 +29,9 @@ exports.controller = {
                         console.error('Error sending push notification for feedback:', notificationError);
                     }
                 }
-                return res.status(200).json({ responseType: "S", responseValue: { message: "Your data has been successfully stored." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Data saving failed. Please try again later." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு சேமிப்பு தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });

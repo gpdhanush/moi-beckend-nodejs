@@ -38,13 +38,13 @@ exports.controller = {
                         if (err.code === 'LIMIT_FILE_SIZE') {
                             return res.status(400).json({ 
                                 responseType: "F", 
-                                responseValue: { message: 'File size too large! Maximum size is 5MB.' } 
+                                responseValue: { message: 'கோப்பு அளவு மிகப் பெரியது! அதிகபட்ச அளவு 5MB.' } 
                             });
                         }
                         if (err.code === 'LIMIT_UNEXPECTED_FILE') {
                             return res.status(400).json({ 
                                 responseType: "F", 
-                                responseValue: { message: 'Unexpected field. Please use field name "file" for the file upload.' } 
+                                responseValue: { message: 'எதிர்பாராத புலம். கோப்பு பதிவேற்றத்திற்கு "file" என்ற புலப் பெயரைப் பயன்படுத்தவும்.' } 
                             });
                         }
                     }
@@ -52,14 +52,14 @@ exports.controller = {
                     if (err.message && err.message.includes('Unexpected field')) {
                         return res.status(400).json({ 
                             responseType: "F", 
-                            responseValue: { message: 'Unexpected field. Please use field name "file" for the file upload in form-data.' } 
+                            responseValue: { message: 'எதிர்பாராத புலம். form-data இல் கோப்பு பதிவேற்றத்திற்கு "file" என்ற புலப் பெயரைப் பயன்படுத்தவும்.' } 
                         });
                     }
                     return res.status(400).json({ responseType: "F", responseValue: { message: err.message } });
                 }
 
                 if (!req.file) {
-                    return res.status(400).json({ responseType: "F", responseValue: { message: 'No file uploaded!' } });
+                    return res.status(400).json({ responseType: "F", responseValue: { message: 'கோப்பு பதிவேற்றப்படவில்லை!' } });
                 }
                 
                 const userId = req.body.userId;
@@ -74,7 +74,7 @@ exports.controller = {
                             // Ignore cleanup errors
                         }
                     }
-                    return res.status(400).json({ responseType: "F", responseValue: { message: 'userId is required!' } });
+                    return res.status(400).json({ responseType: "F", responseValue: { message: 'பயனர் ஐடி தேவையானது!' } });
                 }
 
                 if (!filePath) {
@@ -86,7 +86,7 @@ exports.controller = {
                             // Ignore cleanup errors
                         }
                     }
-                    return res.status(400).json({ responseType: "F", responseValue: { message: 'path is required!' } });
+                    return res.status(400).json({ responseType: "F", responseValue: { message: 'பாதை தேவையானது!' } });
                 }
 
                 // Create the final destination directory
@@ -119,7 +119,7 @@ exports.controller = {
                     console.error('Temp file not found:', tempFilePath);
                     return res.status(500).json({ 
                         responseType: "F", 
-                        responseValue: { message: 'No details found.' } 
+                        responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } 
                     });
                 }
 
@@ -132,7 +132,7 @@ exports.controller = {
                         console.error('File not found after move:', finalFilePath);
                         return res.status(500).json({ 
                             responseType: "F", 
-                            responseValue: { message: 'File was not saved successfully!' } 
+                            responseValue: { message: 'கோப்பு வெற்றிகரமாக சேமிக்கப்படவில்லை!' } 
                         });
                     }
 
@@ -153,7 +153,7 @@ exports.controller = {
                     
                     return res.status(500).json({ 
                         responseType: "F", 
-                        responseValue: { message: `Failed to save file: ${moveError.message}` } 
+                        responseValue: { message: `கோப்பை சேமிக்க முடியவில்லை: ${moveError.message}` } 
                     });
                 }
             });
@@ -169,7 +169,7 @@ exports.controller = {
             if (!userId || !filePath || !filename) {
                 return res.status(400).json({ 
                     responseType: "F", 
-                    responseValue: { message: 'userId, path, and filename are required!' } 
+                    responseValue: { message: 'பயனர் ஐடி, பாதை மற்றும் கோப்பு பெயர் தேவையானவை!' } 
                 });
             }
 
@@ -188,7 +188,7 @@ exports.controller = {
 
             return res.status(200).json({ 
                 responseType: "S", 
-                responseValue: { message: 'File deleted successfully!' } 
+                responseValue: { message: 'கோப்பு வெற்றிகரமாக நீக்கப்பட்டது!' } 
             });
         } catch (error) {
             return res.status(500).json({ 

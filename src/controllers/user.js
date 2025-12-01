@@ -11,8 +11,8 @@ const path = require('path');
 const fs = require('fs');
 
 // Common response messages
-const userError = "The specified user does not exist!";
-const mobileError = "A mobile number is already registered to another user.";
+const userError = "குறிப்பிடப்பட்ட பயனர் இல்லை!";
+const mobileError = "இந்த மொபைல் எண் ஏற்கனவே மற்றொரு பயனருக்கு பதிவு செய்யப்பட்டுள்ளது.";
 
 exports.userController = {
 
@@ -27,12 +27,12 @@ exports.userController = {
         try {
             const user = await User.findByEmail(email);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'Invalid Email ID!' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான மின்னஞ்சல் ஐடி!' } });
             }
 
             const isPasswordValid = await bcrypt.compare(password, user.um_password);
             if (!isPasswordValid) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'The password is incorrect.' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'கடவுச்சொல் தவறானது.' } });
             }
 
             const userID = user.um_id;
@@ -67,18 +67,18 @@ exports.userController = {
         try {
             // Validate required fields
             if (!name || !email || !mobile || !password) {
-                return res.status(400).json({ responseType: "F", responseValue: { message: 'All fields (name, email, mobile, password) are required!' } });
+                return res.status(400).json({ responseType: "F", responseValue: { message: 'அனைத்து புலங்களும் (பெயர், மின்னஞ்சல், மொபைல், கடவுச்சொல்) தேவையானவை!' } });
             }
 
             // Check duplicates by email
             const mail = await User.findByEmail(email);
             if (mail) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'This email is already registered!' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!' } });
             }
             // Check duplicates by mobile number
             const mbl = await User.findByMobile(mobile);
             if (mbl) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'This mobile is already registered!' } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'இந்த மொபைல் எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!' } });
             }
             // Hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -179,9 +179,9 @@ exports.userController = {
                 }
                 // EOF email content --------------
 
-                return res.status(200).json({ responseType: "S", responseValue: { message: "User registered successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "பயனர் வெற்றிகரமாக பதிவு செய்யப்பட்டார்." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "User registered failed." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "பயனர் பதிவு தோல்வியடைந்தது." } });
             }
 
         } catch (error) {
@@ -207,9 +207,9 @@ exports.userController = {
             }
             var query = await User.update(req.body);
             if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "User information updated successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "பயனர் தகவல் வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Update failed. Unable to save changes." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "புதுப்பித்தல் தோல்வியடைந்தது. மாற்றங்களை சேமிக்க முடியவில்லை." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -254,7 +254,7 @@ exports.userController = {
 
         const isPasswordValid = await bcrypt.compare(password, user.um_password);
         if (!isPasswordValid) {
-            return res.status(404).json({ responseType: "F", responseValue: { message: "The password doesn't match our records." } });
+            return res.status(404).json({ responseType: "F", responseValue: { message: "கடவுச்சொல் எங்கள் பதிவுகளுடன் பொருந்தவில்லை." } });
         }
 
         // Password and user verified; hash new password
@@ -283,9 +283,9 @@ exports.userController = {
                         console.error('Error sending push notification for password change:', notificationError);
                     }
                 }
-                return res.status(200).json({ responseType: "S", responseValue: { message: "Your password has been changed successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Failed to change password. Please try again." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "கடவுச்சொல்லை மாற்ற முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -306,9 +306,9 @@ exports.userController = {
             if (query) {
                 // Remove token from memory when user is deleted (security best practice)
                 tokenService.removeToken(userId);
-                return res.status(200).json({ responseType: "S", responseValue: { message: "User permanently deleted successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "பயனர் நிரந்தரமாக நீக்கப்பட்டார்." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "User permanently deleted failed!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "பயனர் நீக்குதல் தோல்வியடைந்தது!" } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -352,9 +352,9 @@ exports.userController = {
                         console.error('Error sending push notification for password reset:', notificationError);
                     }
                 }
-                return res.status(200).json({ responseType: "S", responseValue: { message: "Your password has been reset successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "Failed to reset password." } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "கடவுச்சொல்லை மீட்டமைக்க முடியவில்லை." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -376,9 +376,9 @@ exports.userController = {
         try {
             var query = await User.updateToken(userId, token);
             if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "User token updated successfully." } });
+                return res.status(200).json({ responseType: "S", responseValue: { message: "பயனர் டோக்கன் வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "User token updated failed!" } });
+                return res.status(404).json({ responseType: "F", responseValue: { message: "பயனர் டோக்கன் புதுப்பித்தல் தோல்வியடைந்தது!" } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
@@ -424,7 +424,7 @@ exports.userController = {
                 if (extname && mimetype) {
                     return cb(null, true);
                 } else {
-                    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+                    cb(new Error('பட கோப்புகள் மட்டுமே அனுமதிக்கப்படுகின்றன (jpeg, jpg, png, gif, webp)'));
                 }
             }
         }).single('profileImage');
@@ -436,20 +436,20 @@ exports.userController = {
                         if (err.code === 'LIMIT_FILE_SIZE') {
                             return res.status(400).json({ 
                                 responseType: "F", 
-                                responseValue: { message: 'File size too large! Maximum size is 5MB.' } 
+                                responseValue: { message: 'கோப்பு அளவு மிகப் பெரியது! அதிகபட்ச அளவு 5MB.' } 
                             });
                         }
                     }
                     return res.status(400).json({ 
                         responseType: "F", 
-                        responseValue: { message: err.message || 'File upload error' } 
+                        responseValue: { message: err.message || 'கோப்பு பதிவேற்ற பிழை' } 
                     });
                 }
 
                 if (!req.file) {
                     return res.status(400).json({ 
                         responseType: "F", 
-                        responseValue: { message: 'No file uploaded! Please upload a profile image.' } 
+                        responseValue: { message: 'கோப்பு பதிவேற்றப்படவில்லை! தயவுசெய்து ஒரு சுயவிவர படத்தை பதிவேற்றவும்.' } 
                     });
                 }
 
@@ -466,7 +466,7 @@ exports.userController = {
                     }
                     return res.status(400).json({ 
                         responseType: "F", 
-                        responseValue: { message: 'userId is required!' } 
+                        responseValue: { message: 'பயனர் ஐடி தேவையானது!' } 
                     });
                 }
 
@@ -519,7 +519,7 @@ exports.userController = {
                     if (!fs.existsSync(finalFilePath)) {
                         return res.status(500).json({ 
                             responseType: "F", 
-                            responseValue: { message: 'File was not saved successfully!' } 
+                            responseValue: { message: 'கோப்பு வெற்றிகரமாக சேமிக்கப்படவில்லை!' } 
                         });
                     }
 
@@ -542,7 +542,7 @@ exports.userController = {
                         return res.status(200).json({ 
                             responseType: "S", 
                             responseValue: { 
-                                message: "Profile picture updated successfully.",
+                                message: "சுயவிவர படம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது.",
                                 user: userProfile
                             } 
                         });
@@ -557,7 +557,7 @@ exports.userController = {
                         }
                         return res.status(500).json({ 
                             responseType: "F", 
-                            responseValue: { message: 'Failed to update profile picture in database.' } 
+                            responseValue: { message: 'தரவுத்தளத்தில் சுயவிவர படத்தை புதுப்பிக்க முடியவில்லை.' } 
                         });
                     }
                 } catch (moveError) {
@@ -573,7 +573,7 @@ exports.userController = {
                     
                     return res.status(500).json({ 
                         responseType: "F", 
-                        responseValue: { message: `Failed to save file: ${moveError.message}` } 
+                        responseValue: { message: `கோப்பை சேமிக்க முடியவில்லை: ${moveError.message}` } 
                     });
                 }
             } catch (error) {
