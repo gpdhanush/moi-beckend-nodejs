@@ -58,6 +58,74 @@ exports.controller = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+    updateMoiUser: async (req, res) => {
+        const userId = req.params.id;
+        const { um_full_name, um_mobile, um_email, um_profile_image, um_status } = req.body;
+        
+        try {
+            // Check if user exists
+            const existingUser = await Model.getMoiUserById(userId);
+            if (!existingUser) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'User not found.' } });
+            }
+            
+            // Prepare update data
+            const updateData = {};
+            if (um_full_name !== undefined) updateData.um_full_name = um_full_name;
+            if (um_mobile !== undefined) updateData.um_mobile = um_mobile;
+            if (um_email !== undefined) updateData.um_email = um_email;
+            if (um_profile_image !== undefined) updateData.um_profile_image = um_profile_image;
+            if (um_status !== undefined) updateData.um_status = um_status;
+            
+            // Check if there's any data to update
+            if (Object.keys(updateData).length === 0) {
+                return res.status(400).json({ responseType: "F", responseValue: { message: 'No fields provided to update.' } });
+            }
+            
+            const result = await Model.updateMoiUser(userId, updateData);
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'User not found or no changes made.' } });
+            }
+            
+            // Get updated user data
+            const updatedUser = await Model.getMoiUserById(userId);
+            
+            return res.status(200).json({ 
+                responseType: "S", 
+                responseValue: { 
+                    message: 'User updated successfully.',
+                    user: updatedUser
+                } 
+            });
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
+    deleteMoiUser: async (req, res) => {
+        const userId = req.params.id;
+        
+        try {
+            // Check if user exists
+            const existingUser = await Model.getMoiUserById(userId);
+            if (!existingUser) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'User not found.' } });
+            }
+            
+            const result = await Model.deleteMoiUser(userId);
+            
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: 'User not found.' } });
+            }
+            
+            return res.status(200).json({ 
+                responseType: "S", 
+                responseValue: { message: 'User deleted successfully.' } 
+            });
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
 
     // FUNCTIONS
     moiUserFunction: async (req, res) => {

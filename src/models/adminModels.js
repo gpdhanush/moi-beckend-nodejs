@@ -54,6 +54,50 @@ const Model = {
         const [result] = await db.query(`SELECT * FROM gp_moi_out_master WHERE mom_user_id = ?`, [user]);
         return result;
     },
+    async getMoiUserById(userId) {
+        const [result] = await db.query(`SELECT * FROM gp_moi_user_master WHERE um_id = ?`, [userId]);
+        return result[0];
+    },
+    async updateMoiUser(userId, updateData) {
+        const fields = [];
+        const values = [];
+        
+        if (updateData.um_full_name !== undefined) {
+            fields.push('um_full_name = ?');
+            values.push(updateData.um_full_name);
+        }
+        if (updateData.um_mobile !== undefined) {
+            fields.push('um_mobile = ?');
+            values.push(updateData.um_mobile);
+        }
+        if (updateData.um_email !== undefined) {
+            fields.push('um_email = ?');
+            values.push(updateData.um_email);
+        }
+        if (updateData.um_profile_image !== undefined) {
+            fields.push('um_profile_image = ?');
+            values.push(updateData.um_profile_image);
+        }
+        if (updateData.um_status !== undefined) {
+            fields.push('um_status = ?');
+            values.push(updateData.um_status);
+        }
+        
+        if (fields.length === 0) {
+            throw new Error('No fields to update');
+        }
+        
+        fields.push('um_update_dt = CURRENT_TIMESTAMP');
+        values.push(userId);
+        
+        const query = `UPDATE gp_moi_user_master SET ${fields.join(', ')} WHERE um_id = ?`;
+        const [result] = await db.query(query, values);
+        return result;
+    },
+    async deleteMoiUser(userId) {
+        const [result] = await db.query(`UPDATE gp_moi_user_master SET um_status = 'N', um_update_dt = CURRENT_TIMESTAMP WHERE um_id = ?`, [userId]);
+        return result;
+    },
 
 
 }
