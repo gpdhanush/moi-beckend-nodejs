@@ -96,6 +96,26 @@ const Notification = {
         );
         return result;
     },
+
+    /**
+     * Check if a notification with the same title and type was sent to a user today
+     * @param {number} userId - The user ID
+     * @param {string} title - The notification title
+     * @param {string} type - The notification type
+     * @returns {Promise<boolean>} True if notification was sent today, false otherwise
+     */
+    async wasSentToday(userId, title, type) {
+        const [rows] = await db.query(
+            `SELECT COUNT(*) as count FROM ${table} 
+             WHERE n_um_id = ? 
+             AND n_title = ? 
+             AND n_type = ? 
+             AND DATE(n_create_dt) = CURDATE() 
+             AND n_active = 'Y'`,
+            [userId, title, type]
+        );
+        return rows[0].count > 0;
+    },
 }
 
 module.exports = {

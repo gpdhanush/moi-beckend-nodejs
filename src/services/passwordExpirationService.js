@@ -1,6 +1,6 @@
 const User = require('../models/user');
 const { sendPushNotification } = require('../controllers/notificationController');
-const { NotificationType } = require('../models/notificationModels');
+const { NotificationType, Notification } = require('../models/notificationModels');
 
 /**
  * Check for users with passwords older than 3 months and send push notifications
@@ -21,13 +21,28 @@ async function checkAndNotifyPasswordExpiration() {
         console.log(`Found ${usersWithOldPasswords.length} user(s) with passwords older than 3 months.`);
 
         // Send notifications to each user
+        const notificationTitle = 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்';
+        const notificationBody = 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.';
+
         for (const user of usersWithOldPasswords) {
             if (user.um_notification_token) {
                 try {
+                    // Check if notification was already sent today to prevent duplicates
+                    const alreadySent = await Notification.wasSentToday(
+                        user.um_id,
+                        notificationTitle,
+                        NotificationType.ACCOUNT
+                    );
+
+                    if (alreadySent) {
+                        console.log(`Password expiration notification already sent today to user ${user.um_id} (${user.um_email}), skipping.`);
+                        continue;
+                    }
+
                     await sendPushNotification({
                         userId: user.um_id,
-                        title: 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்',
-                        body: 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.',
+                        title: notificationTitle,
+                        body: notificationBody,
                         token: user.um_notification_token,
                         type: NotificationType.ACCOUNT
                     });
