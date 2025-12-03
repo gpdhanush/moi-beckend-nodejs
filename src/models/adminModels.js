@@ -95,7 +95,7 @@ const Model = {
         return result;
     },
     async deleteMoiUser(userId) {
-        const [result] = await db.query(`UPDATE gp_moi_user_master SET um_status = 'N', um_update_dt = CURRENT_TIMESTAMP WHERE um_id = ?`, [userId]);
+        const [result] = await db.query(`DELETE FROM gp_moi_user_master WHERE um_id = ?`, [userId]);
         return result;
     },
 
