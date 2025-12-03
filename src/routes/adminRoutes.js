@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post('/login', controller.login);
 router.get('/moi-users', controller.moiUsers);
+router.post('/moi-users', controller.createMoiUser);
 router.get('/moi-user-list', controller.moiUserList);
 router.get('/moi-user-list/:id', controller.moiUserListId);
 router.put('/moi-users/:id', controller.updateMoiUser);

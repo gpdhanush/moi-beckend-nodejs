@@ -2,6 +2,7 @@ const Model = require('../models/adminModels');
 const User = require('../models/user');
 const { sendPushNotification } = require('./notificationController');
 const { NotificationType } = require('../models/notificationModels');
+const bcrypt = require('bcryptjs');
 
 
 exports.controller = {
@@ -55,6 +56,84 @@ exports.controller = {
             }
             return res.status(200).json({ responseType: "S", responseValue: list });
         } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
+    createMoiUser: async (req, res) => {
+        const { name, email, mobile, password } = req.body;
+        
+        try {
+            // Validate required fields
+            if (!name || !email || !mobile || !password) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'Name, email, mobile, and password are required.' } 
+                });
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'Invalid email format.' } 
+                });
+            }
+
+            // Validate mobile number (should be 10 digits)
+            if (!/^\d{10}$/.test(mobile)) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'Mobile number must be 10 digits.' } 
+                });
+            }
+
+            // Check if email already exists
+            const existingUserByEmail = await User.findByEmail(email);
+            if (existingUserByEmail) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'Email already registered.' } 
+                });
+            }
+
+            // Check if mobile already exists
+            const existingUserByMobile = await User.findByMobile(mobile);
+            if (existingUserByMobile) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'Mobile number already registered.' } 
+                });
+            }
+
+            // Hash the password
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            // Create user
+            const newUser = {
+                name: name.trim(),
+                email: email.trim().toLowerCase(),
+                mobile: mobile.trim(),
+                password: hashedPassword
+            };
+
+            const result = await User.create(newUser);
+            
+            // Get created user data
+            const createdUser = await User.findById(result.insertId);
+            
+            // Remove password from response
+            delete createdUser.um_password;
+            
+            return res.status(201).json({ 
+                responseType: "S", 
+                responseValue: { 
+                    message: 'User created successfully.',
+                    user: createdUser
+                } 
+            });
+        } catch (error) {
+            console.error('Error creating user:', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
