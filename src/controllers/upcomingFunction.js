@@ -19,8 +19,8 @@ exports.controller = {
 
             const changeKeyNames = (arr) => {
                 return arr.map(({ uf_id: id, uf_user_id: userId, uf_date: functionDate, uf_name: functionName,
-                    uf_place: place, uf_invitation_url: invitationUrl
-                }) => ({ id, userId, functionName, functionDate, place, invitationUrl }))
+                    uf_place: place, uf_invitation_url: invitationUrl, status
+                }) => ({ id, userId, functionName, functionDate, place, invitationUrl, status }))
                     .map(event => {
                         return {
                             ...event,
@@ -85,6 +85,32 @@ exports.controller = {
                 return res.status(200).json({ responseType: "S", responseValue: { message: "பொருள் வெற்றிகரமாக நீக்கப்பட்டது." } });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "இந்த பதிவுகளை நீக்க முடியவில்லை!" } });
+            }
+        } catch (error) {
+            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+        }
+    },
+    updateStatus: async (req, res) => {
+        try {
+            const { id, status } = req.body;
+            
+            if (!id) {
+                return res.status(400).json({ responseType: "F", responseValue: { message: "ID is required!" } });
+            }
+
+            const moidata = await Model.readById(id);
+            if (!moidata) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } });
+            }
+
+            // Validate status value - should be 'completed' or null/empty
+            const validStatus = status === 'completed' ? 'completed' : (status === '' || status === null ? null : status);
+            
+            var query = await Model.updateStatus(id, validStatus);
+            if (query) {
+                return res.status(200).json({ responseType: "S", responseValue: { message: "நிலை வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
+            } else {
+                return res.status(404).json({ responseType: "F", responseValue: { message: "நிலை புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
             }
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
