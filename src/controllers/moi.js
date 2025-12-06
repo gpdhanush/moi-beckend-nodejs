@@ -25,12 +25,12 @@ exports.controller = {
                     f_place: f_place, f_native: f_native, f_invitation: f_invitation,
                     // MOI DETAILS
                     mr_id: id, mr_um_id: userId, mr_city_id: cityName, mr_first_name: firstName, mr_second_name: secondName, 
-                    mr_amount: amount, mr_occupation: occupation, mr_remarks: remarks
+                    mr_amount: amount, mr_occupation: occupation, mr_remarks: remarks, seimurai, things
                     }) => ({
                     // FUNCTION DEATILS
                         functionId, functionName, functionDate, f_firstName, f_secondName, f_place, f_native, f_invitation,
                     // MOI DETAILS
-                        id, userId, cityName, firstName, secondName, amount, occupation, remarks,
+                        id, userId, cityName, firstName, secondName, amount, occupation, remarks, seimurai, things,
                     }))
                     .map(event => {
                         return {

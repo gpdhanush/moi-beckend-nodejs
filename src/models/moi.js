@@ -4,9 +4,9 @@ const table = "gp_moi_master_records";
 const Model = {
     async create(list) {
         const [result] = await db.query(`INSERT INTO ${table} 
-            (mr_um_id, mr_function_id, mr_city_id, mr_first_name, mr_second_name, mr_amount, mr_occupation, mr_remarks) VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [list.userId, list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks]);
+            (mr_um_id, mr_function_id, mr_city_id, mr_first_name, mr_second_name, mr_amount, mr_occupation, mr_remarks, seimurai, things) VALUES 
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [list.userId, list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks, list.seimurai || null, list.things || null]);
         return result;
     },
 
@@ -29,8 +29,8 @@ const Model = {
     },
     async update(list) {
         const [result] = await db.query(`UPDATE ${table} 
-            SET mr_function_id = ?, mr_city_id = ?, mr_first_name = ?, mr_second_name = ?, mr_amount = ?, mr_occupation = ?, mr_remarks = ? WHERE mr_id = ?`,
-            [list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks, list.id]);
+            SET mr_function_id = ?, mr_city_id = ?, mr_first_name = ?, mr_second_name = ?, mr_amount = ?, mr_occupation = ?, mr_remarks = ?, seimurai = ?, things = ? WHERE mr_id = ?`,
+            [list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks, list.seimurai || null, list.things || null, list.id]);
         return result;
     },
     async delete(id) {

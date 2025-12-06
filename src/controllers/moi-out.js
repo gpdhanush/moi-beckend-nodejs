@@ -20,9 +20,9 @@ exports.controller = {
             const changeKeyNames = (arr) => {
                 return arr.map(({ mom_id: id, mom_user_id: userId, mom_function_name:functionName, 
                     mom_function_date: functionDate, mom_city: cityName, mom_first_name: firstName, mom_second_name: secondName, mom_amount: amount, 
-                    mom_mobile: mobile, mom_occupation: occupation, mom_remarks: remarks
+                    mom_mobile: mobile, mom_occupation: occupation, mom_remarks: remarks, seimurai, things
                     }) => ({
-                        id, userId, functionName, functionDate, cityName, firstName, secondName, amount, mobile, occupation, remarks,
+                        id, userId, functionName, functionDate, cityName, firstName, secondName, amount, mobile, occupation, remarks, seimurai, things,
                     }))
                     .map(event => {
                         return {

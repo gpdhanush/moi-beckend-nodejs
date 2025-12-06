@@ -4,9 +4,9 @@ const table = "gp_moi_out_master";
 const Model = {
     async create(list) {
         const [result] = await db.query(`INSERT INTO ${table} 
-            (mom_user_id, mom_first_name, mom_second_name, mom_city, mom_function_date, mom_function_name, mom_amount, mom_remarks) VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [list.userId, list.firstName, list.secondName, list.city, list.functionDate, list.functionName, list.amount, list.remarks]);
+            (mom_user_id, mom_first_name, mom_second_name, mom_city, mom_function_date, mom_function_name, mom_amount, mom_remarks, seimurai, things) VALUES 
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [list.userId, list.firstName, list.secondName, list.city, list.functionDate, list.functionName, list.amount, list.remarks, list.seimurai || null, list.things || null]);
         return result;
     },
 
@@ -22,8 +22,8 @@ const Model = {
     },
     async update(list) {
         const [result] = await db.query(`UPDATE ${table} 
-            SET mom_first_name = ?, mom_second_name = ?, mom_city = ?, mom_function_date = ?, mom_function_name = ?, mom_amount = ?, mom_remarks = ? WHERE mom_id = ?`,
-            [list.firstName, list.secondName, list.city, list.functionDate, list.functionName, list.amount, list.remarks, list.id]);
+            SET mom_first_name = ?, mom_second_name = ?, mom_city = ?, mom_function_date = ?, mom_function_name = ?, mom_amount = ?, mom_remarks = ?, seimurai = ?, things = ? WHERE mom_id = ?`,
+            [list.firstName, list.secondName, list.city, list.functionDate, list.functionName, list.amount, list.remarks, list.seimurai || null, list.things || null, list.id]);
         return result;
     },
     async delete(id) {
