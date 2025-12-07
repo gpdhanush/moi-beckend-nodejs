@@ -70,8 +70,11 @@ exports.controller = {
             }
 
             // If no personId, return list of all persons with their summaries and transactions
-            // Get all persons with transaction summaries
-            const personsWithSummaries = await Model.getPersonsWithSummaries(userId);
+            // Optimize: Fetch all data in parallel with minimal queries
+            const [personsWithSummaries, allTransactions] = await Promise.all([
+                Model.getPersonsWithSummaries(userId),
+                Model.readAll(userId) // Get all transactions in one query
+            ]);
 
             // Get overall summary
             const summaryData = await Model.getSummary(userId);
@@ -91,14 +94,24 @@ exports.controller = {
 
             const total = moiInvest - moiReturn;
 
+            // Group transactions by personId for efficient lookup
+            const transactionsByPerson = {};
+            allTransactions.forEach(t => {
+                const personId = t.mcd_person_id;
+                if (!transactionsByPerson[personId]) {
+                    transactionsByPerson[personId] = [];
+                }
+                transactionsByPerson[personId].push(t);
+            });
+
             // Transform persons with their summaries and transactions
-            const personsList = await Promise.all(personsWithSummaries.map(async (p, index) => {
+            const personsList = personsWithSummaries.map((p, index) => {
                 const personMoiReturn = parseFloat(p.moi_return) || 0;
                 const personMoiInvest = parseFloat(p.moi_invest) || 0;
                 const personTotal = personMoiInvest - personMoiReturn;
                 
-                // Get transactions for this person
-                const personTransactions = await Model.readByPersonId(userId, p.mp_id);
+                // Get transactions for this person from grouped data
+                const personTransactions = transactionsByPerson[p.mp_id] || [];
                 const transformTransactions = personTransactions.map((t, tIndex) => ({
                     id: t.mcd_id,
                     index: tIndex + 1,
@@ -127,7 +140,7 @@ exports.controller = {
                     transactions: transformTransactions,
                     count: transformTransactions.length
                 };
-            }));
+            });
 
             return res.status(200).json({
                 responseType: "S",
