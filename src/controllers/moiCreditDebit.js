@@ -6,7 +6,7 @@ const moment = require('moment');
 exports.controller = {
     // Get dashboard with summary and list
     dashboard: async (req, res) => {
-        const { userId } = req.body;
+        const { userId, personId } = req.body;
         try {
             const user = await User.findById(userId);
             if (!user) {
@@ -16,17 +16,68 @@ exports.controller = {
                 });
             }
 
-            // Get person details (for header)
-            const personDetails = await PersonModel.getPersonDetails(userId);
+            // If personId is provided, return person details with their transactions
+            if (personId) {
+                const person = await PersonModel.readById(personId);
+                if (!person || person.mp_um_id !== userId) {
+                    return res.status(404).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "குறிப்பிடப்பட்ட நபர் இல்லை!" } 
+                    });
+                }
 
-            // Get all transactions
-            const transactions = await Model.readAll(userId);
+                // Get person's transactions
+                const transactions = await Model.readByPersonId(userId, personId);
+                
+                // Get person's summary
+                const personSummary = await Model.getPersonSummary(userId, personId);
+                const moiReturn = parseFloat(personSummary.moi_return) || 0;
+                const moiInvest = parseFloat(personSummary.moi_invest) || 0;
+                const total = moiInvest - moiReturn;
 
-            // Get summary
+                // Transform transactions
+                const transformTransactions = transactions.map((t, index) => ({
+                    id: t.mcd_id,
+                    index: index + 1,
+                    date: moment(t.mcd_date).format('DD/MM/YYYY'),
+                    functionName: t.function_name,
+                    type: t.mcd_type,
+                    mode: t.mcd_mode,
+                    amount: parseFloat(t.mcd_amount) || 0,
+                    remarks: t.mcd_remarks
+                }));
+
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: [{
+                        personDetails: {
+                            id: person.mp_id,
+                            firstName: person.mp_first_name,
+                            secondName: person.mp_second_name,
+                            business: person.mp_business,
+                            city: person.mp_city,
+                            mobile: person.mp_mobile
+                        },
+                        summary: {
+                            moiReturn: moiReturn,
+                            moiInvest: moiInvest,
+                            total: total
+                        },
+                        transactions: transformTransactions,
+                        count: transformTransactions.length
+                    }]
+                });
+            }
+
+            // If no personId, return list of all persons with their summaries
+            // Get all persons with transaction summaries
+            const personsWithSummaries = await Model.getPersonsWithSummaries(userId);
+
+            // Get overall summary
             const summaryData = await Model.getSummary(userId);
             const memberCount = await Model.getMemberCount(userId);
 
-            // Calculate totals
+            // Calculate overall totals
             let moiReturn = 0;
             let moiInvest = 0;
 
@@ -40,45 +91,39 @@ exports.controller = {
 
             const total = moiInvest - moiReturn;
 
-            // Transform transactions
-            const transformTransactions = transactions.map((t, index) => ({
-                id: t.mcd_id,
-                index: index + 1,
-                date: moment(t.mcd_date).format('DD/MM/YYYY'),
-                functionName: t.function_name,
-                type: t.mcd_type,
-                mode: t.mcd_mode,
-                amount: parseFloat(t.mcd_amount) || 0,
-                remarks: t.mcd_remarks,
-                person: {
-                    id: t.mcd_person_id,
-                    firstName: t.mp_first_name,
-                    secondName: t.mp_second_name,
-                    business: t.mp_business,
-                    city: t.mp_city,
-                    mobile: t.mp_mobile
-                }
-            }));
+            // Transform persons with their summaries
+            const personsList = personsWithSummaries.map((p, index) => {
+                const personMoiReturn = parseFloat(p.moi_return) || 0;
+                const personMoiInvest = parseFloat(p.moi_invest) || 0;
+                const personTotal = personMoiInvest - personMoiReturn;
+                
+                return {
+                    id: p.mp_id,
+                    index: index + 1,
+                    firstName: p.mp_first_name,
+                    secondName: p.mp_second_name,
+                    business: p.mp_business,
+                    city: p.mp_city,
+                    mobile: p.mp_mobile,
+                    summary: {
+                        moiReturn: personMoiReturn,
+                        moiInvest: personMoiInvest,
+                        total: personTotal
+                    }
+                };
+            });
 
             return res.status(200).json({
                 responseType: "S",
                 responseValue: {
-                    personDetails: personDetails ? {
-                        id: personDetails.mp_id,
-                        firstName: personDetails.mp_first_name,
-                        secondName: personDetails.mp_second_name,
-                        business: personDetails.mp_business,
-                        city: personDetails.mp_city,
-                        mobile: personDetails.mp_mobile
-                    } : null,
                     summary: {
                         moiReturn: moiReturn,
                         moiInvest: moiInvest,
                         total: total,
                         memberCount: memberCount
                     },
-                    transactions: transformTransactions,
-                    count: transformTransactions.length
+                    persons: personsList,
+                    count: personsList.length
                 }
             });
         } catch (error) {

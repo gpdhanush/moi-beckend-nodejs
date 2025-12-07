@@ -84,6 +84,48 @@ const Model = {
             FROM ${table}
             WHERE mcd_um_id = ? AND mcd_active = 'Y'`, [userId]);
         return result[0]?.member_count || 0;
+    },
+
+    // Get all persons with their transaction summaries
+    async getPersonsWithSummaries(userId) {
+        const [result] = await db.query(`SELECT 
+            mp.mp_id,
+            mp.mp_first_name,
+            mp.mp_second_name,
+            mp.mp_business,
+            mp.mp_city,
+            mp.mp_mobile,
+            SUM(CASE WHEN mcd.mcd_type = 'RETURN' AND mcd.mcd_mode = 'MONEY' THEN mcd.mcd_amount ELSE 0 END) as moi_return,
+            SUM(CASE WHEN mcd.mcd_type = 'INVEST' AND mcd.mcd_mode = 'MONEY' THEN mcd.mcd_amount ELSE 0 END) as moi_invest
+            FROM ${table} as mcd
+            INNER JOIN gp_moi_persons as mp ON mp.mp_id = mcd.mcd_person_id
+            WHERE mcd.mcd_um_id = ? AND mcd.mcd_active = 'Y' AND mp.mp_active = 'Y'
+            GROUP BY mp.mp_id, mp.mp_first_name, mp.mp_second_name, mp.mp_business, mp.mp_city, mp.mp_mobile
+            ORDER BY mp.mp_first_name ASC, mp.mp_second_name ASC`, [userId]);
+        return result;
+    },
+
+    // Get transactions by personId
+    async readByPersonId(userId, personId) {
+        const [result] = await db.query(`SELECT mcd.*, 
+            mp.mp_first_name, mp.mp_second_name, mp.mp_business, mp.mp_city, mp.mp_mobile,
+            mdf.mdf_name as function_name
+            FROM ${table} as mcd
+            LEFT JOIN gp_moi_persons as mp ON mp.mp_id = mcd.mcd_person_id
+            LEFT JOIN gp_moi_default_functions as mdf ON mdf.mdf_id = mcd.mcd_function_id
+            WHERE mcd.mcd_um_id = ? AND mcd.mcd_person_id = ? AND mcd.mcd_active = 'Y'
+            ORDER BY mcd.mcd_date DESC, mcd.mcd_id DESC`, [userId, personId]);
+        return result;
+    },
+
+    // Get person summary by personId
+    async getPersonSummary(userId, personId) {
+        const [result] = await db.query(`SELECT 
+            SUM(CASE WHEN mcd_type = 'RETURN' AND mcd_mode = 'MONEY' THEN mcd_amount ELSE 0 END) as moi_return,
+            SUM(CASE WHEN mcd_type = 'INVEST' AND mcd_mode = 'MONEY' THEN mcd_amount ELSE 0 END) as moi_invest
+            FROM ${table}
+            WHERE mcd_um_id = ? AND mcd_person_id = ? AND mcd_active = 'Y'`, [userId, personId]);
+        return result[0] || { moi_return: 0, moi_invest: 0 };
     }
 }
 
