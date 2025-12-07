@@ -26,7 +26,6 @@ exports.controller = {
                 id: p.mp_id,
                 firstName: p.mp_first_name,
                 secondName: p.mp_second_name,
-                parentName: p.mp_parent_name,
                 business: p.mp_business,
                 city: p.mp_city,
                 mobile: p.mp_mobile
@@ -47,7 +46,7 @@ exports.controller = {
 
     create: async (req, res) => {
         try {
-            const { userId, firstName, secondName, parentName, business, city, mobile } = req.body;
+            const { userId, firstName, secondName, business, city, mobile } = req.body;
 
             if (!userId || !firstName) {
                 return res.status(400).json({ 
@@ -82,7 +81,6 @@ exports.controller = {
                 userId,
                 firstName,
                 secondName,
-                parentName,
                 business,
                 city,
                 mobile
@@ -113,7 +111,7 @@ exports.controller = {
 
     update: async (req, res) => {
         try {
-            const { userId, id, firstName, secondName, parentName, business, city, mobile } = req.body;
+            const { userId, id, firstName, secondName, business, city, mobile } = req.body;
 
             if (!userId || !id || !firstName) {
                 return res.status(400).json({ 
@@ -153,7 +151,6 @@ exports.controller = {
                 id,
                 firstName,
                 secondName,
-                parentName,
                 business,
                 city,
                 mobile
@@ -230,7 +227,6 @@ exports.controller = {
                     userId: person.mp_um_id,
                     firstName: person.mp_first_name,
                     secondName: person.mp_second_name,
-                    parentName: person.mp_parent_name,
                     business: person.mp_business,
                     city: person.mp_city,
                     mobile: person.mp_mobile
@@ -270,7 +266,6 @@ exports.controller = {
                     id: person.mp_id,
                     firstName: person.mp_first_name,
                     secondName: person.mp_second_name,
-                    parentName: person.mp_parent_name,
                     business: person.mp_business,
                     city: person.mp_city,
                     mobile: person.mp_mobile

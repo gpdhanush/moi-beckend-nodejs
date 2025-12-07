@@ -12,7 +12,7 @@ const Model = {
 
     async readAll(userId, filters = {}) {
         let query = `SELECT mcd.*, 
-            mp.mp_first_name, mp.mp_second_name, mp.mp_parent_name, mp.mp_business, mp.mp_city, mp.mp_mobile,
+            mp.mp_first_name, mp.mp_second_name, mp.mp_business, mp.mp_city, mp.mp_mobile,
             mdf.mdf_name as function_name
             FROM ${table} as mcd
             LEFT JOIN gp_moi_persons as mp ON mp.mp_id = mcd.mcd_person_id
@@ -45,7 +45,7 @@ const Model = {
 
     async readById(id) {
         const [rows] = await db.query(`SELECT mcd.*, 
-            mp.mp_first_name, mp.mp_second_name, mp.mp_parent_name, mp.mp_business, mp.mp_city, mp.mp_mobile,
+            mp.mp_first_name, mp.mp_second_name, mp.mp_business, mp.mp_city, mp.mp_mobile,
             mdf.mdf_name as function_name
             FROM ${table} as mcd
             LEFT JOIN gp_moi_persons as mp ON mp.mp_id = mcd.mcd_person_id

@@ -54,7 +54,6 @@ exports.controller = {
                     id: t.mcd_person_id,
                     firstName: t.mp_first_name,
                     secondName: t.mp_second_name,
-                    parentName: t.mp_parent_name,
                     business: t.mp_business,
                     city: t.mp_city,
                     mobile: t.mp_mobile
@@ -68,7 +67,6 @@ exports.controller = {
                         id: personDetails.mp_id,
                         firstName: personDetails.mp_first_name,
                         secondName: personDetails.mp_second_name,
-                        parentName: personDetails.mp_parent_name,
                         business: personDetails.mp_business,
                         city: personDetails.mp_city,
                         mobile: personDetails.mp_mobile
@@ -130,7 +128,6 @@ exports.controller = {
                     id: t.mcd_person_id,
                     firstName: t.mp_first_name,
                     secondName: t.mp_second_name,
-                    parentName: t.mp_parent_name,
                     business: t.mp_business,
                     city: t.mp_city,
                     mobile: t.mp_mobile
@@ -377,7 +374,6 @@ exports.controller = {
                     id: transaction.mcd_person_id,
                     firstName: transaction.mp_first_name,
                     secondName: transaction.mp_second_name,
-                    parentName: transaction.mp_parent_name,
                     business: transaction.mp_business,
                     city: transaction.mp_city,
                     mobile: transaction.mp_mobile

@@ -4,9 +4,9 @@ const table = "gp_moi_persons";
 const Model = {
     async create(data) {
         const [result] = await db.query(`INSERT INTO ${table} 
-            (mp_um_id, mp_first_name, mp_second_name, mp_parent_name, mp_business, mp_city, mp_mobile) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [data.userId, data.firstName, data.secondName || null, data.parentName || null, 
+            (mp_um_id, mp_first_name, mp_second_name, mp_business, mp_city, mp_mobile) 
+            VALUES (?, ?, ?, ?, ?, ?)`,
+            [data.userId, data.firstName, data.secondName || null, 
              data.business || null, data.city || null, data.mobile || null]);
         return result;
     },
@@ -40,10 +40,10 @@ const Model = {
 
     async update(data) {
         const [result] = await db.query(`UPDATE ${table} 
-            SET mp_first_name = ?, mp_second_name = ?, mp_parent_name = ?, 
+            SET mp_first_name = ?, mp_second_name = ?, 
                 mp_business = ?, mp_city = ?, mp_mobile = ? 
             WHERE mp_id = ? AND mp_active = 'Y'`,
-            [data.firstName, data.secondName || null, data.parentName || null, 
+            [data.firstName, data.secondName || null, 
              data.business || null, data.city || null, data.mobile || null, data.id]);
         return result;
     },
