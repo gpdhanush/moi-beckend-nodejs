@@ -69,7 +69,7 @@ exports.controller = {
                 });
             }
 
-            // If no personId, return list of all persons with their summaries
+            // If no personId, return list of all persons with their summaries and transactions
             // Get all persons with transaction summaries
             const personsWithSummaries = await Model.getPersonsWithSummaries(userId);
 
@@ -91,27 +91,43 @@ exports.controller = {
 
             const total = moiInvest - moiReturn;
 
-            // Transform persons with their summaries
-            const personsList = personsWithSummaries.map((p, index) => {
+            // Transform persons with their summaries and transactions
+            const personsList = await Promise.all(personsWithSummaries.map(async (p, index) => {
                 const personMoiReturn = parseFloat(p.moi_return) || 0;
                 const personMoiInvest = parseFloat(p.moi_invest) || 0;
                 const personTotal = personMoiInvest - personMoiReturn;
                 
+                // Get transactions for this person
+                const personTransactions = await Model.readByPersonId(userId, p.mp_id);
+                const transformTransactions = personTransactions.map((t, tIndex) => ({
+                    id: t.mcd_id,
+                    index: tIndex + 1,
+                    date: moment(t.mcd_date).format('DD/MM/YYYY'),
+                    functionName: t.function_name,
+                    type: t.mcd_type,
+                    mode: t.mcd_mode,
+                    amount: parseFloat(t.mcd_amount) || 0,
+                    remarks: t.mcd_remarks
+                }));
+                
                 return {
-                    id: p.mp_id,
-                    index: index + 1,
-                    firstName: p.mp_first_name,
-                    secondName: p.mp_second_name,
-                    business: p.mp_business,
-                    city: p.mp_city,
-                    mobile: p.mp_mobile,
+                    personDetails: {
+                        id: p.mp_id,
+                        firstName: p.mp_first_name,
+                        secondName: p.mp_second_name,
+                        business: p.mp_business,
+                        city: p.mp_city,
+                        mobile: p.mp_mobile
+                    },
                     summary: {
                         moiReturn: personMoiReturn,
                         moiInvest: personMoiInvest,
                         total: personTotal
-                    }
+                    },
+                    transactions: transformTransactions,
+                    count: transformTransactions.length
                 };
-            });
+            }));
 
             return res.status(200).json({
                 responseType: "S",
