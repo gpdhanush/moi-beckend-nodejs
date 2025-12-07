@@ -12,6 +12,9 @@ const email = require('./emailRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const adminRoutes = require('./adminRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const moiCreditDebit = require('./moiCreditDebit');
+const moiDefaultFunctions = require('./moiDefaultFunctions');
+const moiPersons = require('./moiPersons');
 
 
 router.use('/users', user);
@@ -24,6 +27,10 @@ router.use('/feedbacks', feedbacks);
 router.use('/email', email);
 router.use('/uploads', uploadRoutes);
 router.use('/notification', notificationRoutes);
+// NEW MOI CREDIT/DEBIT ROUTES
+router.use('/moi-credit-debit', moiCreditDebit);
+router.use('/moi-default-functions', moiDefaultFunctions);
+router.use('/moi-persons', moiPersons);
 // ADMIN ROUTES
 router.use('/admin', adminRoutes);
 
