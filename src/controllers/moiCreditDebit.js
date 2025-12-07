@@ -71,8 +71,9 @@ exports.controller = {
 
             // If no personId, return list of all persons with their summaries and transactions
             // Optimize: Fetch all data in parallel with minimal queries
-            const [personsWithSummaries, allTransactions] = await Promise.all([
-                Model.getPersonsWithSummaries(userId),
+            // Get ALL persons (not just those with transactions) and all transactions
+            const [allPersons, allTransactions] = await Promise.all([
+                PersonModel.readAll(userId), // Get all persons
                 Model.readAll(userId) // Get all transactions in one query
             ]);
 
@@ -94,24 +95,43 @@ exports.controller = {
 
             const total = moiInvest - moiReturn;
 
-            // Group transactions by personId for efficient lookup
+            // Group transactions by personId and calculate summaries
             const transactionsByPerson = {};
+            const summariesByPerson = {};
+
             allTransactions.forEach(t => {
                 const personId = t.mcd_person_id;
                 if (!transactionsByPerson[personId]) {
                     transactionsByPerson[personId] = [];
+                    summariesByPerson[personId] = { moiReturn: 0, moiInvest: 0 };
                 }
                 transactionsByPerson[personId].push(t);
+                
+                // Calculate summary for this person
+                if (t.mcd_type === 'RETURN' && t.mcd_mode === 'MONEY') {
+                    summariesByPerson[personId].moiReturn += parseFloat(t.mcd_amount) || 0;
+                } else if (t.mcd_type === 'INVEST' && t.mcd_mode === 'MONEY') {
+                    summariesByPerson[personId].moiInvest += parseFloat(t.mcd_amount) || 0;
+                }
             });
 
-            // Transform persons with their summaries and transactions
-            const personsList = personsWithSummaries.map((p, index) => {
-                const personMoiReturn = parseFloat(p.moi_return) || 0;
-                const personMoiInvest = parseFloat(p.moi_invest) || 0;
+            // Transform all persons with their summaries and transactions
+            const personsList = allPersons.map((p, index) => {
+                const personSummary = summariesByPerson[p.mp_id] || { moiReturn: 0, moiInvest: 0 };
+                const personMoiReturn = personSummary.moiReturn;
+                const personMoiInvest = personSummary.moiInvest;
                 const personTotal = personMoiInvest - personMoiReturn;
                 
                 // Get transactions for this person from grouped data
-                const personTransactions = transactionsByPerson[p.mp_id] || [];
+                const personTransactions = (transactionsByPerson[p.mp_id] || []).sort((a, b) => {
+                    // Sort by date descending, then by id descending
+                    const dateA = new Date(a.mcd_date);
+                    const dateB = new Date(b.mcd_date);
+                    if (dateB.getTime() !== dateA.getTime()) {
+                        return dateB.getTime() - dateA.getTime();
+                    }
+                    return b.mcd_id - a.mcd_id;
+                });
                 const transformTransactions = personTransactions.map((t, tIndex) => ({
                     id: t.mcd_id,
                     index: tIndex + 1,

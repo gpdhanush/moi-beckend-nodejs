@@ -77,6 +77,18 @@ exports.controller = {
                 }
             }
 
+            // Check for duplicate person (same firstName, secondName, business, city, mobile)
+            const duplicate = await Model.findDuplicate(userId, firstName, secondName, business, city, mobile);
+            if (duplicate) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: "இந்த விவரங்களுடன் ஒரு நபர் ஏற்கனவே உள்ளது.",
+                        personId: duplicate.mp_id
+                    } 
+                });
+            }
+
             const data = {
                 userId,
                 firstName,
