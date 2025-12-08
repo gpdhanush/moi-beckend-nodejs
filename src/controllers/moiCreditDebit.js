@@ -39,7 +39,7 @@ exports.controller = {
                 const transformTransactions = transactions.map((t, index) => ({
                     id: t.mcd_id,
                     index: index + 1,
-                    date: moment(t.mcd_date).format('DD/MM/YYYY'),
+                    date: moment(t.mcd_date).format('DD-MMM-YYYY'),
                     functionName: t.function_name,
                     type: t.mcd_type,
                     mode: t.mcd_mode,
@@ -138,7 +138,7 @@ exports.controller = {
                 const transformTransactions = personTransactions.map((t, tIndex) => ({
                     id: t.mcd_id,
                     index: tIndex + 1,
-                    date: moment(t.mcd_date).format('DD/MM/YYYY'),
+                    date: moment(t.mcd_date).format('DD-MMM-YYYY'),
                     functionName: t.function_name,
                     type: t.mcd_type,
                     mode: t.mcd_mode,
@@ -442,7 +442,7 @@ exports.controller = {
             }
 
             const result = await Model.delete(id);
-            if (result) {
+            if (result && result.affectedRows > 0) {
                 return res.status(200).json({ 
                     responseType: "S", 
                     responseValue: { message: "பதிவு வெற்றிகரமாக நீக்கப்பட்டது." } 

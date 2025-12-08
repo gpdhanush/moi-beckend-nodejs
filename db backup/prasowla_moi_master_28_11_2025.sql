@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Dec 07, 2025 at 06:06 PM
+-- Generation Time: Dec 08, 2025 at 12:09 PM
 -- Server version: 10.11.14-MariaDB-cll-lve
 -- PHP Version: 8.4.14
 
@@ -55,6 +55,9 @@ CREATE TABLE `gp_moi_credit_debit_master` (
   `mcd_id` int(10) NOT NULL,
   `mcd_um_id` int(10) NOT NULL,
   `mcd_person_id` int(10) NOT NULL,
+  `mcd_first_name` varchar(100) DEFAULT NULL,
+  `mcd_second_name` varchar(100) DEFAULT NULL,
+  `mcd_city` varchar(100) DEFAULT NULL,
   `mcd_function_id` int(10) NOT NULL,
   `mcd_type` varchar(20) NOT NULL COMMENT 'INVEST / RETURN',
   `mcd_mode` varchar(20) NOT NULL COMMENT 'MONEY / THINGS',
@@ -91,39 +94,12 @@ INSERT INTO `gp_moi_default_functions` (`mdf_id`, `mdf_um_id`, `mdf_name`, `mdf_
 (3, 0, 'இல்ல காதணி விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (4, 0, 'வளைகாப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (5, 0, 'இல்ல பூப்புனித நீராட்டு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(6, 0, 'இல்ல விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (7, 0, 'இல்ல புதுமனை புகுவிழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(8, 0, 'வசந்த விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (9, 0, 'மொய் விருந்து விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(10, 0, 'மார்க்க கல்யாண விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (11, 0, 'கிடா வெட்டு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(12, 0, 'முடியிறக்கு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (13, 0, 'இல்ல திருமண விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(14, 0, 'இல்ல திருமண நிச்சயதார்த்த விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(15, 0, 'இல்ல இனிய விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(16, 0, 'இல்ல செவிப்பொன் சூட்டு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(17, 0, 'இல்ல வளைகாப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(18, 0, 'திருக்கோவில் பூக்குழி திருவிழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(19, 0, 'புனரமைக்கப்பட்ட இல்ல திறப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(20, 0, 'பரிசுத்த விவாக அழைப்பிதழ்', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(21, 0, 'மஹா கும்பாபிஷேக திருவிழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(22, 0, 'மஹால் திறப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
 (23, 0, 'நிக்காஹ் திருமண விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(24, 0, 'இல்ல முதல் இறை உணவு ஏற்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(25, 0, 'இல்ல திருமண வரவேற்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(26, 0, 'காதணி விழா மற்றும் நிச்சயதார்த்த விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(27, 0, 'பணிநிறைவு விருந்து உபசரிப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(28, 0, 'முதல் திருவிருந்து பெரும் விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(29, 0, 'குல உறவுகள் சந்திப்பு திருவிழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(30, 0, 'தாய்மாமனின் தங்க பரிசு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(31, 0, 'நன்றி ஜெப விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(32, 0, 'உறவுகள் சந்திக்கும் விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(33, 0, 'பாச சொந்தங்கள் சேரும் விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(34, 0, 'புதிய கட்டிட திறப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(35, 0, 'இல்ல திருமண உறுதிப்பாட்டு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(36, 0, 'திறப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(37, 0, 'இல்ல புது நன்மை விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y'),
-(38, 0, 'பரிசுத்த மெய்விவாக வரவேற்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y');
+(34, 0, 'புதிய கட்டிட திறப்பு விழா', '2025-12-07 12:28:53', '2025-12-07 12:28:53', 'Y');
 
 -- --------------------------------------------------------
 
@@ -663,32 +639,6 @@ CREATE TABLE `gp_moi_notifications` (
   `n_active` char(1) NOT NULL DEFAULT 'Y' COMMENT 'Active status: Y=Active, N=Deleted/Inactive'
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
---
--- Dumping data for table `gp_moi_notifications`
---
-
-INSERT INTO `gp_moi_notifications` (`n_id`, `n_um_id`, `n_title`, `n_body`, `n_type`, `n_is_read`, `n_read_time`, `n_create_dt`, `n_update_dt`, `n_active`) VALUES
-(1, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-04 03:30:00', '2025-12-04 03:30:00', 'Y'),
-(2, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-04 03:30:00', '2025-12-04 03:30:00', 'Y'),
-(3, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-04 03:30:02', '2025-12-04 03:30:02', 'Y'),
-(4, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-04 03:30:02', '2025-12-04 03:30:02', 'Y'),
-(5, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-05 03:30:00', '2025-12-05 03:30:00', 'Y'),
-(6, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-05 03:30:00', '2025-12-05 03:30:00', 'Y'),
-(7, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-05 03:30:02', '2025-12-05 03:30:02', 'Y'),
-(8, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-05 03:30:02', '2025-12-05 03:30:02', 'Y'),
-(9, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-06 03:30:00', '2025-12-06 16:29:03', 'Y'),
-(10, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-06 03:30:00', '2025-12-06 03:30:00', 'Y'),
-(11, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-06 03:30:02', '2025-12-06 03:30:02', 'Y'),
-(12, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-06 03:30:02', '2025-12-06 03:30:02', 'Y'),
-(13, 60, 'உங்கள் கருத்துக்களை பகிர்ந்து கொள்ளுங்கள்', 'App-ஐ பயன்படுத்தி முடித்த பிறகு, உங்கள் கருத்துகளை \'கருத்துகள்\' மெனுவில் பகிரவும்.', 'general', 'N', NULL, '2025-12-06 13:02:23', '2025-12-06 13:02:23', 'Y'),
-(14, 1, 'உங்கள் கருத்துக்களை பகிர்ந்து கொள்ளுங்கள்', 'App-ஐ பயன்படுத்தி முடித்த பிறகு, உங்கள் கருத்துகளை \'கருத்துகள்\' மெனுவில் பகிரவும்.', 'general', 'Y', '2025-12-06 16:29:01', '2025-12-06 13:02:23', '2025-12-06 16:29:01', 'Y'),
-(15, 60, 'உங்கள் கருத்துக்களை பகிர்ந்து கொள்ளுங்கள்', 'App-ஐ பயன்படுத்தி முடித்த பிறகு, உங்கள் கருத்துகளை \'கருத்துகள்\' மெனுவில் பகிரவும்.', 'general', 'N', NULL, '2025-12-06 13:02:40', '2025-12-06 13:02:40', 'Y'),
-(16, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-07 03:30:00', '2025-12-07 03:30:00', 'Y'),
-(17, 1, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-07 03:30:00', '2025-12-07 03:30:00', 'Y'),
-(18, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-07 03:30:02', '2025-12-07 03:30:02', 'Y'),
-(19, 46, 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்', 'உங்கள் கடவுச்சொல் 3 மாதங்களுக்கு மேல் மாற்றப்படவில்லை. உங்கள் கணக்கின் பாதுகாப்பை உறுதிப்படுத்த, தயவுசெய்து உங்கள் கடவுச்சொல்லை மாற்றவும்.', 'account', 'N', NULL, '2025-12-07 03:30:02', '2025-12-07 03:30:02', 'Y'),
-(20, 62, 'Welcome Rajeshwaran', 'Please add your mois and moi out. ', 'general', 'N', NULL, '2025-12-07 05:52:30', '2025-12-07 05:52:30', 'Y');
-
 -- --------------------------------------------------------
 
 --
@@ -737,7 +687,6 @@ INSERT INTO `gp_moi_out_master` (`mom_id`, `mom_user_id`, `mom_first_name`, `mom
 (35, 1, 'சாக்ரடீஸ்', 'புளோரா சில்வேரியா', 'மேட்டுப்பட்டி', '2025-09-04', 'திருமணம்', '2000', 'அற்புதராஜ் லில்லி தெராஸ் மகன்', 'Money', NULL, '2025-09-03 18:12:20', '2025-12-06 17:36:33', 'Y'),
 (37, 1, 'ஜனனி', 'கேசவமணி', 'தாமரைபாடி', '2025-12-03', 'புதுமனை புகுவிழா', '505', '', 'Money', NULL, '2025-12-01 17:59:02', '2025-12-06 17:36:33', 'Y'),
 (38, 59, 'P.ராஜா', 'செல்வி', 'மதுரை', '2018-12-06', 'இல்ல விழா', '1000', '', 'Money', NULL, '2025-12-06 05:15:14', '2025-12-06 17:36:33', 'Y'),
-(41, 55, 'texft', '', 'vhh', '2025-12-07', 'test', '', '', 'Thinks', 'vhbb', '2025-12-06 18:37:52', '2025-12-06 18:37:52', 'Y'),
 (42, 60, 'கூரி செல்வம் ', '', 'DINDIGUL ', '2024-12-12', 'கிடா வெட்டு ', '2000', '', NULL, NULL, '2025-12-07 03:39:34', '2025-12-07 03:39:34', 'Y'),
 (43, 60, 'koori selvam', '', 'DINDIGUL ', '2025-10-16', 'kida vettu', '500', '2 nd ', NULL, NULL, '2025-12-07 03:40:36', '2025-12-07 03:40:36', 'Y'),
 (44, 60, 'sathish machi', '', 'RAMNADU', '2025-12-07', 'திருமணம் ', '1001', '', NULL, NULL, '2025-12-07 03:41:36', '2025-12-07 03:41:36', 'Y'),
@@ -756,7 +705,6 @@ CREATE TABLE `gp_moi_persons` (
   `mp_um_id` int(10) NOT NULL,
   `mp_first_name` varchar(100) NOT NULL,
   `mp_second_name` varchar(100) DEFAULT NULL,
-  `mp_parent_name` varchar(100) DEFAULT NULL,
   `mp_business` varchar(150) DEFAULT NULL,
   `mp_city` varchar(100) DEFAULT NULL,
   `mp_mobile` varchar(20) DEFAULT NULL,
@@ -789,8 +737,7 @@ CREATE TABLE `gp_moi_upcoming_functions` (
 --
 
 INSERT INTO `gp_moi_upcoming_functions` (`uf_id`, `uf_user_id`, `uf_date`, `uf_name`, `uf_place`, `uf_invitation_url`, `uf_create_dt`, `uf_update_dt`, `uf_status`, `status`) VALUES
-(2, 1, '2025-12-03', 'ஜனனி புதுமனை புகுவிழா', 'தாமரைபாடி', 'uploads/1/invitation-upcomming/file-1764611879205-3965375.jpg', '2025-12-01 17:58:02', '2025-12-06 16:46:14', 'Y', 'completed'),
-(4, 55, '2025-12-06', 'Test', 'Chennai', '', '2025-12-06 16:48:34', '2025-12-06 17:05:08', 'Y', 'completed');
+(2, 1, '2025-12-03', 'ஜனனி புதுமனை புகுவிழா', 'தாமரைபாடி', 'uploads/1/invitation-upcomming/file-1764611879205-3965375.jpg', '2025-12-01 17:58:02', '2025-12-06 16:46:14', 'Y', 'completed');
 
 -- --------------------------------------------------------
 
@@ -820,7 +767,7 @@ CREATE TABLE `gp_moi_user_master` (
 --
 
 INSERT INTO `gp_moi_user_master` (`um_id`, `um_full_name`, `um_password`, `um_password_changed_at`, `um_mobile`, `um_email`, `um_profile_image`, `um_last_login`, `um_otp`, `um_notification_token`, `um_otp_exp`, `um_create_dt`, `um_update_dt`, `um_status`) VALUES
-(1, 'GNANA PRAKASAM', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '2024-07-18 08:27:23', '7845456609', 'agprakash406@gmail.com', 'uploads/1/profile/profile-1764608788488-562964416.jpg', '2025-12-07 02:38:06', '6634', 'cSRg4xOqS6O48ZRqLiP6hd:APA91bEFx_TFkhyz_xr4Wzhcd6sqEj4GMMP9ASaZVGQ2qROF2A6G25Y3_S4RYkLRSBfjbI7dzhfvYU17THiSIuD0DcfGOYSLqcLE4jDb3Z6g526Dk2YCXwY', '1764242503', '2024-07-18 08:27:23', '2025-12-07 02:38:09', 'Y'),
+(1, 'GNANA PRAKASAM', '$2a$10$hYDAo.jD/ALucO9SNq9xrOF.7.K3aIqTf6OZeV37H2.b5GWe.2fTa', '2024-07-18 08:27:23', '7845456609', 'agprakash406@gmail.com', 'uploads/1/profile/profile-1764608788488-562964416.jpg', '2025-12-08 05:23:19', '6634', 'fG2GkdSTSs2VeagnCsELMQ:APA91bH5DoPhPR56oztgXccAdh40PCmnY71ra51QAMM4p_l9JB_YBjkoingx98m0Zihu30xbmMYc7ed2kwkNtgxRqGHAVnISTcud6Xit1Zod4MqAAybQqLQ', '1764242503', '2024-07-18 08:27:23', '2025-12-08 05:23:19', 'Y'),
 (10, 'DINESH', '$2y$10$eDTyVMHMuzQcM/szIzpfYODo0kWnKOpKKY.ArdjFvjZBBzvb.HNKq', '2024-09-13 12:23:46', '8122675801', 'dineshkumar25.ddk@gmail.com', NULL, '2024-09-13 15:23:37', NULL, '', NULL, '2024-09-13 12:23:46', '2025-11-29 20:13:33', 'Y'),
 (17, 'P SANTHOSHRAJ', '$2y$10$ctQqAqLktyqo1pkQPqR8veocodi27vPJ06HDHjlLXIT2UM.KbS0/K', '2024-09-18 13:50:25', '9087471277', 'bccnmart@gmail.com', NULL, '2024-09-18 13:50:25', NULL, '', NULL, '2024-09-18 13:50:25', '2025-11-29 20:13:33', 'Y'),
 (18, 'LOGU', '$2y$10$UvrPcm0FeIcVR02l1iJdW.IEyFWBdXM25ypLiNOPlNji5et5aEwoO', '2024-09-21 10:19:28', '9976791028', 'eeelogu11490@gmail.com', NULL, '2024-09-21 10:20:23', NULL, '', NULL, '2024-09-21 10:19:28', '2025-11-29 20:13:33', 'Y'),
@@ -837,11 +784,11 @@ INSERT INTO `gp_moi_user_master` (`um_id`, `um_full_name`, `um_password`, `um_pa
 (47, 'B KRISHNA', '$2a$10$TwnKA0li8DQcX0SHsMh3BeBDSi2B72Vckt14H5ZxlL6dP6FBdCwle', '2025-07-31 04:09:12', '9940955808', 'kmoorthy362@gmail.com', NULL, '2025-07-31 04:09:45', NULL, 'd9fkO37jTZSsKq_NPInpa9:APA91bHL4l7xP9sJ4GsDT8pkZj6_-8p9-mvk5JRNHFVDDFPKRelq2u1mS2rrY0JFD8o-Y1rARUROi7IkFdqsmwsoxdAhvTtlZ-Eo0PTeOvQvAn3ZmGoaWf4', NULL, '2025-07-31 04:09:12', '2025-11-29 20:13:33', 'Y'),
 (48, 'KARUNAMOORTHY', '$2a$10$ejk9/daHXdoOgaqkIJjiWORhekzy24VGNnP3Et1/vvohS2yvJkKUy', '2025-09-17 17:39:17', '9042833328', 'karunarajaram33@gmail.com', NULL, '2025-09-17 17:40:07', NULL, 'fUi-hMQsSoOGicpG3D6Rg7:APA91bFsQNFHnFVNux6aDPQumYY_APtEBRIg55J1ON21nrpCcIcdgQMxYC8eYtTXF07MkSlEkVGdIQ6cdUdce2vJ0jR64iKS65N7VNygYGVtWCI2CpUJlT0', NULL, '2025-09-17 17:39:17', '2025-11-29 20:13:33', 'Y'),
 (54, 'DHARMENDHIRAN', '$2a$10$z/t4WChCOMtowZP8jI601OgdgcwSWNrJSYrQbh8T1gyGfhQXXFXU6', '2025-11-30 16:50:39', '8072053727', 'dharmendhiran810@gmail.com', 'uploads/54/profile/profile-1764521406459-264848278.jpg', '2025-12-03 12:31:12', NULL, 'er1eK4i4TNGHiIrVIkNGhC:APA91bGAPOsTzw4py8ctipsCl7Ds-MfN0YYj0H1xs3mBmnnZh7-UtZyYABM1Ees5BRtCDPQcnZDSsLxr30bGE80p1KLxHUVJ15aDbBGaRhS4hkbF6V7Jy4Q', NULL, '2025-11-29 04:48:00', '2025-12-03 12:31:14', 'Y'),
-(55, 'Guest 1', '$2a$10$WpWmrs7YA.RsIJTgb293eOVm97JcJx.VaJM9gTt0kbxjHuyb6nvbG', '2025-11-30 06:36:12', '9876543211', 'guest@gmail.com', 'uploads/55/profile/profile-1764620795560-938667607.jpg', '2025-12-06 17:39:03', NULL, 'c1I2pp3_S8S6ywvwAiQf5D:APA91bGZ1Ew9Nz6WPz2_9En9XQ-c0Bk_TI-ZeNfdX17LBcxcPiqTx5e37m4G0M6QqglwsLee8Z4oxh5XIIzJsUOy6rmKyAh6KMcyReivY42-aJd1dAz1y2U', NULL, '2025-11-30 06:36:12', '2025-12-06 17:39:03', 'Y'),
+(55, 'Guest 1', '$2a$10$WpWmrs7YA.RsIJTgb293eOVm97JcJx.VaJM9gTt0kbxjHuyb6nvbG', '2025-11-30 06:36:12', '9876543211', 'guest@gmail.com', 'uploads/55/profile/profile-1764620795560-938667607.jpg', '2025-12-08 05:55:06', NULL, 'dNiMlQFyTBKs7LndWOk_hj:APA91bFD22cuClh4GhdK0fZzqYd-BW5B9iUu0NioBXsxwmw9hk1WVqku5mPAK7fndk1OYRMqx6gUBC3SohBZdUMj98ApL1HJMA2VCGfxJZcpHtRBbYv40HU', NULL, '2025-11-30 06:36:12', '2025-12-08 05:55:10', 'Y'),
 (58, 'VINCEN CHARLES', '$2a$10$6vjAGYBPeACo7zodLTDRmugFpTya.2BtrNHNj2D.t2wEP.nuoRe/K', '2025-12-03 17:56:06', '8667433021', 'vincencharles@gmail.com', NULL, '2025-12-03 17:56:19', NULL, 'cga1aD9TS3Gz_-8Ef-pQaW:APA91bF8qvimAlxPxY6pdhOE2YrwQ0MNmsF7WKABLnGDdLSV5DgnSVO04stPoYn-hj6vsqB3vnGM_Jhy3kPnUHFFkg33CVBbkQM9lqDcImObBs6QuOdboSs', NULL, '2025-12-03 17:56:06', '2025-12-03 17:56:24', 'Y'),
 (59, 'Sathyaprakash', '$2a$10$8MP/CF.oJCm9TQx6I4wtKO8bFcPX6yDJF5KHc.budwjE1GCFAthXS', '2025-12-06 05:11:38', '9940030304', 'sathya@gmail.com', NULL, '2025-12-06 05:11:52', NULL, 'fC_G6Ho-T6aP58F1kHpZBr:APA91bEmZFkgfiZ8IU0v_mMlgoiCWajCyUxSAbC14yaIQEggJnfJxwcT4cJVXXiJH1oKZMb_DKg1yM43Eqc7uGDDuok52XUSqy21MpcAUM96-2WhNs8eNZI', NULL, '2025-12-06 05:11:38', '2025-12-06 05:11:56', 'Y'),
 (60, 'SARAVANAN', '$2a$10$Byn5HKt3yH1Mj26SGRsBE.4Bv5fryEuhxS1ftiUezx0XUeXyu0aj.', '2025-12-06 11:59:23', '9345160921', 'saranvijay4564@gmail.com', NULL, '2025-12-07 03:37:43', NULL, 'fiLsoU2bSVOUs7gZ2HZDYA:APA91bFIdnTqJt71W2zrydN-UmmVsHNxYDuPCl272WuRniFeWnr_MmSwRJ_sPD6cNw8ZLnM5QeJ0yve2Z_QhD8_q5pz-dE2R1Cu-5pq9wk7VEX7tFE2By5A', NULL, '2025-12-06 11:59:23', '2025-12-07 03:37:43', 'Y'),
-(62, 'RAJESHWARAN S', '$2a$10$0ppemowGk05tYK9FrmzTIecv0XPwulevisdJYk3FJymVorPK1tXDq', '2025-12-07 04:07:58', '7373139756', 'rajeshtrisha007@gmail.com', NULL, '2025-12-07 05:14:25', NULL, 'cerT4MdvTAuu6sScn-SNVn:APA91bGkdEYWmpFat0Branm_HtWnw3rIYR03DvGj2VC78tHyYYHjjxcf3I38RxZ4JQ95zQLUQ_63C1ZUDwjvbn82wyQY1-mXgV87ZLZ-OLZnnp9U8mCN5Ug', NULL, '2025-12-07 04:07:58', '2025-12-07 06:37:44', 'Y');
+(62, 'RAJESHWARAN S', '$2a$10$0ppemowGk05tYK9FrmzTIecv0XPwulevisdJYk3FJymVorPK1tXDq', '2025-12-07 04:07:58', '7373139756', 'rajeshtrisha007@gmail.com', NULL, '2025-12-07 05:14:25', NULL, 'c70B4GzFR1OTYgd7f6fdWj:APA91bEh8ncBNoMpxo33_BTzEr9-Atxonmx9zhxINvizpVdjxM1xDrONU6xcUVgaqahYM7qslJDJUte6cdAnyW98Fb1hNs3UkVLfWpC8RcdN_3IuPx7n-cE', NULL, '2025-12-07 04:07:58', '2025-12-08 00:08:34', 'Y');
 
 --
 -- Indexes for dumped tables
@@ -967,7 +914,7 @@ ALTER TABLE `gp_moi_master_records`
 -- AUTO_INCREMENT for table `gp_moi_notifications`
 --
 ALTER TABLE `gp_moi_notifications`
-  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `n_id` int(10) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `gp_moi_out_master`
@@ -1002,7 +949,6 @@ ALTER TABLE `gp_moi_user_master`
 --
 ALTER TABLE `gp_moi_credit_debit_master`
   ADD CONSTRAINT `fk_mcd_default_function` FOREIGN KEY (`mcd_function_id`) REFERENCES `gp_moi_default_functions` (`mdf_id`),
-  ADD CONSTRAINT `fk_mcd_function` FOREIGN KEY (`mcd_function_id`) REFERENCES `gp_moi_functions` (`f_id`),
   ADD CONSTRAINT `fk_mcd_person` FOREIGN KEY (`mcd_person_id`) REFERENCES `gp_moi_persons` (`mp_id`);
 
 --

@@ -331,15 +331,7 @@ exports.controller = {
                 });
             }
 
-            // Check if notification is already deleted
-            if (notification.n_active === 'N') {
-                return res.status(400).json({
-                    responseType: "F",
-                    responseValue: { message: 'அறிவிப்பு ஏற்கனவே நீக்கப்பட்டது.' }
-                });
-            }
-
-            // Soft delete notification
+            // Hard delete notification
             const result = await Notification.delete(notificationId);
 
             if (result && result.affectedRows > 0) {

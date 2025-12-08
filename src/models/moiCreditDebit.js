@@ -67,7 +67,7 @@ const Model = {
     },
 
     async delete(id) {
-        const [result] = await db.query(`UPDATE ${table} SET mcd_active = 'N' WHERE mcd_id = ?`, [id]);
+        const [result] = await db.query(`DELETE FROM ${table} WHERE mcd_id = ?`, [id]);
         return result;
     },
 

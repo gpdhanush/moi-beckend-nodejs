@@ -92,7 +92,7 @@ exports.controller = {
             }
 
             var del = await Model.delete(id);
-            if (del) {
+            if (del && del.affectedRows > 0) {
                 return res.status(200).json({ responseType: "S", responseValue: { message: "பொருள் வெற்றிகரமாக நீக்கப்பட்டது." } });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "இந்த பதிவுகளை நீக்க முடியவில்லை!" } });

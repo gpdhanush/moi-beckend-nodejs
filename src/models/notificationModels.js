@@ -91,7 +91,7 @@ const Notification = {
      */
     async delete(notificationId) {
         const [result] = await db.query(
-            `UPDATE ${table} SET n_active = 'N' WHERE n_id = ?`,
+            `DELETE FROM ${table} WHERE n_id = ?`,
             [notificationId]
         );
         return result;

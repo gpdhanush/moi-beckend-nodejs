@@ -201,7 +201,7 @@ exports.controller = {
             }
 
             const result = await Model.delete(id);
-            if (result) {
+            if (result && result.affectedRows > 0) {
                 return res.status(200).json({ 
                     responseType: "S", 
                     responseValue: { message: "நபர் வெற்றிகரமாக நீக்கப்பட்டது." } 
