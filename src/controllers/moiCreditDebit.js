@@ -44,7 +44,10 @@ exports.controller = {
                     type: t.mcd_type,
                     mode: t.mcd_mode,
                     amount: parseFloat(t.mcd_amount) || 0,
-                    remarks: t.mcd_remarks
+                    remarks: t.mcd_remarks,
+                    firstName: t.mcd_first_name || t.mp_first_name,
+                    secondName: t.mcd_second_name || t.mp_second_name,
+                    city: t.mcd_city || t.mp_city
                 }));
 
                 return res.status(200).json({
@@ -140,7 +143,10 @@ exports.controller = {
                     type: t.mcd_type,
                     mode: t.mcd_mode,
                     amount: parseFloat(t.mcd_amount) || 0,
-                    remarks: t.mcd_remarks
+                    remarks: t.mcd_remarks,
+                    firstName: t.mcd_first_name || t.mp_first_name,
+                    secondName: t.mcd_second_name || t.mp_second_name,
+                    city: t.mcd_city || t.mp_city
                 }));
                 
                 return {
@@ -218,12 +224,15 @@ exports.controller = {
                 mode: t.mcd_mode,
                 amount: parseFloat(t.mcd_amount) || 0,
                 remarks: t.mcd_remarks,
+                firstName: t.mcd_first_name || t.mp_first_name,
+                secondName: t.mcd_second_name || t.mp_second_name,
+                city: t.mcd_city || t.mp_city,
                 person: {
                     id: t.mcd_person_id,
-                    firstName: t.mp_first_name,
-                    secondName: t.mp_second_name,
+                    firstName: t.mcd_first_name || t.mp_first_name,
+                    secondName: t.mcd_second_name || t.mp_second_name,
                     business: t.mp_business,
-                    city: t.mp_city,
+                    city: t.mcd_city || t.mp_city,
                     mobile: t.mp_mobile
                 }
             }));
@@ -244,7 +253,7 @@ exports.controller = {
     // Add Moi Return (Credit)
     addReturn: async (req, res) => {
         try {
-            const { userId, personId, functionId, mode, date, amount, remarks } = req.body;
+            const { userId, personId, functionId, mode, date, amount, remarks, firstName, secondName, city } = req.body;
 
             if (!userId || !personId || !functionId || !mode || !date) {
                 return res.status(400).json({ 
@@ -264,6 +273,9 @@ exports.controller = {
             const data = {
                 userId,
                 personId,
+                firstName: firstName || null,
+                secondName: secondName || null,
+                city: city || null,
                 functionId,
                 type: 'RETURN',
                 mode: mode.toUpperCase(),
@@ -298,7 +310,7 @@ exports.controller = {
     // Add Moi Invest (Debit)
     addInvest: async (req, res) => {
         try {
-            const { userId, personId, functionId, mode, date, amount, remarks } = req.body;
+            const { userId, personId, functionId, mode, date, amount, remarks, firstName, secondName, city } = req.body;
 
             if (!userId || !personId || !functionId || !mode || !date) {
                 return res.status(400).json({ 
@@ -318,6 +330,9 @@ exports.controller = {
             const data = {
                 userId,
                 personId,
+                firstName: firstName || null,
+                secondName: secondName || null,
+                city: city || null,
                 functionId,
                 type: 'INVEST',
                 mode: mode.toUpperCase(),
@@ -352,7 +367,7 @@ exports.controller = {
     // Update transaction
     update: async (req, res) => {
         try {
-            const { userId, id, personId, functionId, type, mode, date, amount, remarks } = req.body;
+            const { userId, id, personId, functionId, type, mode, date, amount, remarks, firstName, secondName, city } = req.body;
 
             if (!userId || !id) {
                 return res.status(400).json({ 
@@ -377,9 +392,14 @@ exports.controller = {
                 });
             }
 
+            const finalPersonId = personId || existing.mcd_person_id;
+
             const data = {
                 id,
-                personId: personId || existing.mcd_person_id,
+                personId: finalPersonId,
+                firstName: firstName !== undefined ? firstName : existing.mcd_first_name,
+                secondName: secondName !== undefined ? secondName : existing.mcd_second_name,
+                city: city !== undefined ? city : existing.mcd_city,
                 functionId: functionId || existing.mcd_function_id,
                 type: type || existing.mcd_type,
                 mode: mode ? mode.toUpperCase() : existing.mcd_mode,
@@ -466,10 +486,10 @@ exports.controller = {
                 remarks: transaction.mcd_remarks,
                 person: {
                     id: transaction.mcd_person_id,
-                    firstName: transaction.mp_first_name,
-                    secondName: transaction.mp_second_name,
+                    firstName: transaction.mcd_first_name || transaction.mp_first_name,
+                    secondName: transaction.mcd_second_name || transaction.mp_second_name,
                     business: transaction.mp_business,
-                    city: transaction.mp_city,
+                    city: transaction.mcd_city || transaction.mp_city,
                     mobile: transaction.mp_mobile
                 },
                 functionName: transaction.function_name

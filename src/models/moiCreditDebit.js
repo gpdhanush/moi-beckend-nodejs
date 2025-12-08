@@ -4,9 +4,10 @@ const table = "gp_moi_credit_debit_master";
 const Model = {
     async create(data) {
         const [result] = await db.query(`INSERT INTO ${table} 
-            (mcd_um_id, mcd_person_id, mcd_function_id, mcd_type, mcd_mode, mcd_date, mcd_amount, mcd_remarks) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [data.userId, data.personId, data.functionId, data.type, data.mode, data.date, data.amount || 0.00, data.remarks || null]);
+            (mcd_um_id, mcd_person_id, mcd_first_name, mcd_second_name, mcd_city, mcd_function_id, mcd_type, mcd_mode, mcd_date, mcd_amount, mcd_remarks) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [data.userId, data.personId, data.firstName || null, data.secondName || null, data.city || null, 
+             data.functionId, data.type, data.mode, data.date, data.amount || 0.00, data.remarks || null]);
         return result;
     },
 
@@ -56,10 +57,12 @@ const Model = {
 
     async update(data) {
         const [result] = await db.query(`UPDATE ${table} 
-            SET mcd_person_id = ?, mcd_function_id = ?, mcd_type = ?, mcd_mode = ?, 
+            SET mcd_person_id = ?, mcd_first_name = ?, mcd_second_name = ?, mcd_city = ?, 
+                mcd_function_id = ?, mcd_type = ?, mcd_mode = ?, 
                 mcd_date = ?, mcd_amount = ?, mcd_remarks = ? 
             WHERE mcd_id = ? AND mcd_active = 'Y'`,
-            [data.personId, data.functionId, data.type, data.mode, data.date, data.amount || 0.00, data.remarks || null, data.id]);
+            [data.personId, data.firstName || null, data.secondName || null, data.city || null,
+             data.functionId, data.type, data.mode, data.date, data.amount || 0.00, data.remarks || null, data.id]);
         return result;
     },
 
