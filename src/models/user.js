@@ -32,9 +32,15 @@ const User = {
     },
 
     async create(users) {
-        const [result] = await db.query(`INSERT INTO ${table} (um_full_name, um_password, um_mobile, um_email, um_password_changed_at) VALUES (?, ?, ?, ?, ?)`,
-            [users.name, users.password, users.mobile, users.email, new Date()]);
-        return result;
+        if (users.fcm_token) {
+            const [result] = await db.query(`INSERT INTO ${table} (um_full_name, um_password, um_mobile, um_email, um_password_changed_at, um_notification_token) VALUES (?, ?, ?, ?, ?, ?)`,
+                [users.name, users.password, users.mobile, users.email, new Date(), users.fcm_token]);
+            return result;
+        } else {
+            const [result] = await db.query(`INSERT INTO ${table} (um_full_name, um_password, um_mobile, um_email, um_password_changed_at) VALUES (?, ?, ?, ?, ?)`,
+                [users.name, users.password, users.mobile, users.email, new Date()]);
+            return result;
+        }
     },
 
     async update(users) {

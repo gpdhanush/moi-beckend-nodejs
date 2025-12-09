@@ -63,7 +63,7 @@ exports.userController = {
      * Body: { name, email, mobile, password }
      */
     create: async (req, res) => {
-        const { name, email, mobile, password } = req.body;
+        const { name, email, mobile, password, fcm_token } = req.body;
         try {
             // Validate required fields
             if (!name || !email || !mobile || !password) {
@@ -82,7 +82,7 @@ exports.userController = {
             }
             // Hash the password
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = { name, email, mobile, password: hashedPassword };
+            const newUser = { name, email, mobile, password: hashedPassword, fcm_token: fcm_token || null };
 
             // Save user details
             const query = await User.create(newUser);
@@ -178,6 +178,23 @@ exports.userController = {
                     // Log error but don't fail the registration
                 }
                 // EOF email content --------------
+
+                // Send FCM notification if fcm_token is provided
+                if (fcm_token) {
+                    try {
+                        await sendPushNotification({
+                            userId: userId,
+                            title: 'பயனர் வெற்றிகரமாக பதிவு செய்யப்பட்டார்',
+                            body: 'இப்போது நீங்கள் இந்த பயன்பாட்டைப் பயன்படுத்தலாம்',
+                            token: fcm_token,
+                            type: NotificationType.ACCOUNT
+                        });
+                        console.log(`FCM notification sent to user ${userId} after successful registration`);
+                    } catch (fcmError) {
+                        console.error('Error sending FCM notification after registration:', fcmError);
+                        // Log error but don't fail the registration
+                    }
+                }
 
                 return res.status(200).json({ responseType: "S", responseValue: { message: "பயனர் வெற்றிகரமாக பதிவு செய்யப்பட்டார்." } });
             } else {
