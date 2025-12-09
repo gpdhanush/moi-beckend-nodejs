@@ -7,10 +7,145 @@ http://localhost:3000/apis
 *(Replace with your actual server URL if different)*
 
 ## Authentication
-All endpoints require authentication. Include the JWT token in the Authorization header:
+Most endpoints require authentication. Include the JWT token in the Authorization header:
 ```
 Authorization: Bearer <your_jwt_token>
 ```
+
+**Note:** The registration endpoint (`/apis/user/create`) requires an API key instead of JWT token. See User Management section below.
+
+---
+
+## 0. USER MANAGEMENT ENDPOINTS
+
+### 0.1 Register New User
+**Method:** `POST`  
+**URL:** `http://localhost:3000/apis/user/create`  
+**Headers:**
+```
+X-API-Key: MY_SON_NAME_IS_RENZO_ROWAN
+Content-Type: application/json
+```
+**⚠️ Important:** This endpoint requires the `X-API-Key` header (not JWT token). The API key must match the `API_SECRET_KEY` value in your `.env` file.
+
+**Body (JSON):**
+```json
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "mobile": "9876543210",
+  "password": "SecurePassword123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "responseType": "S",
+  "responseValue": {
+    "message": "பயனர் வெற்றிகரமாக பதிவு செய்யப்பட்டார்."
+  }
+}
+```
+
+**Error Responses:**
+
+**Missing API Key (401):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "API key is required. Please include X-API-Key header."
+  }
+}
+```
+
+**Invalid API Key (403):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "Invalid API key. Access denied."
+  }
+}
+```
+
+**Missing Required Fields (400):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "அனைத்து புலங்களும் (பெயர், மின்னஞ்சல், மொபைல், கடவுச்சொல்) தேவையானவை!"
+  }
+}
+```
+
+**Duplicate Email (404):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!"
+  }
+}
+```
+
+**Duplicate Mobile (404):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "இந்த மொபைல் எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!"
+  }
+}
+```
+
+**Rate Limit Exceeded (429):**
+```json
+{
+  "responseType": "F",
+  "responseValue": {
+    "message": "Too many registration attempts from this IP. Please try again after 15 minutes."
+  }
+}
+```
+
+**Rate Limiting:** Maximum 5 registration attempts per IP address per 15 minutes.
+
+---
+
+### 0.2 User Login
+**Method:** `POST`  
+**URL:** `http://localhost:3000/apis/user/login`  
+**Headers:**
+```
+Content-Type: application/json
+```
+**Body (JSON):**
+```json
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePassword123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "responseType": "S",
+  "responseValue": {
+    "id": 1,
+    "name": "John Doe",
+    "mobile": "9876543210",
+    "email": "john.doe@example.com",
+    "last_login": "2025-01-15 10:30:00",
+    "profile_image": null,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Use the `token` from this response for authenticated requests.**
 
 ---
 
@@ -575,14 +710,31 @@ Authorization: Bearer <your_jwt_token>
 
 ## Complete Flow Example
 
-### Step 1: Login to get token
+### Step 0: Register New User (if not already registered)
 **Method:** `POST`  
-**URL:** `http://localhost:3000/apis/users/login`  
+**URL:** `http://localhost:3000/apis/user/create`  
+**Headers:** `X-API-Key: MY_SON_NAME_IS_RENZO_ROWAN`  
 **Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "password123"
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "mobile": "9876543210",
+  "password": "SecurePassword123"
+}
+```
+**Response:** User registered successfully
+
+---
+
+### Step 1: Login to get token
+**Method:** `POST`  
+**URL:** `http://localhost:3000/apis/user/login`  
+**Body:**
+```json
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePassword123"
 }
 ```
 **Response:** Get `token` from response

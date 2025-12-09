@@ -7,6 +7,7 @@ DB_USER=prasowla_moi_master
 DB_PASSWORD=Renzo@1995
 DB_NAME=prasowla_moi_master
 JWT_SECRET=mysonnameisrenzo
+API_SECRET_KEY=MY_SON_NAME_IS_RENZO_ROWAN
 PORT=3000
 # for email purpose
 EMAIL_HOST=prasowlabs.in

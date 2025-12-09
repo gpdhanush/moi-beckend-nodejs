@@ -23,10 +23,10 @@ if (!admin.apps.length) {
 
 /**
  * Helper function to send push notification (can be called directly without HTTP request/response)
- * @param {Object} params - { userId, title, body, token, type }
+ * @param {Object} params - { userId, title, body, token, type, skipDbSave }
  * @returns {Promise<Object>} - { success: boolean, message: string }
  */
-async function sendPushNotification({ userId, title, body, token, type }) {
+async function sendPushNotification({ userId, title, body, token, type, skipDbSave = false }) {
     // Validate required fields
     if (!token || !title || !body) {
         throw new Error('Token, title, and body are required.');
@@ -53,18 +53,20 @@ async function sendPushNotification({ userId, title, body, token, type }) {
         // Send notification via FCM
         await admin.messaging().send(message);
         
-        // If FCM send is successful, save notification to database
-        try {
-            await Notification.create({
-                userId: userId,
-                title: title,
-                body: body,
-                type: type || NotificationType.GENERAL // Use provided type or default to 'general'
-            });
-        } catch (dbError) {
-            // Log database error but don't fail the request since FCM send was successful
-            console.error('Error saving notification to database:', dbError);
-            // Continue - notification was sent successfully
+        // If FCM send is successful, save notification to database (unless skipDbSave is true)
+        if (!skipDbSave) {
+            try {
+                await Notification.create({
+                    userId: userId,
+                    title: title,
+                    body: body,
+                    type: type || NotificationType.GENERAL // Use provided type or default to 'general'
+                });
+            } catch (dbError) {
+                // Log database error but don't fail the request since FCM send was successful
+                console.error('Error saving notification to database:', dbError);
+                // Continue - notification was sent successfully
+            }
         }
 
         return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };

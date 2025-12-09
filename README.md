@@ -40,8 +40,11 @@ A Node.js/Express backend API for the Moi Credit/Debit management system.
      DB_PASSWORD=your_password
      DB_NAME=prasowla_moi_master
      JWT_SECRET=mysonnameisrenzo
+     API_SECRET_KEY=your_secure_api_key_here
      PORT=3000
      ```
+   
+   **Important:** Set a strong, random `API_SECRET_KEY` to protect your registration endpoint. This key must be included in the `X-API-Key` header for registration requests.
 
 ## Running the Project
 
@@ -79,6 +82,13 @@ Base URL: `http://localhost:3000/apis`
 - `/apis/uploads/*` - File uploads
 
 See `POSTMAN_API_DOCUMENTATION.md` for detailed API documentation.
+
+### Security
+
+**Registration Endpoint Protection:**
+- The `/apis/user/create` endpoint requires an `X-API-Key` header with a valid API secret key
+- Rate limiting: Maximum 5 registration attempts per IP address per 15 minutes
+- Set `API_SECRET_KEY` in your `.env` file and include it in the `X-API-Key` header for registration requests
 
 ## Database Configuration
 
