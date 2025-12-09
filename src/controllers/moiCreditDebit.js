@@ -280,7 +280,8 @@ exports.controller = {
                 type: 'RETURN',
                 mode: mode.toUpperCase(),
                 date,
-                amount: mode.toUpperCase() === 'MONEY' ? (amount || 0) : 0,
+                amount: amount || 0,
+                // amount: mode.toUpperCase() === 'MONEY' ? (amount || 0) : 0,
                 remarks
             };
 
@@ -337,7 +338,7 @@ exports.controller = {
                 type: 'INVEST',
                 mode: mode.toUpperCase(),
                 date,
-                amount: mode.toUpperCase() === 'MONEY' ? (amount || 0) : 0,
+                amount: amount || 0,
                 remarks
             };
 
@@ -404,7 +405,8 @@ exports.controller = {
                 type: type || existing.mcd_type,
                 mode: mode ? mode.toUpperCase() : existing.mcd_mode,
                 date: date || existing.mcd_date,
-                amount: mode && mode.toUpperCase() === 'MONEY' ? (amount || 0) : (existing.mcd_mode === 'MONEY' ? (amount || existing.mcd_amount) : 0),
+                amount: amount || existing.mcd_amount,
+                // amount: mode && mode.toUpperCase() === 'MONEY' ? (amount || 0) : (existing.mcd_mode === 'MONEY' ? (amount || existing.mcd_amount) : 0),
                 remarks: remarks !== undefined ? remarks : existing.mcd_remarks
             };
 
