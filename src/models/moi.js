@@ -37,5 +37,74 @@ const Model = {
         const [result] = await db.query(`DELETE FROM ${table} WHERE mr_id=?`, [id]);
         return result;
     },
+    async getDashboard(userId) {
+        // Get all INVEST transactions (from gp_moi_master_records) with function owner details
+        const [investTransactions] = await db.query(`
+            SELECT 
+                mr.mr_id as id,
+                mr.mr_um_id as userId,
+                mr.mr_first_name as personFirstName,
+                mr.mr_second_name as personSecondName,
+                mr.mr_city_id as personCity,
+                mr.mr_occupation as personBusiness,
+                mr.mr_amount as amount,
+                mr.mr_remarks as remarks,
+                mr.mr_create_dt as createDate,
+                COALESCE(mr.seimurai, 'Money') as mode,
+                mf.function_name as functionName,
+                mf.function_date as functionDate,
+                mf.first_name as functionFirstName,
+                mf.second_name as functionSecondName,
+                mf.place as functionCity
+            FROM gp_moi_master_records mr
+            LEFT JOIN gp_moi_functions mf ON mf.f_id = mr.mr_function_id
+            WHERE mr.mr_um_id = ? AND mr.mr_active = 'Y'
+            ORDER BY mr.mr_create_dt DESC
+        `, [userId]);
+
+        // Get all RETURN transactions (from gp_moi_out_master) 
+        // For RETURN, function owner details might be the user's own details or from the transaction
+        const [returnTransactions] = await db.query(`
+            SELECT 
+                mom.mom_id as id,
+                mom.mom_user_id as userId,
+                mom.mom_first_name as personFirstName,
+                mom.mom_second_name as personSecondName,
+                mom.mom_city as personCity,
+                '' as personBusiness,
+                mom.mom_amount as amount,
+                mom.mom_remarks as remarks,
+                mom.mom_create_dt as createDate,
+                COALESCE(mom.seimurai, 'Money') as mode,
+                mom.mom_function_name as functionName,
+                mom.mom_function_date as functionDate,
+                um.um_full_name as userFullName,
+                um.um_mobile as userMobile
+            FROM gp_moi_out_master mom
+            LEFT JOIN gp_moi_user_master um ON um.um_id = mom.mom_user_id
+            WHERE mom.mom_user_id = ? AND mom.mom_status = 'Y'
+            ORDER BY mom.mom_create_dt DESC
+        `, [userId]);
+
+        // Get all persons from gp_moi_persons for this user
+        const [persons] = await db.query(`
+            SELECT 
+                mp.mp_id as id,
+                mp.mp_first_name as firstName,
+                mp.mp_second_name as secondName,
+                mp.mp_business as business,
+                mp.mp_city as city,
+                mp.mp_mobile as mobile
+            FROM gp_moi_persons mp
+            WHERE mp.mp_um_id = ? AND mp.mp_active = 'Y'
+            ORDER BY mp.mp_first_name ASC, mp.mp_second_name ASC
+        `, [userId]);
+
+        return {
+            investTransactions,
+            returnTransactions,
+            persons
+        };
+    },
 }
 module.exports = Model;
