@@ -15,6 +15,7 @@ const notificationRoutes = require('./notificationRoutes');
 const moiCreditDebit = require('./moiCreditDebit');
 const moiDefaultFunctions = require('./moiDefaultFunctions');
 const moiPersons = require('./moiPersons');
+const employeeRoutes = require('./employee');
 
 
 router.use('/users', user);
@@ -33,6 +34,8 @@ router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/moi-persons', moiPersons);
 // ADMIN ROUTES
 router.use('/admin', adminRoutes);
+// EMPLOYEE ROUTES
+router.use('/employee', employeeRoutes);
 
 
 
