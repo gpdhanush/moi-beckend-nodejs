@@ -55,15 +55,16 @@ const Model = {
                 mf.function_date as functionDate,
                 mf.first_name as functionFirstName,
                 mf.second_name as functionSecondName,
-                mf.place as functionCity
+                mf.place as functionCity,
+                um.um_mobile as userMobile
             FROM gp_moi_master_records mr
             LEFT JOIN gp_moi_functions mf ON mf.f_id = mr.mr_function_id
+            LEFT JOIN gp_moi_user_master um ON um.um_id = mr.mr_um_id
             WHERE mr.mr_um_id = ? AND mr.mr_active = 'Y'
             ORDER BY mr.mr_create_dt DESC
         `, [userId]);
 
         // Get all RETURN transactions (from gp_moi_out_master) 
-        // For RETURN, function owner details might be the user's own details or from the transaction
         const [returnTransactions] = await db.query(`
             SELECT 
                 mom.mom_id as id,
@@ -86,24 +87,9 @@ const Model = {
             ORDER BY mom.mom_create_dt DESC
         `, [userId]);
 
-        // Get all persons from gp_moi_persons for this user
-        const [persons] = await db.query(`
-            SELECT 
-                mp.mp_id as id,
-                mp.mp_first_name as firstName,
-                mp.mp_second_name as secondName,
-                mp.mp_business as business,
-                mp.mp_city as city,
-                mp.mp_mobile as mobile
-            FROM gp_moi_persons mp
-            WHERE mp.mp_um_id = ? AND mp.mp_active = 'Y'
-            ORDER BY mp.mp_first_name ASC, mp.mp_second_name ASC
-        `, [userId]);
-
         return {
             investTransactions,
-            returnTransactions,
-            persons
+            returnTransactions
         };
     },
 }

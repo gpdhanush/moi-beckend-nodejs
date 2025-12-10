@@ -2,7 +2,6 @@ const Model = require('../models/moi');
 const User = require('../models/user');
 const Employee = require('../models/employee');
 const moment = require('moment');
-const PersonModel = require('../models/moiPersons');
 
 
 exports.controller = {
@@ -149,35 +148,30 @@ exports.controller = {
 
             const data = await Model.getDashboard(userId);
             
-            // Group transactions by person
-            // First, create a map of persons from gp_moi_persons
+            // Group transactions by person (derive person details from transactions)
+            // Match persons by firstName and secondName only (same person across both tables)
             const personMap = new Map();
             
-            // Helper function to create person key for matching
-            const createPersonKey = (firstName, secondName, city, mobile) => {
-                return `${(firstName || '').toLowerCase().trim()}_${(secondName || '').toLowerCase().trim()}_${(city || '').toLowerCase().trim()}_${(mobile || '').trim()}`;
+            // Helper function to create person key for matching (only firstName and secondName)
+            const createPersonKey = (firstName, secondName) => {
+                return `${(firstName || '').toLowerCase().trim()}_${(secondName || '').toLowerCase().trim()}`;
             };
-            
-            // Initialize persons from gp_moi_persons
-            data.persons.forEach(person => {
-                const key = createPersonKey(person.firstName, person.secondName, person.city, person.mobile);
-                personMap.set(key, {
-                    personDetails: {
-                        id: person.id,
-                        firstName: person.firstName,
-                        secondName: person.secondName || '',
-                        business: person.business || '',
-                        city: person.city || '',
-                        mobile: person.mobile || ''
-                    },
-                    investTransactions: [],
-                    returnTransactions: []
-                });
-            });
 
-            // Process INVEST transactions - match by person details
+            // Helper function to merge person details (prefer non-empty values)
+            const mergePersonDetails = (existing, newData) => {
+                return {
+                    id: existing.id || null,
+                    firstName: existing.firstName || newData.firstName,
+                    secondName: existing.secondName || newData.secondName || '',
+                    business: existing.business || newData.business || '',
+                    city: existing.city || newData.city || '',
+                    mobile: existing.mobile || newData.mobile || ''
+                };
+            };
+
+            // Process INVEST transactions (from gp_moi_master_records) - match by firstName and secondName
             data.investTransactions.forEach((txn) => {
-                const personKey = createPersonKey(txn.personFirstName, txn.personSecondName, txn.personCity, '');
+                const personKey = createPersonKey(txn.personFirstName, txn.personSecondName);
                 let personEntry = personMap.get(personKey);
                 
                 // If person doesn't exist in map, create from transaction
@@ -189,12 +183,21 @@ exports.controller = {
                             secondName: txn.personSecondName || '',
                             business: txn.personBusiness || '',
                             city: txn.personCity || '',
-                            mobile: ''
+                            mobile: txn.userMobile || ''
                         },
                         investTransactions: [],
                         returnTransactions: []
                     };
                     personMap.set(personKey, personEntry);
+                } else {
+                    // Merge person details if person already exists (from RETURN transactions)
+                    personEntry.personDetails = mergePersonDetails(personEntry.personDetails, {
+                        firstName: txn.personFirstName,
+                        secondName: txn.personSecondName || '',
+                        business: txn.personBusiness || '',
+                        city: txn.personCity || '',
+                        mobile: txn.userMobile || ''
+                    });
                 }
 
                 personEntry.investTransactions.push({
@@ -211,9 +214,9 @@ exports.controller = {
                 });
             });
 
-            // Process RETURN transactions - match by person details
+            // Process RETURN transactions (from gp_moi_out_master) - match by firstName and secondName
             data.returnTransactions.forEach((txn) => {
-                const personKey = createPersonKey(txn.personFirstName, txn.personSecondName, txn.personCity, '');
+                const personKey = createPersonKey(txn.personFirstName, txn.personSecondName);
                 let personEntry = personMap.get(personKey);
                 
                 // If person doesn't exist in map, create from transaction
@@ -225,12 +228,21 @@ exports.controller = {
                             secondName: txn.personSecondName || '',
                             business: txn.personBusiness || '',
                             city: txn.personCity || '',
-                            mobile: ''
+                            mobile: txn.userMobile || ''
                         },
                         investTransactions: [],
                         returnTransactions: []
                     };
                     personMap.set(personKey, personEntry);
+                } else {
+                    // Merge person details if person already exists (from INVEST transactions)
+                    personEntry.personDetails = mergePersonDetails(personEntry.personDetails, {
+                        firstName: txn.personFirstName,
+                        secondName: txn.personSecondName || '',
+                        business: txn.personBusiness || '',
+                        city: txn.personCity || '',
+                        mobile: txn.userMobile || ''
+                    });
                 }
 
                 // For RETURN transactions, function owner details might be from user or empty
