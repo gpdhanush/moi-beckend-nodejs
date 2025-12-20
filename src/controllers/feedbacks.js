@@ -38,8 +38,13 @@ exports.controller = {
         }
     },
     list: async (req, res) => {
-        const { userId } = req.body;
         try {
+            const { userId } = req.body;
+            
+            if (!userId) {
+                return res.status(400).json({ responseType: "F", responseValue: { message: "பயனர் ID தேவை!" } });
+            }
+
             // Check if user exists
             const user = await User.findById(userId);
             if (!user) {
