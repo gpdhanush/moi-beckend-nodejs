@@ -6,8 +6,8 @@ const Model = {
         const [result] = await db.query(`INSERT INTO ${table} (user_id, feedbacks) VALUES (?, ?)`, [list.userId, list.feedbacks]);
         return result;
     },
-    async readAll() {
-        const [result] = await db.query(`SELECT * FROM ${table} WHERE active = 'Y' ORDER BY created_time DESC`, []);
+    async readAll(userId) {
+        const [result] = await db.query(`SELECT * FROM ${table} WHERE user_id = ? AND active = 'Y' ORDER BY created_time DESC`, [userId]);
         return result;
     },
 }

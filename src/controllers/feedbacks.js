@@ -38,8 +38,15 @@ exports.controller = {
         }
     },
     list: async (req, res) => {
+        const { userId } = req.body;
         try {
-            const feedbacks = await Model.readAll();
+            // Check if user exists
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
+            }
+
+            const feedbacks = await Model.readAll(userId);
             if (!feedbacks || feedbacks.length === 0) {
                 return res.status(200).json({ responseType: "S", count: 0, responseValue: [] });
             }
