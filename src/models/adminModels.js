@@ -7,23 +7,23 @@ const Model = {
         return result[0];
     },
     async moiUsers() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_user_master`);
+        const [result] = await db.query(`SELECT * FROM gp_moi_user_master ORDER BY um_id DESC`);
         return result;
     },
     async moiUserList() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_master_records`);
+        const [result] = await db.query(`SELECT * FROM gp_moi_master_records ORDER BY mr_id DESC`);
         return result;
     },
     async moiUserListId(userId) {
-        const [result] = await db.query(`SELECT * FROM gp_moi_master_records WHERE mr_um_id = ?`, [userId]);
+        const [result] = await db.query(`SELECT * FROM gp_moi_master_records WHERE mr_um_id = ? ORDER BY mr_id DESC`, [userId]);
         return result;
     },
     async moiUserFunction() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_functions`, []);
+        const [result] = await db.query(`SELECT * FROM gp_moi_functions ORDER BY f_id DESC`, []);
         return result;
     },
     async moiFunctionsUserId(userId) {
-        const [result] = await db.query(`SELECT * FROM gp_moi_functions WHERE f_um_id = ?`, [userId]);
+        const [result] = await db.query(`SELECT * FROM gp_moi_functions WHERE f_um_id = ? ORDER BY f_id DESC`, [userId]);
         return result;
     },
     async feedbacks() {
@@ -47,15 +47,15 @@ const Model = {
         return result;
     },
     async moiOutAll() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_out_master`, []);
+        const [result] = await db.query(`SELECT * FROM gp_moi_out_master ORDER BY mom_id DESC`, []);
         return result;
     },
     async moiOutAllUser(user) {
-        const [result] = await db.query(`SELECT * FROM gp_moi_out_master WHERE mom_user_id = ?`, [user]);
+        const [result] = await db.query(`SELECT * FROM gp_moi_out_master WHERE mom_user_id = ? ORDER BY mom_id DESC`, [user]);
         return result;
     },
     async getMoiUserById(userId) {
-        const [result] = await db.query(`SELECT * FROM gp_moi_user_master WHERE um_id = ?`, [userId]);
+        const [result] = await db.query(`SELECT * FROM gp_moi_user_master WHERE um_id = ? ORDER BY um_id DESC`, [userId]);
         return result[0];
     },
     async updateMoiUser(userId, updateData) {
