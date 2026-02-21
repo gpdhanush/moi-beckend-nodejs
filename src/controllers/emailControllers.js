@@ -2,7 +2,7 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 const User = require('../models/user');
 const Model = require('../models/emailModels');
-// const { verify } = require('jsonwebtoken');
+const logger = require('../config/logger');
 
 exports.controller = {
     forgotOtp: async (req, res) => {
@@ -41,7 +41,6 @@ exports.controller = {
                 }
             });
             const mailOptions = {
-                // from: process.env.EMAIL_USER,
                 from: `"Help - Moi Kanakku" <${process.env.EMAIL_USER}>`,
                 to: emailId,
                 subject: 'Forgot Password - OTP',
@@ -50,6 +49,7 @@ exports.controller = {
             await transporter.sendMail(mailOptions);
             return res.status(200).json({ responseType: "S", responseValue: { message: 'மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது.' } });
         } catch (error) {
+            logger.error('forgotOtp: send mail failed', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
@@ -73,6 +73,7 @@ exports.controller = {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான OTP!' } });
             }
         } catch (error) {
+            logger.error('verifyOtp failed', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
@@ -102,6 +103,7 @@ exports.controller = {
             await transporter.sendMail(mailOptions);
             return res.status(200).json({ responseType: "S", responseValue: { message: 'மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது.' } });
         } catch (error) {
+            logger.error('sendEmail failed', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },

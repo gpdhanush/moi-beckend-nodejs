@@ -1,4 +1,5 @@
 const Employee = require('../models/employee');
+const logger = require('../config/logger');
 
 /**
  * Middleware to check if the authenticated user is an employee
@@ -31,7 +32,7 @@ async function isEmployee(req, res, next) {
         req.employeeId = employee.em_id;
         next();
     } catch (error) {
-        console.error('Error in isEmployee middleware:', error);
+        logger.error('Error in isEmployee middleware', error);
         return res.status(500).json({
             responseType: "F",
             responseValue: { message: "சர்வர் பிழை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்." }
@@ -66,7 +67,7 @@ async function hasEmployeePermission(permissionType) {
 
             next();
         } catch (error) {
-            console.error('Error in hasEmployeePermission middleware:', error);
+            logger.error('Error in hasEmployeePermission middleware', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: "சர்வர் பிழை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்." }

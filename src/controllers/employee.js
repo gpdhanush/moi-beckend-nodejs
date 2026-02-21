@@ -1,5 +1,6 @@
 const Employee = require('../models/employee');
 const bcrypt = require('bcryptjs');
+const logger = require('../config/logger');
 
 exports.employeeController = {
     /**
@@ -87,7 +88,7 @@ exports.employeeController = {
                 });
             }
         } catch (error) {
-            console.error('Error creating employee:', error);
+            logger.error('Error creating employee:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -107,7 +108,7 @@ exports.employeeController = {
                 responseValue: employees
             });
         } catch (error) {
-            console.error('Error fetching employees:', error);
+            logger.error('Error fetching employees:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -138,7 +139,7 @@ exports.employeeController = {
                 responseValue: employee
             });
         } catch (error) {
-            console.error('Error fetching employee:', error);
+            logger.error('Error fetching employee:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -213,7 +214,7 @@ exports.employeeController = {
                 });
             }
         } catch (error) {
-            console.error('Error updating employee:', error);
+            logger.error('Error updating employee:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -287,7 +288,7 @@ exports.employeeController = {
                 });
             }
         } catch (error) {
-            console.error('Error assigning permission:', error);
+            logger.error('Error assigning permission:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -341,7 +342,7 @@ exports.employeeController = {
                 });
             }
         } catch (error) {
-            console.error('Error cancelling permission:', error);
+            logger.error('Error cancelling permission:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -372,7 +373,7 @@ exports.employeeController = {
                 responseValue: permissions
             });
         } catch (error) {
-            console.error('Error fetching employee permissions:', error);
+            logger.error('Error fetching employee permissions:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -392,7 +393,7 @@ exports.employeeController = {
                 responseValue: permissions
             });
         } catch (error) {
-            console.error('Error fetching all permissions:', error);
+            logger.error('Error fetching all permissions:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -441,7 +442,7 @@ exports.employeeController = {
                 });
             }
         } catch (error) {
-            console.error('Error updating employee status:', error);
+            logger.error('Error updating employee status:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }

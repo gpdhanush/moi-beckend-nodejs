@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const logger = require('../config/logger');
 
 // Common response messages
 const userError = "குறிப்பிடப்பட்ட பயனர் இல்லை!";
@@ -115,7 +116,7 @@ exports.userController = {
                     };
                     await transporter.sendMail(mailOptions);
                 } catch (emailError) {
-                    console.error('Error sending welcome email:', emailError);
+                    logger.error('Error sending welcome email:', emailError);
                     // Continue even if welcome email fails
                 }
 
@@ -174,7 +175,7 @@ exports.userController = {
                     };
                     await transporter.sendMail(adminMailOptions);
                 } catch (adminEmailError) {
-                    console.error('Error sending admin notification email:', adminEmailError);
+                    logger.error('Error sending admin notification email:', adminEmailError);
                     // Log error but don't fail the registration
                 }
                 // EOF email content --------------
@@ -189,9 +190,9 @@ exports.userController = {
                             token: fcm_token,
                             type: NotificationType.ACCOUNT
                         });
-                        console.log(`FCM notification sent to user ${userId} after successful registration`);
+                        logger.info(`FCM notification sent to user ${userId} after successful registration`);
                     } catch (fcmError) {
-                        console.error('Error sending FCM notification after registration:', fcmError);
+                        logger.error('Error sending FCM notification after registration:', fcmError);
                         // Log error but don't fail the registration
                     }
                 }
@@ -202,7 +203,7 @@ exports.userController = {
             }
 
         } catch (error) {
-            console.error('Error in user creation:', error);
+            logger.error('Error in user creation:', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
@@ -297,7 +298,7 @@ exports.userController = {
                         });
                     } catch (notificationError) {
                         // Log error but don't fail the request since password was changed successfully
-                        console.error('Error sending push notification for password change:', notificationError);
+                        logger.error('Error sending push notification for password change:', notificationError);
                     }
                 }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது." } });
@@ -366,7 +367,7 @@ exports.userController = {
                         });
                     } catch (notificationError) {
                         // Log error but don't fail the request since password was reset successfully
-                        console.error('Error sending push notification for password reset:', notificationError);
+                        logger.error('Error sending push notification for password reset:', notificationError);
                     }
                 }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது." } });
@@ -519,7 +520,7 @@ exports.userController = {
                             fs.unlinkSync(oldImagePath);
                         }
                     } catch (deleteError) {
-                        console.error('Error deleting old profile image:', deleteError);
+                        logger.error('Error deleting old profile image:', deleteError);
                         // Continue even if old image deletion fails
                     }
                 }
@@ -570,7 +571,7 @@ exports.userController = {
                                 fs.unlinkSync(finalFilePath);
                             }
                         } catch (cleanupError) {
-                            console.error('Error cleaning up file after DB update failure:', cleanupError);
+                            logger.error('Error cleaning up file after DB update failure:', cleanupError);
                         }
                         return res.status(500).json({ 
                             responseType: "F", 
@@ -578,14 +579,14 @@ exports.userController = {
                         });
                     }
                 } catch (moveError) {
-                    console.error('Error moving file:', moveError);
+                    logger.error('Error moving file:', moveError);
                     // Clean up temp file
                     try {
                         if (fs.existsSync(tempFilePath)) {
                             fs.unlinkSync(tempFilePath);
                         }
                     } catch (cleanupError) {
-                        console.error('Error cleaning up temp file:', cleanupError);
+                        logger.error('Error cleaning up temp file:', cleanupError);
                     }
                     
                     return res.status(500).json({ 
@@ -602,7 +603,7 @@ exports.userController = {
                         // Ignore cleanup errors
                     }
                 }
-                console.error('Error in updateProfilePicture:', error);
+                logger.error('Error in updateProfilePicture:', error);
                 return res.status(500).json({ 
                     responseType: "F", 
                     responseValue: { message: error.toString() } 

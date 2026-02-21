@@ -2,6 +2,8 @@ const Model = require('../models/adminModels');
 const User = require('../models/user');
 const { sendPushNotification } = require('./notificationController');
 const { NotificationType } = require('../models/notificationModels');
+const { sendFeedbackReplyEmail } = require('../services/emailService');
+const logger = require('../config/logger');
 const bcrypt = require('bcryptjs');
 
 
@@ -133,7 +135,7 @@ exports.controller = {
                 } 
             });
         } catch (error) {
-            console.error('Error creating user:', error);
+            logger.error('Error creating user', error);
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
@@ -232,7 +234,6 @@ exports.controller = {
     },
     // FEEDBACKS
     feedbacks: async (req, res) => {
-        // const userId = req.params.userId;
         try {
             const list = await Model.feedbacks();
             if (!list) {
@@ -267,25 +268,28 @@ exports.controller = {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'No details found.' } });
             }
             
-            // Send push notification to the user if they have a device token
             if (feedback.user_id) {
-                try {
-                    const user = await User.findById(feedback.user_id);
-                    if (user && user.um_notification_token) {
-                        await sendPushNotification({
-                            userId: feedback.user_id,
-                            title: 'உங்கள் கருத்துக்கு பதில்',
-                            body: 'உங்கள் கருத்துக்கு பதில் வழங்கப்பட்டது. தயவுசெய்து பார்க்கவும்.',
-                            token: user.um_notification_token,
-                            type: NotificationType.GENERAL
-                        });
+                const user = await User.findById(feedback.user_id);
+                if (user) {
+                    if (user.um_notification_token) {
+                        try {
+                            await sendPushNotification({
+                                userId: feedback.user_id,
+                                title: 'உங்கள் கருத்துக்கு பதில்',
+                                body: 'உங்கள் கருத்துக்கு பதில் வழங்கப்பட்டது. தயவுசெய்து பார்க்கவும்.',
+                                token: user.um_notification_token,
+                                type: NotificationType.GENERAL
+                            });
+                        } catch (notificationError) {
+                            logger.error('Error sending push notification for feedback reply', notificationError);
+                        }
                     }
-                } catch (notificationError) {
-                    // Log error but don't fail the request since reply was saved successfully
-                    console.error('Error sending push notification for feedback reply:', notificationError);
+                    if (user.um_email) {
+                        sendFeedbackReplyEmail(user.um_email, user.um_full_name, reply).catch(() => {});
+                    }
                 }
             }
-            
+
             return res.status(200).json({ responseType: "S", responseValue: { message: 'Reply has been successfully added.' } });
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });

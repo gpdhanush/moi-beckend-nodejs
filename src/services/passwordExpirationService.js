@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const { sendPushNotification } = require('../controllers/notificationController');
 const { NotificationType, Notification } = require('../models/notificationModels');
+const logger = require('../config/logger');
 
 /**
  * Check for users with passwords older than 3 months and send push notifications
@@ -8,17 +9,17 @@ const { NotificationType, Notification } = require('../models/notificationModels
  */
 async function checkAndNotifyPasswordExpiration() {
     try {
-        console.log('Checking for users with passwords older than 3 months...');
+        logger.info('Checking for users with passwords older than 3 months...');
         
         // Find users with passwords older than 3 months
         const usersWithOldPasswords = await User.findUsersWithOldPasswords(3);
         
         if (usersWithOldPasswords.length === 0) {
-            console.log('No users found with passwords older than 3 months.');
+            logger.info('No users found with passwords older than 3 months.');
             return;
         }
 
-        console.log(`Found ${usersWithOldPasswords.length} user(s) with passwords older than 3 months.`);
+        logger.info(`Found ${usersWithOldPasswords.length} user(s) with passwords older than 3 months.`);
 
         // Send notifications to each user
         const notificationTitle = 'கடவுச்சொல் புதுப்பிப்பு நினைவூட்டல்';
@@ -35,7 +36,7 @@ async function checkAndNotifyPasswordExpiration() {
                     );
 
                     if (alreadySent) {
-                        console.log(`Password expiration notification already sent today to user ${user.um_id} (${user.um_email}), skipping.`);
+                        logger.info(`Password expiration notification already sent today to user ${user.um_id} (${user.um_email}), skipping.`);
                         continue;
                     }
 
@@ -76,7 +77,7 @@ async function checkAndNotifyPasswordExpiration() {
                         // delete ours and skip (let the other process handle it)
                         if (countRows[0].count > 1) {
                             await Notification.delete(notificationId);
-                            console.log(`Duplicate notification detected for user ${user.um_id} (${user.um_email}), deleted our record and skipping.`);
+                            logger.info(`Duplicate notification detected for user ${user.um_id} (${user.um_email}), deleted our record and skipping.`);
                             continue;
                         }
                     } catch (dbError) {
@@ -87,7 +88,7 @@ async function checkAndNotifyPasswordExpiration() {
                             NotificationType.ACCOUNT
                         );
                         if (alreadySentRetry) {
-                            console.log(`Password expiration notification already sent today to user ${user.um_id} (${user.um_email}), skipping.`);
+                            logger.info(`Password expiration notification already sent today to user ${user.um_id} (${user.um_email}), skipping.`);
                             continue;
                         }
                         throw dbError; // Re-throw if it's a different error
@@ -103,31 +104,31 @@ async function checkAndNotifyPasswordExpiration() {
                             type: NotificationType.ACCOUNT,
                             skipDbSave: true // Skip saving to DB since we already saved it
                         });
-                        console.log(`Password expiration notification sent to user ${user.um_id} (${user.um_email})`);
+                        logger.info(`Password expiration notification sent to user ${user.um_id} (${user.um_email})`);
                     } catch (fcmError) {
                         // If FCM send fails, delete the notification record we just created
                         if (notificationId) {
                             try {
                                 await Notification.delete(notificationId);
-                                console.log(`Deleted notification record ${notificationId} for user ${user.um_id} due to FCM send failure`);
+                                logger.info(`Deleted notification record ${notificationId} for user ${user.um_id} due to FCM send failure`);
                             } catch (deleteError) {
-                                console.error(`Error deleting notification record ${notificationId}:`, deleteError);
+                                logger.error(`Error deleting notification record ${notificationId}:`, deleteError);
                             }
                         }
                         throw fcmError;
                     }
                 } catch (notificationError) {
-                    console.error(`Error sending password expiration notification to user ${user.um_id}:`, notificationError);
+                    logger.error(`Error sending password expiration notification to user ${user.um_id}:`, notificationError);
                     // Continue with other users even if one fails
                 }
             } else {
-                console.log(`User ${user.um_id} (${user.um_email}) does not have a notification token, skipping.`);
+                logger.info(`User ${user.um_id} (${user.um_email}) does not have a notification token, skipping.`);
             }
         }
 
-        console.log('Password expiration check completed.');
+        logger.info('Password expiration check completed.');
     } catch (error) {
-        console.error('Error in password expiration check:', error);
+        logger.error('Error in password expiration check:', error);
     }
 }
 

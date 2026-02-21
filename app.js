@@ -5,11 +5,11 @@ const morgan = require('morgan');
 const cron = require('node-cron');
 require('dotenv').config();
 const routes = require('./src/routes');
+const healthRoutes = require('./src/routes/health');
+const logger = require('./src/config/logger');
 const { checkAndNotifyPasswordExpiration } = require('./src/services/passwordExpirationService');
 const { checkAndNotifyUpcomingFunctions } = require('./src/services/functionReminderService');
 const app = express();
-const https = require('https');
-https.globalAgent.options.rejectUnauthorized = false;
 
 // Middleware
 app.use(cors());
@@ -17,37 +17,50 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// Routes
+
+// Health routes (no rate limit, no auth) – host, port, db, memory, etc.
+app.use('/health', healthRoutes);
+// API routes
 app.use('/apis', routes);
 
 const PORT = process.env.PORT || 3000;
 
+// Cron lock: ensure only one execution at a time (no overlapping or loop)
+let isDailyCronRunning = false;
+
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-    
-    // Schedule password expiration check to run daily at 9:00 AM
-    // Cron format: minute hour day month day-of-week
-    // '0 9 * * *' means: at 9:00 AM every day
-    cron.schedule('0 9 * * *', () => {
-        console.log('Running scheduled password expiration check...');
-        checkAndNotifyPasswordExpiration();
+    logger.info(`Server is running on http://localhost:${PORT}`);
+
+    cron.schedule('0 9 * * *', async () => {
+        if (isDailyCronRunning) {
+            logger.warn('Daily cron already running, skipping this trigger.');
+            return;
+        }
+        isDailyCronRunning = true;
+        try {
+            logger.info('Running scheduled daily jobs...');
+            await checkAndNotifyPasswordExpiration();
+            await checkAndNotifyUpcomingFunctions();
+            logger.info('Daily cron jobs completed.');
+        } catch (err) {
+            logger.error('Error in daily cron', err);
+        } finally {
+            isDailyCronRunning = false;
+        }
     });
-    
-    console.log('Password expiration check scheduled to run daily at 9:00 AM');
-    
-    // Schedule function reminder check to run daily at 9:00 AM
-    // This checks for functions that are 1 day away (tomorrow)
-    cron.schedule('0 9 * * *', () => {
-        console.log('Running scheduled function reminder check...');
-        checkAndNotifyUpcomingFunctions();
-    });
-    
-    console.log('Function reminder check scheduled to run daily at 9:00 AM');
+    logger.info('Daily cron scheduled at 9:00 AM (password expiration + function reminder).');
 });
 
-// Start server
+// Global error handler – log every error with request context
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    logger.error('Unhandled error', {
+        message: err.message,
+        stack: err.stack,
+        path: req.path,
+        method: req.method,
+        query: req.query,
+        body: req.body && Object.keys(req.body).length ? '[present]' : undefined
+    });
     res.status(500).json({ message: 'Something went wrong!' });
 });
 

@@ -3,7 +3,8 @@ const User = require('../models/user');
 const moment = require('moment');
 const { sendPushNotification } = require('./notificationController');
 const { NotificationType } = require('../models/notificationModels');
-
+const { sendFeedbackConfirmationEmail } = require('../services/emailService');
+const logger = require('../config/logger');
 
 exports.controller = {
     create: async (req, res) => {
@@ -14,7 +15,6 @@ exports.controller = {
             }
             var query = await Model.create(req.body);
             if (query) {
-                // Send push notification if user has a device token
                 if (user.um_notification_token) {
                     try {
                         await sendPushNotification({
@@ -25,9 +25,11 @@ exports.controller = {
                             type: NotificationType.GENERAL
                         });
                     } catch (notificationError) {
-                        // Log error but don't fail the request since feedback was saved successfully
-                        console.error('Error sending push notification for feedback:', notificationError);
+                        logger.error('Error sending push notification for feedback', notificationError);
                     }
+                }
+                if (user.um_email) {
+                    sendFeedbackConfirmationEmail(user.um_email, user.um_full_name).catch(() => {});
                 }
                 return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது." } });
             } else {

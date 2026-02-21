@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const logger = require('../config/logger');
 
 /**
  * Middleware to check if the authenticated user is an admin
@@ -50,7 +51,7 @@ async function isAdmin(req, res, next) {
             responseValue: { message: "நீங்கள் நிர்வாகி அல்ல. இந்த செயலைச் செய்ய அனுமதி இல்லை." }
         });
     } catch (error) {
-        console.error('Error in isAdmin middleware:', error);
+        logger.error('Error in isAdmin middleware', error);
         return res.status(500).json({
             responseType: "F",
             responseValue: { message: "சர்வர் பிழை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்." }

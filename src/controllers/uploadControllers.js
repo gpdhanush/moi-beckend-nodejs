@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const logger = require('../config/logger');
 const uploadDir = './../gp.prasowlabs.in/uploads';
 
 if (!fs.existsSync(uploadDir)) {
@@ -105,7 +106,7 @@ exports.controller = {
                 const tempFilePath = req.file.path;
                 const finalFilePath = path.join(categoryDir, req.file.filename);
                 
-                console.log('Upload Debug:', {
+                logger.info('Upload Debug:', {
                     tempFilePath,
                     finalFilePath,
                     fileExists: fs.existsSync(tempFilePath),
@@ -116,7 +117,7 @@ exports.controller = {
                 
                 // Verify temp file exists before moving
                 if (!fs.existsSync(tempFilePath)) {
-                    console.error('Temp file not found:', tempFilePath);
+                    logger.error('Temp file not found:', tempFilePath);
                     return res.status(500).json({ 
                         responseType: "F", 
                         responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } 
@@ -129,7 +130,7 @@ exports.controller = {
                     
                     // Verify file was moved successfully
                     if (!fs.existsSync(finalFilePath)) {
-                        console.error('File not found after move:', finalFilePath);
+                        logger.error('File not found after move:', finalFilePath);
                         return res.status(500).json({ 
                             responseType: "F", 
                             responseValue: { message: 'கோப்பு வெற்றிகரமாக சேமிக்கப்படவில்லை!' } 
@@ -138,17 +139,17 @@ exports.controller = {
 
                     // Use forward slashes for the response path (URL-friendly)
                     const fullFilePath = `uploads/${userId}/${filePath}/${req.file.filename}`;
-                    console.log('File saved successfully:', fullFilePath);
+                    logger.info('File saved successfully:', fullFilePath);
                     return res.status(200).json({ responseType: "S", responseValue: fullFilePath });
                 } catch (moveError) {
-                    console.error('Error moving file:', moveError);
+                    logger.error('Error moving file:', moveError);
                     // If move fails, try to clean up temp file
                     try {
                         if (fs.existsSync(tempFilePath)) {
                             fs.unlinkSync(tempFilePath);
                         }
                     } catch (cleanupError) {
-                        console.error('Error cleaning up temp file:', cleanupError);
+                        logger.error('Error cleaning up temp file:', cleanupError);
                     }
                     
                     return res.status(500).json({ 

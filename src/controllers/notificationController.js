@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 const { Notification, NotificationType, isValidNotificationType } = require('../models/notificationModels');
+const logger = require('../config/logger');
 
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE,
@@ -64,7 +65,7 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
                 });
             } catch (dbError) {
                 // Log database error but don't fail the request since FCM send was successful
-                console.error('Error saving notification to database:', dbError);
+                logger.error('Error saving notification to database:', dbError);
                 // Continue - notification was sent successfully
             }
         }
@@ -72,7 +73,7 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
         return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };
     } catch (error) {
         // FCM send failed, don't save to database
-        console.error('FCM send error:', error);
+        logger.error('FCM send error:', error);
         throw error;
     }
 }
@@ -96,7 +97,7 @@ exports.controller = {
             });
         } catch (error) {
             // FCM send failed, don't save to database
-            console.error('FCM send error:', error);
+            logger.error('FCM send error:', error);
             
             // Handle FCM-specific errors
             let errorMessage = 'அறிவிப்பை அனுப்ப முடியவில்லை.';
@@ -170,7 +171,7 @@ exports.controller = {
                 responseValue: notifications
             });
         } catch (error) {
-            console.error('Error fetching notifications:', error);
+            logger.error('Error fetching notifications:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -231,7 +232,7 @@ exports.controller = {
                 });
             }
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+            logger.error('Error marking notification as read:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -292,7 +293,7 @@ exports.controller = {
                 });
             }
         } catch (error) {
-            console.error('Error marking notification as unread:', error);
+            logger.error('Error marking notification as unread:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -348,7 +349,7 @@ exports.controller = {
                 });
             }
         } catch (error) {
-            console.error('Error deleting notification:', error);
+            logger.error('Error deleting notification:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }

@@ -1,4 +1,26 @@
 const rateLimit = require('express-rate-limit');
+const logger = require('../config/logger');
+
+/**
+ * General API rate limiter - applies to all /apis routes
+ * 100 requests per 15 minutes per IP
+ */
+const generalRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+        responseType: "F",
+        responseValue: { message: "Too many requests from this IP. Please try again later." }
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            responseType: "F",
+            responseValue: { message: "Too many requests. Please try again after 15 minutes." }
+        });
+    }
+});
 
 /**
  * Middleware to validate API secret key
@@ -9,7 +31,7 @@ function validateApiKey(req, res, next) {
     const validApiKey = process.env.API_SECRET_KEY;
 
     if (!validApiKey) {
-        console.error('API_SECRET_KEY is not set in environment variables');
+        logger.error('API_SECRET_KEY is not set in environment variables');
         return res.status(500).json({
             responseType: "F",
             responseValue: { message: "Server configuration error." }
@@ -89,6 +111,7 @@ function validateOrigin(req, res, next) {
 }
 
 module.exports = {
+    generalRateLimiter,
     validateApiKey,
     registrationRateLimiter,
     validateOrigin

@@ -1,4 +1,5 @@
 const UpcomingFunction = require('../models/upcomingFunction');
+const logger = require('../config/logger');
 
 /**
  * Auto-update status for upcoming functions where date has passed
@@ -6,15 +7,15 @@ const UpcomingFunction = require('../models/upcomingFunction');
  */
 async function updateStatusForPastDates() {
     try {
-        console.log('Updating status for upcoming functions with past dates...');
+        logger.info('Updating status for upcoming functions with past dates...');
         
         const result = await UpcomingFunction.updateStatusByDate();
         
-        console.log(`Updated status for ${result.affectedRows || 0} upcoming function(s) with past dates.`);
+        logger.info(`Updated status for ${result.affectedRows || 0} upcoming function(s) with past dates.`);
         
         return result;
     } catch (error) {
-        console.error('Error updating status for past dates:', error);
+        logger.error('Error updating status for past dates', error);
         throw error;
     }
 }

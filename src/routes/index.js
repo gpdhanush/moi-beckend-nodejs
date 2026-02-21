@@ -1,5 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const { generalRateLimiter } = require('../middlewares/apiSecurity');
+
+// Apply general rate limit to all API routes
+router.use(generalRateLimiter);
 
 const user = require('./user');
 const moi = require('./moi');
