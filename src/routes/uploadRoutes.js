@@ -4,7 +4,8 @@ const { authenticateToken } = require('../middlewares/auth'); // Middleware for 
 
 const router = express.Router();
 
-router.post('/saveFiles', controller.saveFiles);
-router.delete('/deleteImage', controller.deleteImage);
+router.post('/saveFiles', authenticateToken, controller.saveFiles);
+router.get('/getFile', controller.getFile); // Public access to get files (optional - for direct file access)
+router.delete('/deleteImage', authenticateToken, controller.deleteImage);
 
 module.exports = router;

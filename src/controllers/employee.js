@@ -247,13 +247,13 @@ exports.employeeController = {
                     responseValue: { message: 'பணியாளர் கிடைக்கவில்லை அல்லது செயலில் இல்லை.' }
                 });
             }
-
             // If functionId is provided, verify function exists
             if (functionId) {
                 const db = require('../config/database');
+                const { toBinaryUUID } = require('../helpers/uuid');
                 const [functionRows] = await db.query(
-                    `SELECT * FROM gp_moi_functions WHERE f_id = ? AND f_active = 'Y'`,
-                    [functionId]
+                    `SELECT * FROM upcoming_functions WHERE id = ? AND status = 'ACTIVE' AND (is_deleted = 0 OR is_deleted IS NULL)`,
+                    [toBinaryUUID(functionId)]
                 );
                 if (functionRows.length === 0) {
                     return res.status(404).json({

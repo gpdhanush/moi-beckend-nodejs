@@ -116,4 +116,7 @@ jspm_packages/
 .DS_Store
 package.json
 package-lock.json
+yarn.lock
 package.json
+migrations/
+# docs/

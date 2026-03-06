@@ -1,19 +1,26 @@
-# MYSQL CONNECTION
-# DB_HOST=duexhoods.com
-# DB_USER=hellonew_moi_kanakku
-# DB_PASSWORD=Renzo@1995
-DB_HOST=prasowlabs.in
-DB_USER=prasowla_moi_master
-DB_PASSWORD=Renzo@1995
-DB_NAME=prasowla_moi_master
-JWT_SECRET=mysonnameisrenzo
-API_SECRET_KEY=MY_SON_NAME_IS_RENZO_ROWAN
 PORT=3000
+LOG_LEVEL=debug
+
+# MYSQL CONNECTION
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=moi_new
+
+# DB_HOST=prasowlabs.in
+# DB_USER=prasowla_moi_master
+# DB_PASSWORD=Renzo@1995
+# DB_NAME=prasowla_moi_master
+
+JWT_SECRET=JWT_SECRET
+API_SECRET_KEY=API_SECRET_KEY
+
 # for email purpose
 EMAIL_HOST=prasowlabs.in
 EMAIL_USER=gp@prasowlabs.in
 EMAIL_PASS=Renzo@1995
 EMAIL_PORT=465
+
 # Firebase Config
 FIREBASE_TYPE=service_account
 FIREBASE_PROJECT_ID=moi-master

@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { toBinaryUUID } = require('../helpers/uuid');
 
 const Model = {
 
@@ -7,10 +8,23 @@ const Model = {
         return result;
     },
     async totalAmount(userId) {
-        const [result] = await db.query(`SELECT 
-        IFNULL((SELECT SUM(mom_amount) FROM gp_moi_out_master WHERE mom_user_id = ?), 0) AS moi_out_total,
-        IFNULL((SELECT SUM(mr_amount) FROM gp_moi_master_records WHERE mr_um_id = ?), 0) AS moi_total`, [userId, userId]);
-        return result;
+        const userIdBin = toBinaryUUID(userId);
+        
+        const [data] = await db.query(`
+            SELECT 
+                IFNULL(SUM(CASE WHEN type = 'INVEST' THEN amount ELSE 0 END), 0) AS invest_amount,
+                IFNULL(SUM(CASE WHEN type = 'RETURN' THEN amount ELSE 0 END), 0) AS return_amount,
+                -- item_type column was removed; treat transactions with a non-empty item_name as "things"
+                IFNULL(SUM(CASE WHEN type = 'INVEST' AND item_name IS NOT NULL AND TRIM(item_name) <> '' THEN 1 ELSE 0 END), 0) AS invest_things,
+                IFNULL(SUM(CASE WHEN type = 'RETURN' AND item_name IS NOT NULL AND TRIM(item_name) <> '' THEN 1 ELSE 0 END), 0) AS return_things,
+                (SELECT COUNT(DISTINCT person_id) FROM transactions WHERE user_id = ? AND is_deleted = 0) AS total_members,
+                (SELECT COUNT(DISTINCT person_id) FROM transactions WHERE user_id = ? AND type = 'INVEST' AND is_deleted = 0) AS invest_members,
+                (SELECT COUNT(DISTINCT person_id) FROM transactions WHERE user_id = ? AND type = 'RETURN' AND is_deleted = 0) AS return_members
+            FROM transactions
+            WHERE user_id = ? AND is_deleted = 0
+        `, [userIdBin, userIdBin, userIdBin, userIdBin]);
+        
+        return data;
     },
 
 }

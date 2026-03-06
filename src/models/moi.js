@@ -1,96 +1,183 @@
 const db = require('../config/database');
-const table = "gp_moi_master_records";
+const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const table = "transactions";
 
 const Model = {
     async create(list) {
+        const id = list.id || generateUUID();
+        const personId = list.personId || list.mp_id;
+        const txnFuncId = list.function ? toBinaryUUID(list.function) : null;
+        
         const [result] = await db.query(`INSERT INTO ${table} 
-            (mr_um_id, mr_function_id, mr_city_id, mr_first_name, mr_second_name, mr_amount, mr_occupation, mr_remarks, seimurai, things) VALUES 
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [list.userId, list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks, list.seimurai || null, list.things || null]);
+            (id, user_id, person_id, transaction_function_id, transaction_date, type, item_type, amount, notes, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, CURDATE(), 'INVEST', 'MONEY', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [toBinaryUUID(id), toBinaryUUID(list.userId), 
+             personId ? toBinaryUUID(personId) : null, 
+             txnFuncId,
+             list.amount || 0, 
+             list.remarks || null]);
         return result;
     },
 
-
     async readAll(userId) {
-        const [result] = await db.query(`SELECT mm.*, 
-            mf.function_name as 'functionName', mf.function_date as 'functionDate', 
-            mf.first_name as 'f_firstName', mf.second_name as 'f_secondName',
-            mf.place as 'f_place', mf.native_place as 'f_native',
-            mf.invitation_photo as 'f_invitation'
-            FROM gp_moi_master_records as mm
-            LEFT JOIN gp_moi_functions as mf ON mf.f_id = mr_function_id
-            WHERE mr_um_id = ? AND mr_active = 'Y' ORDER BY mr_id DESC`, [userId]);
-        return result;
+        const [result] = await db.query(`
+            SELECT 
+                t.id,
+                t.user_id,
+                t.person_id,
+                t.transaction_function_id,
+                t.transaction_date,
+                t.type,
+                t.item_type,
+                t.amount,
+                t.notes,
+                t.created_at,
+                t.updated_at,
+                p.first_name,
+                p.last_name,
+                p.city,
+                p.occupation,
+                tf.function_name,
+                tf.function_date,
+                tf.location
+            FROM ${table} t
+            LEFT JOIN persons p ON p.id = t.person_id
+            LEFT JOIN transaction_functions tf ON tf.id = t.transaction_function_id
+            WHERE t.user_id = ? AND t.type = 'INVEST' AND (t.is_deleted = 0 OR t.is_deleted IS NULL)
+            ORDER BY t.transaction_date DESC, t.created_at DESC`, 
+            [toBinaryUUID(userId)]);
+        return result.map(r => mapTransactionRow(r));
     },
 
     async readById(id) {
-        const [rows] = await db.query(`SELECT * FROM ${table} WHERE mr_id =? `, [id]);
-        return rows[0];
+        const [rows] = await db.query(`
+            SELECT 
+                t.id,
+                t.user_id,
+                t.person_id,
+                t.transaction_function_id,
+                t.transaction_date,
+                t.type,
+                t.item_type,
+                t.amount,
+                t.notes,
+                t.created_at,
+                t.updated_at,
+                p.first_name,
+                p.last_name,
+                p.city,
+                p.occupation
+            FROM ${table} t
+            LEFT JOIN persons p ON p.id = t.person_id
+            WHERE t.id = ? AND (t.is_deleted = 0 OR t.is_deleted IS NULL)`, 
+            [toBinaryUUID(id)]);
+        if (!rows[0]) return null;
+        return mapTransactionRow(rows[0]);
     },
+
     async update(list) {
+        const txnFuncId = list.function ? toBinaryUUID(list.function) : null;
         const [result] = await db.query(`UPDATE ${table} 
-            SET mr_function_id = ?, mr_city_id = ?, mr_first_name = ?, mr_second_name = ?, mr_amount = ?, mr_occupation = ?, mr_remarks = ?, seimurai = ?, things = ? WHERE mr_id = ?`,
-            [list.function, list.city, list.firstName, list.secondName, list.amount, list.occupation, list.remarks, list.seimurai || null, list.things || null, list.id]);
+            SET transaction_function_id = ?, amount = ?, notes = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [txnFuncId, list.amount || 0, list.remarks || null, toBinaryUUID(list.id)]);
         return result;
     },
+
     async delete(id) {
-        const [result] = await db.query(`DELETE FROM ${table} WHERE mr_id=?`, [id]);
+        // Soft delete
+        const [result] = await db.query(`UPDATE ${table} SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP WHERE id = ?`, [toBinaryUUID(id)]);
         return result;
     },
+
     async getDashboard(userId) {
-        // Get all INVEST transactions (from gp_moi_master_records) with function owner details
+        // Get all INVEST transactions
         const [investTransactions] = await db.query(`
             SELECT 
-                mr.mr_id as id,
-                mr.mr_um_id as userId,
-                mr.mr_first_name as personFirstName,
-                mr.mr_second_name as personSecondName,
-                mr.mr_city_id as personCity,
-                mr.mr_occupation as personBusiness,
-                mr.mr_amount as amount,
-                mr.mr_remarks as remarks,
-                mr.mr_create_dt as createDate,
-                COALESCE(mr.seimurai, 'Money') as mode,
-                mf.function_name as functionName,
-                mf.function_date as functionDate,
-                mf.first_name as functionFirstName,
-                mf.second_name as functionSecondName,
-                mf.place as functionCity,
-                um.um_mobile as userMobile
-            FROM gp_moi_master_records mr
-            LEFT JOIN gp_moi_functions mf ON mf.f_id = mr.mr_function_id
-            LEFT JOIN gp_moi_user_master um ON um.um_id = mr.mr_um_id
-            WHERE mr.mr_um_id = ? AND mr.mr_active = 'Y'
-            ORDER BY mr.mr_create_dt DESC
-        `, [userId]);
+                t.id,
+                t.user_id as userId,
+                p.first_name as personFirstName,
+                p.last_name as personSecondName,
+                p.city as personCity,
+                p.occupation as personBusiness,
+                t.amount,
+                t.notes as remarks,
+                t.transaction_date as createDate,
+                COALESCE(t.item_type, 'MONEY') as mode,
+                tf.function_name as functionName,
+                tf.function_date as functionDate,
+                tf.location as functionCity,
+                (SELECT u.mobile FROM users u WHERE u.id = t.user_id LIMIT 1) as userMobile
+            FROM ${table} t
+            LEFT JOIN persons p ON p.id = t.person_id
+            LEFT JOIN transaction_functions tf ON tf.id = t.transaction_function_id
+            WHERE t.user_id = ? AND t.type = 'INVEST' AND (t.is_deleted = 0 OR t.is_deleted IS NULL)
+            ORDER BY t.transaction_date DESC, t.created_at DESC
+        `, [toBinaryUUID(userId)]);
 
-        // Get all RETURN transactions (from gp_moi_out_master) 
+        // Get all RETURN transactions
         const [returnTransactions] = await db.query(`
             SELECT 
-                mom.mom_id as id,
-                mom.mom_user_id as userId,
-                mom.mom_first_name as personFirstName,
-                mom.mom_second_name as personSecondName,
-                mom.mom_city as personCity,
+                t.id,
+                t.user_id as userId,
+                p.first_name as personFirstName,
+                p.last_name as personSecondName,
+                p.city as personCity,
                 '' as personBusiness,
-                mom.mom_amount as amount,
-                mom.mom_remarks as remarks,
-                mom.mom_create_dt as createDate,
-                COALESCE(mom.seimurai, 'Money') as mode,
-                mom.mom_function_name as functionName,
-                mom.mom_function_date as functionDate,
-                um.um_full_name as userFullName,
-                um.um_mobile as userMobile
-            FROM gp_moi_out_master mom
-            LEFT JOIN gp_moi_user_master um ON um.um_id = mom.mom_user_id
-            WHERE mom.mom_user_id = ? AND mom.mom_status = 'Y'
-            ORDER BY mom.mom_create_dt DESC
-        `, [userId]);
+                t.amount,
+                t.notes as remarks,
+                t.transaction_date as createDate,
+                COALESCE(t.item_type, 'MONEY') as mode,
+                CONCAT(p.first_name, ' ', COALESCE(p.last_name, '')) as functionName,
+                NULL as functionDate,
+                NULL as functionCity,
+                (SELECT u.mobile FROM users u WHERE u.id = t.user_id LIMIT 1) as userMobile,
+                (SELECT u.full_name FROM users u WHERE u.id = t.user_id LIMIT 1) as userFullName
+            FROM ${table} t
+            LEFT JOIN persons p ON p.id = t.person_id
+            WHERE t.user_id = ? AND t.type = 'RETURN' AND (t.is_deleted = 0 OR t.is_deleted IS NULL)
+            ORDER BY t.transaction_date DESC, t.created_at DESC
+        `, [toBinaryUUID(userId)]);
 
         return {
-            investTransactions,
-            returnTransactions
+            investTransactions: investTransactions.map(r => mapTransactionRow(r)),
+            returnTransactions: returnTransactions.map(r => mapTransactionRow(r))
         };
     },
+};
+
+function mapTransactionRow(r) {
+    const id = fromBinaryUUID(r.id);
+    const userId = r.user_id ? fromBinaryUUID(r.user_id) : null;
+    const personId = r.person_id ? fromBinaryUUID(r.person_id) : null;
+    
+    return {
+        id,
+        mr_id: id,
+        user_id: userId,
+        mr_um_id: userId,
+        person_id: personId,
+        mp_id: personId,
+        first_name: r.first_name,
+        mr_first_name: r.first_name,
+        last_name: r.last_name,
+        mr_second_name: r.last_name,
+        city: r.city,
+        mr_city_id: r.city,
+        occupation: r.occupation,
+        mr_occupation: r.occupation,
+        amount: r.amount,
+        mr_amount: r.amount,
+        notes: r.notes,
+        mr_remarks: r.notes,
+        item_type: r.item_type,
+        seimurai: r.item_type,
+        transaction_date: r.transaction_date || r.createDate,
+        mr_create_dt: r.transaction_date || r.createDate,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        is_deleted: r.is_deleted || 0
+    };
 }
+
 module.exports = Model;

@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const table = "gp_moi_notifications";
+const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
 
 // Notification Type Enum
 const NotificationType = {
@@ -23,98 +23,176 @@ const Notification = {
      * @returns {Promise} Database result
      */
     async create(notificationData) {
-        const type = notificationData.type || NotificationType.GENERAL; // Default to 'general' if not provided
+        const id = generateUUID();
+        const type = notificationData.type || NotificationType.GENERAL;
         
         const [result] = await db.query(
-            `INSERT INTO ${table} (n_um_id, n_title, n_body, n_type) VALUES (?, ?, ?, ?)`,
-            [notificationData.userId, notificationData.title, notificationData.body, type]
+            `INSERT INTO notifications (id, user_id, title, body, type, is_read, created_at)
+             VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+            [toBinaryUUID(id), toBinaryUUID(notificationData.userId), notificationData.title, notificationData.body, type]
         );
-        return result;
+        return { insertId: id };
     },
 
     /**
-     * Get all notifications for a specific user
-     * @param {number} userId - The user ID
+     * Get all notifications for a specific user (with pagination)
+     * @param {string} userId - The user ID (UUID)
+     * @param {number} limit - Number of notifications to return
+     * @param {number} offset - Offset for pagination
      * @returns {Promise} Array of notifications
      */
-    async findByUserId(userId) {
+    async findByUserId(userId, limit = 50, offset = 0) {
         const [rows] = await db.query(
-            `SELECT * FROM ${table} WHERE n_um_id = ? AND n_active = 'Y' ORDER BY n_create_dt DESC`,
-            [userId]
+            `SELECT id, user_id, title, body, type, is_read, read_at, created_at, updated_at
+             FROM notifications 
+             WHERE user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL)
+             ORDER BY created_at DESC
+             LIMIT ? OFFSET ?`,
+            [toBinaryUUID(userId), limit, offset]
         );
-        return rows;
+        
+        return rows.map(r => ({
+            id: fromBinaryUUID(r.id),
+            userId: fromBinaryUUID(r.user_id),
+            title: r.title,
+            body: r.body,
+            type: r.type,
+            isRead: r.is_read === 1,
+            readAt: r.read_at,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at
+        }));
+    },
+
+    /**
+     * Get unread notifications count for a user
+     * @param {string} userId - The user ID (UUID)
+     * @returns {Promise<number>} Count of unread notifications
+     */
+    async getUnreadCount(userId) {
+        const [rows] = await db.query(
+            `SELECT COUNT(*) as count FROM notifications 
+             WHERE user_id = ? AND is_read = 0 AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(userId)]
+        );
+        return rows[0].count;
     },
 
     /**
      * Get a notification by ID
-     * @param {number} notificationId - The notification ID
+     * @param {string} notificationId - The notification ID (UUID)
      * @returns {Promise} Notification object
      */
     async findById(notificationId) {
         const [rows] = await db.query(
-            `SELECT * FROM ${table} WHERE n_id = ?`,
-            [notificationId]
+            `SELECT * FROM notifications WHERE id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(notificationId)]
         );
-        return rows[0];
+        
+        if (!rows[0]) return null;
+        
+        const r = rows[0];
+        return {
+            id: fromBinaryUUID(r.id),
+            userId: fromBinaryUUID(r.user_id),
+            title: r.title,
+            body: r.body,
+            type: r.type,
+            isRead: r.is_read === 1,
+            readAt: r.read_at,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at
+        };
     },
 
     /**
      * Mark notification as read
-     * @param {number} notificationId - The notification ID
+     * @param {string} notificationId - The notification ID (UUID)
      * @returns {Promise} Database result
      */
     async markAsRead(notificationId) {
         const [result] = await db.query(
-            `UPDATE ${table} SET n_is_read = 'Y', n_read_time = ? WHERE n_id = ?`,
-            [new Date(), notificationId]
+            `UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
+             WHERE id = ?`,
+            [toBinaryUUID(notificationId)]
         );
         return result;
     },
 
     /**
      * Mark notification as unread
-     * @param {number} notificationId - The notification ID
+     * @param {string} notificationId - The notification ID (UUID)
      * @returns {Promise} Database result
      */
     async markAsUnread(notificationId) {
         const [result] = await db.query(
-            `UPDATE ${table} SET n_is_read = 'N', n_read_time = NULL WHERE n_id = ?`,
-            [notificationId]
+            `UPDATE notifications SET is_read = 0, read_at = NULL, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?`,
+            [toBinaryUUID(notificationId)]
         );
         return result;
     },
 
     /**
-     * Delete/Deactivate a notification
-     * @param {number} notificationId - The notification ID
+     * Delete notification (soft delete)
+     * @param {string} notificationId - The notification ID (UUID)
      * @returns {Promise} Database result
      */
     async delete(notificationId) {
         const [result] = await db.query(
-            `DELETE FROM ${table} WHERE n_id = ?`,
-            [notificationId]
+            `UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE id = ?`,
+            [toBinaryUUID(notificationId)]
         );
         return result;
     },
 
     /**
      * Check if a notification with the same title and type was sent to a user today
-     * @param {number} userId - The user ID
+     * @param {string} userId - The user ID (UUID)
      * @param {string} title - The notification title
      * @param {string} type - The notification type
      * @returns {Promise<boolean>} True if notification was sent today, false otherwise
      */
     async wasSentToday(userId, title, type) {
         const [rows] = await db.query(
-            `SELECT COUNT(*) as count FROM ${table} 
-             WHERE n_um_id = ? 
-             AND n_title = ? 
-             AND n_type = ? 
-             AND DATE(n_create_dt) = CURDATE() 
-             AND n_active = 'Y'`,
-            [userId, title, type]
+            `SELECT COUNT(*) as count FROM notifications
+             WHERE user_id = ? 
+             AND title = ? 
+             AND type = ? 
+             AND DATE(created_at) = CURDATE()
+             AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(userId), title, type]
         );
         return rows[0].count > 0;
+    },
+
+    /**
+     * Mark all notifications as read for a user
+     * @param {string} userId - The user ID (UUID)
+     * @returns {Promise} Database result
+     */
+    async markAllAsRead(userId) {
+        const [result] = await db.query(
+            `UPDATE notifications SET is_read = 1, read_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = ? AND is_read = 0 AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(userId)]
+        );
+        return result;
+    },
+
+    /**
+     * Delete all notifications for a user (soft delete)
+     * @param {string} userId - The user ID (UUID)
+     * @returns {Promise} Database result
+     */
+    async deleteAllByUser(userId) {
+        const [result] = await db.query(
+            `UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(userId)]
+        );
+        return result;
     },
 }
 

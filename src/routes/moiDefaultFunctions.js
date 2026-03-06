@@ -4,10 +4,22 @@ const { authenticateToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Get list of default functions (for dropdown)
-router.post('/list', authenticateToken, controller.list);
+/**
+ * Global default function management
+ * all routes require a valid token
+ */
 
-// Get single function by ID
+// dropdown: return global defaults + user's transaction functions
+router.post('/dropdown', authenticateToken, controller.dropdown);
+// list all global defaults
+router.post('/list', authenticateToken, controller.list);
+// get one by id
 router.get('/:id', authenticateToken, controller.getById);
+// create new default function
+router.post('/create', authenticateToken, controller.create);
+// update default function
+router.post('/update', authenticateToken, controller.update);
+// soft delete
+router.post('/delete', authenticateToken, controller.delete);
 
 module.exports = router;

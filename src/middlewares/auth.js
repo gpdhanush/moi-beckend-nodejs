@@ -1,9 +1,12 @@
 const jwt = require('jsonwebtoken');
 const tokenService = require('./tokenService');
+const User = require('../models/user');
+const logger = require('../config/logger');
 
 /**
  * Middleware to authenticate JWT tokens
- * Validates token signature, expiration, and checks against stored token (single-session policy)
+ * Validates token signature, expiration, checks against stored token (single-session policy),
+ * and verifies user still exists in database (security protection for deleted users)
  */
 function authenticateToken(req, res, next) {
     // Extract token from Authorization header (format: "Bearer <token>")
@@ -18,7 +21,7 @@ function authenticateToken(req, res, next) {
     }
 
     // Verify JWT token signature and expiration
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
         if (err) {
             if (err.name === 'TokenExpiredError') {
                 return res.status(401).json({ 
@@ -32,11 +35,11 @@ function authenticateToken(req, res, next) {
             });
         }
 
-        // Extract user ID from decoded token and normalize to number
-        const userId = Number(decoded.userId);
+        // Extract user ID from decoded token (UUID string or legacy number)
+        const userId = decoded.userId;
         
         // Validate userId exists
-        if (!userId || isNaN(userId)) {
+        if (userId === undefined || userId === null || userId === '') {
             return res.status(401).json({ 
                 responseType: "F", 
                 responseValue: { message: "Invalid token. Please login to continue." } 
@@ -49,17 +52,46 @@ function authenticateToken(req, res, next) {
         
         // If no token stored, null, or doesn't match, reject the request
         if (!storedToken || storedToken !== token) {
+            logger.debug('token mismatch for user', userId, { token, storedToken });
             return res.status(401).json({ 
                 responseType: "F", 
                 responseValue: { message: "அமர்வு காலாவதியாகிவிட்டது. தயவுசெய்து தொடர உள்நுழையவும்." } 
             });
         }
 
+        // ====== NEW SECURITY CHECK: Verify user still exists in database ======
+        // This prevents API access after user account deletion (account deletion invalidates token)
+        try {
+            const user = await User.findById(userId);
+            if (!user) {
+                // User has been deleted - invalidate the token
+                tokenService.removeToken(userId);
+                return res.status(401).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "உங்கள் கணக்கு நீக்கப்பட்டுவிட்டது. தயவுசெய்து தொடர உள்நுழையவும்." } 
+                });
+            }
+
+            // Additionally, check if user is deleted (is_deleted flag)
+            if (user.is_deleted) {
+                tokenService.removeToken(userId);
+                return res.status(401).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "உங்கள் கணக்கு நீக்கப்பட்டுவிட்டது. தயவுசெய்து தொடர உள்நுழையவும்." } 
+                });
+            }
+        } catch (dbError) {
+            logger.error('Database error in auth middleware:', dbError);
+            return res.status(401).json({ 
+                responseType: "F", 
+                responseValue: { message: "Authentication failed. Please login again." } 
+            });
+        }
+
         // Token is valid, attach user info to request and proceed
-        // Ensure userId is normalized in the request object
         req.user = {
             ...decoded,
-            userId: userId
+            userId: typeof userId === 'number' ? userId : String(userId)
         };
         next();
     });

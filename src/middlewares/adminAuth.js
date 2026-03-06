@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const logger = require('../config/logger');
+const { toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
 
 /**
  * Middleware to check if the authenticated user is an admin
@@ -18,31 +19,42 @@ async function isAdmin(req, res, next) {
             });
         }
 
-        // First, check if user exists in admin_master table
-        const [adminRows] = await db.query(
-            `SELECT * FROM gp_moi_admin_master WHERE id = ? AND active = 'Y'`,
-            [userId]
-        );
+        // New schema: check admins table (UUID)
+        const isUuid = typeof userId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+        if (isUuid) {
+            const [adminRows] = await db.query(
+                `SELECT id FROM admins WHERE id = ? AND status = 'ACTIVE' AND (is_deleted = 0 OR is_deleted IS NULL)`,
+                [toBinaryUUID(userId)]
+            );
+            if (adminRows.length > 0) {
+                req.isAdmin = true;
+                req.adminId = fromBinaryUUID(adminRows[0].id);
+                return next();
+            }
+        }
 
-        if (adminRows.length > 0) {
-            // User is admin from admin_master table
+        // Legacy: check gp_moi_admin_master if it still exists (numeric id)
+        const [adminRowsLegacy] = await db.query(
+            `SELECT id FROM gp_moi_admin_master WHERE id = ? AND active = 'Y'`,
+            [userId]
+        ).catch(() => [[]]);
+        if (adminRowsLegacy.length > 0) {
             req.isAdmin = true;
-            req.adminId = adminRows[0].id;
+            req.adminId = adminRowsLegacy[0].id;
             return next();
         }
 
-        // If not found in admin_master, check if it's a special admin user in user_master
-        // Check by admin email (agprakash406@gmail.com is the admin email from the system)
-        const [userRows] = await db.query(
-            `SELECT * FROM gp_moi_user_master WHERE um_id = ? AND um_email = ? AND um_status = 'Y'`,
-            [userId, 'agprakash406@gmail.com']
-        );
-
-        if (userRows.length > 0) {
-            // User is admin from user_master table
-            req.isAdmin = true;
-            req.adminId = userRows[0].um_id;
-            return next();
+        // Legacy: check if it's a special admin user in users table (by email) - only when userId is UUID
+        if (isUuid) {
+            const [userRows] = await db.query(
+                `SELECT id FROM users WHERE id = ? AND email = ? AND status = 'ACTIVE' AND (is_deleted = 0 OR is_deleted IS NULL)`,
+                [toBinaryUUID(userId), 'agprakash406@gmail.com']
+            ).catch(() => [[]]);
+            if (userRows.length > 0) {
+                req.isAdmin = true;
+                req.adminId = fromBinaryUUID(userRows[0].id);
+                return next();
+            }
         }
 
         // User is not an admin

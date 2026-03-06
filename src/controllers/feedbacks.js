@@ -1,24 +1,56 @@
 const Model = require('../models/feedbacks');
 const User = require('../models/user');
-const moment = require('moment');
+const db = require('../config/database');
 const { sendPushNotification } = require('./notificationController');
 const { NotificationType } = require('../models/notificationModels');
-const { sendFeedbackConfirmationEmail } = require('../services/emailService');
+const { sendFeedbackConfirmationEmail, sendFeedbackReplyEmail } = require('../services/emailService');
 const logger = require('../config/logger');
+
+const FEEDBACK_TYPES = ['GENERAL', 'BUG', 'FEATURE', 'COMPLAINT'];
+const FEEDBACK_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'];
+
+const toISOStringOrNull = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
 
 exports.controller = {
     create: async (req, res) => {
         try {
-            const user = await User.findById(req.body.userId);
+            const userId = req.body.userId;
+            const message = String(req.body.message ?? req.body.feedbacks ?? '').trim();
+            const type = String(req.body.type || 'GENERAL').toUpperCase();
+
+            if (!userId || !message) {
+                return res.status(400).json({ responseType: "F", responseValue: { message: "பயனர் ID மற்றும் செய்தி தேவை!" } });
+            }
+
+            if (!FEEDBACK_TYPES.includes(type)) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Invalid feedback type!" }
+                });
+            }
+
+            const user = await User.findById(userId);
             if (!user) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
-            var query = await Model.create(req.body);
+
+            const payload = {
+                userId,
+                message,
+                type
+            };
+
+            const query = await Model.create(payload);
+
             if (query) {
                 if (user.um_notification_token) {
                     try {
                         await sendPushNotification({
-                            userId: req.body.userId,
+                            userId,
                             title: 'புதிய கருத்து சமர்ப்பிக்கப்பட்டது',
                             body: 'உங்கள் கருத்து வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. நாங்கள் விரைவில் மதிப்பாய்வு செய்வோம்.',
                             token: user.um_notification_token,
@@ -28,10 +60,18 @@ exports.controller = {
                         logger.error('Error sending push notification for feedback', notificationError);
                     }
                 }
+                // TODO: Send email confirmation to user
                 if (user.um_email) {
                     sendFeedbackConfirmationEmail(user.um_email, user.um_full_name).catch(() => {});
                 }
-                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது." } });
+
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது.",
+                        id: query.insertId
+                    }
+                });
             } else {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு சேமிப்பு தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
             }
@@ -41,36 +81,52 @@ exports.controller = {
     },
     list: async (req, res) => {
         try {
-            const { userId } = req.body;
+            const userId =  req.body.userId;
+            const status = req.body.status ? String(req.body.status).toUpperCase() : null;
+            const type = req.body.type ? String(req.body.type).toUpperCase() : null;
             
             if (!userId) {
                 return res.status(400).json({ responseType: "F", responseValue: { message: "பயனர் ID தேவை!" } });
             }
 
-            // Check if user exists
+            if (status && !FEEDBACK_STATUSES.includes(status)) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Invalid feedback status!" }
+                });
+            }
+
+            if (type && !FEEDBACK_TYPES.includes(type)) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Invalid feedback type!" }
+                });
+            }
+
             const user = await User.findById(userId);
             if (!user) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
 
-            const feedbacks = await Model.readAll(userId);
+            const feedbacks = await Model.readAll(userId, { status, type });
             if (!feedbacks || feedbacks.length === 0) {
                 return res.status(200).json({ responseType: "S", count: 0, responseValue: [] });
             }
             
             const formattedFeedbacks = feedbacks.map(feedback => {
-                const createdAt = moment(feedback.created_time).utc().toISOString();
-                // Use updated_time as repliedAt if reply exists, otherwise null
-                const repliedAt = feedback.reply ? moment(feedback.updated_time).utc().toISOString() : null;
-                
                 return {
                     id: feedback.id,
-                    userId: feedback.user_id,
-                    feedbacks: feedback.feedbacks || '',
-                    reply: feedback.reply || '',
-                    createdAt: createdAt,
-                    repliedAt: repliedAt,
-                    active: feedback.active,
+                    userId: feedback.userId,
+                    userName: feedback.userName,
+                    userEmail: feedback.userEmail,
+                    userMobile: feedback.userMobile,
+                    type: feedback.type,
+                    message: feedback.message || '',
+                    adminResponse: feedback.adminResponse || '',
+                    status: feedback.status,
+                    respondedAt: toISOStringOrNull(feedback.respondedAt),
+                    createdAt: toISOStringOrNull(feedback.createdAt),
+                    updatedAt: toISOStringOrNull(feedback.updatedAt)
                 };
             });
             
@@ -79,4 +135,258 @@ exports.controller = {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
     },
+
+    // ==================== ADMIN ENDPOINTS ====================
+
+    /**
+     * Admin: Get all feedbacks with pagination
+     * Body: { limit, offset, status, type }
+     */
+    adminListAll: async (req, res) => {
+        try {
+            const { limit = 50, offset = 0, status = null, type = null } = req.body;
+            
+            // Build count query
+            let countQuery = `SELECT COUNT(*) as total FROM feedbacks WHERE (is_deleted = 0 OR is_deleted IS NULL)`;
+            let countParams = [];
+
+            if (status) {
+                countQuery += ` AND status = ?`;
+                countParams.push(status);
+            }
+
+            if (type) {
+                countQuery += ` AND type = ?`;
+                countParams.push(type);
+            }
+
+            // Get total count
+            const [countRows] = await db.query(countQuery, countParams);
+            const totalCount = countRows[0]?.total || 0;
+            
+            // Get paginated feedbacks
+            const feedbacks = await Model.getAllFeedbacks({ 
+                limit: Math.min(parseInt(limit), 200),
+                offset: parseInt(offset),
+                status,
+                type
+            });
+            
+            return res.status(200).json({
+                responseType: "S",
+                count: totalCount,
+                responseValue: feedbacks
+            });
+        } catch (error) {
+            logger.error('Error fetching all feedbacks:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Get feedback statistics
+     */
+    adminStats: async (req, res) => {
+        try {
+            const stats = await Model.getFeedbackStats();
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: stats
+            });
+        } catch (error) {
+            logger.error('Error fetching feedback stats:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Get specific feedback details
+     * Body: { id }
+     */
+    adminGetDetail: async (req, res) => {
+        try {
+            const { id } = req.body;
+            
+            if (!id) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback ID is required!" }
+                });
+            }
+            
+            const feedback = await Model.readById(id);
+            
+            if (!feedback) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback not found!" }
+                });
+            }
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: feedback
+            });
+        } catch (error) {
+            logger.error('Error fetching feedback detail:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Update feedback status
+     * Body: { id, status }
+     */
+    adminUpdateStatus: async (req, res) => {
+        try {
+            const { id, status } = req.body;
+            
+            if (!id || !status) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback ID and status are required!" }
+                });
+            }
+            
+            // Verify feedback exists
+            const feedback = await Model.readById(id);
+            if (!feedback) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback not found!" }
+                });
+            }
+            
+            const success = await Model.updateStatus(id, status);
+            
+            if (success) {
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: { message: "Feedback status updated successfully!" }
+                });
+            } else {
+                return res.status(500).json({
+                    responseType: "F",
+                    responseValue: { message: "Failed to update feedback status!" }
+                });
+            }
+        } catch (error) {
+            logger.error('Error updating feedback status:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Add response/reply to feedback
+     * Body: { id, adminResponse }
+     */
+    adminAddResponse: async (req, res) => {
+        try {
+            const { id, adminResponse } = req.body;
+            
+            if (!id || !adminResponse) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback ID and response are required!" }
+                });
+            }
+            
+            // Verify feedback exists
+            const feedback = await Model.readById(id);
+            if (!feedback) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback not found!" }
+                });
+            }
+            
+            const success = await Model.addResponse(id, adminResponse);
+            
+            if (success) {
+                // Send email to user about the response
+                try {
+                    if (feedback.userEmail) {
+                        await sendFeedbackReplyEmail(feedback.userEmail, feedback.userName, adminResponse);
+                    }
+                } catch (emailErr) {
+                    logger.warn('Failed to send feedback reply email:', emailErr);
+                }
+                
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: { message: "Response added successfully!" }
+                });
+            } else {
+                return res.status(500).json({
+                    responseType: "F",
+                    responseValue: { message: "Failed to add response!" }
+                });
+            }
+        } catch (error) {
+            logger.error('Error adding feedback response:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Delete feedback (soft delete)
+     * Body: { id }
+     */
+    adminDelete: async (req, res) => {
+        try {
+            const { id } = req.body;
+            
+            if (!id) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback ID is required!" }
+                });
+            }
+            
+            // Verify feedback exists
+            const feedback = await Model.readById(id);
+            if (!feedback) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: "Feedback not found!" }
+                });
+            }
+            
+            const success = await Model.delete(id);
+            
+            if (success) {
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: { message: "Feedback deleted successfully!" }
+                });
+            } else {
+                return res.status(500).json({
+                    responseType: "F",
+                    responseValue: { message: "Failed to delete feedback!" }
+                });
+            }
+        } catch (error) {
+            logger.error('Error deleting feedback:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    }
 }

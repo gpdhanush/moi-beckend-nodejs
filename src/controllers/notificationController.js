@@ -149,12 +149,14 @@ exports.controller = {
     },
 
     /**
-     * Get all notifications for the authenticated user
+     * Get all notifications for the authenticated user (with pagination)
      * Uses userId from req.user (set by authenticateToken middleware)
+     * Query: { limit?, offset? }
      */
     getAllNotifications: async (req, res) => {
         try {
             const userId = req.user.userId;
+            const { limit = 50, offset = 0 } = req.body;
             
             if (!userId) {
                 return res.status(400).json({
@@ -163,11 +165,13 @@ exports.controller = {
                 });
             }
 
-            const notifications = await Notification.findByUserId(userId);
+            const notifications = await Notification.findByUserId(userId, Math.min(parseInt(limit), 100), parseInt(offset));
+            const unreadCount = await Notification.getUnreadCount(userId);
             
             return res.status(200).json({
                 responseType: "S",
                 count: notifications.length,
+                unreadCount: unreadCount,
                 responseValue: notifications
             });
         } catch (error) {
@@ -180,12 +184,41 @@ exports.controller = {
     },
 
     /**
+     * Get unread notification count for the authenticated user
+     */
+    getUnreadCount: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            
+            if (!userId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் ஐடி தேவையானது.' }
+                });
+            }
+
+            const count = await Notification.getUnreadCount(userId);
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: { unreadCount: count }
+            });
+        } catch (error) {
+            logger.error('Error fetching unread count:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
      * Mark notification as read
-     * Params: { id } - Notification ID
+     * Body: { notificationId }
      */
     markAsRead: async (req, res) => {
         try {
-            const notificationId = parseInt(req.params.id);
+            const { notificationId } = req.body;
 
             if (!notificationId) {
                 return res.status(400).json({
@@ -205,7 +238,7 @@ exports.controller = {
 
             // Check if notification belongs to the authenticated user
             const userId = req.user.userId;
-            if (notification.n_um_id !== userId) {
+            if (notification.userId !== userId) {
                 return res.status(403).json({
                     responseType: "F",
                     responseValue: { message: 'இந்த அறிவிப்பை அணுக உங்களுக்கு அனுமதி இல்லை.' }
@@ -216,14 +249,9 @@ exports.controller = {
             const result = await Notification.markAsRead(notificationId);
 
             if (result && result.affectedRows > 0) {
-                // Fetch updated notification
-                const updatedNotification = await Notification.findById(notificationId);
                 return res.status(200).json({
                     responseType: "S",
-                    responseValue: {
-                        message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்பட்டதாக குறிக்கப்பட்டது.',
-                        notification: updatedNotification
-                    }
+                    responseValue: { message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்பட்டதாக குறிக்கப்பட்டது.' }
                 });
             } else {
                 return res.status(404).json({
@@ -242,11 +270,11 @@ exports.controller = {
 
     /**
      * Mark notification as unread
-     * Params: { id } - Notification ID
+     * Body: { notificationId }
      */
     markAsUnread: async (req, res) => {
         try {
-            const notificationId = parseInt(req.params.id);
+            const { notificationId } = req.body;
 
             if (!notificationId) {
                 return res.status(400).json({
@@ -266,7 +294,7 @@ exports.controller = {
 
             // Check if notification belongs to the authenticated user
             const userId = req.user.userId;
-            if (notification.n_um_id !== userId) {
+            if (notification.userId !== userId) {
                 return res.status(403).json({
                     responseType: "F",
                     responseValue: { message: 'இந்த அறிவிப்பை அணுக உங்களுக்கு அனுமதி இல்லை.' }
@@ -277,14 +305,9 @@ exports.controller = {
             const result = await Notification.markAsUnread(notificationId);
 
             if (result && result.affectedRows > 0) {
-                // Fetch updated notification
-                const updatedNotification = await Notification.findById(notificationId);
                 return res.status(200).json({
                     responseType: "S",
-                    responseValue: {
-                        message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்படாததாக குறிக்கப்பட்டது.',
-                        notification: updatedNotification
-                    }
+                    responseValue: { message: 'அறிவிப்பு வெற்றிகரமாக படிக்கப்படாததாக குறிக்கப்பட்டது.' }
                 });
             } else {
                 return res.status(404).json({
@@ -302,12 +325,12 @@ exports.controller = {
     },
 
     /**
-     * Delete/Deactivate a notification (soft delete)
-     * Params: { id } - Notification ID
+     * Delete a notification (soft delete)
+     * Body: { notificationId }
      */
     delete: async (req, res) => {
         try {
-            const notificationId = parseInt(req.params.id);
+            const { notificationId } = req.body;
 
             if (!notificationId) {
                 return res.status(400).json({
@@ -327,14 +350,14 @@ exports.controller = {
 
             // Check if notification belongs to the authenticated user
             const userId = req.user.userId;
-            if (notification.n_um_id !== userId) {
+            if (notification.userId !== userId) {
                 return res.status(403).json({
                     responseType: "F",
                     responseValue: { message: 'இந்த அறிவிப்பை நீக்க உங்களுக்கு அனுமதி இல்லை.' }
                 });
             }
 
-            // Hard delete notification
+            // Soft delete notification
             const result = await Notification.delete(notificationId);
 
             if (result && result.affectedRows > 0) {
@@ -350,6 +373,38 @@ exports.controller = {
             }
         } catch (error) {
             logger.error('Error deleting notification:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Mark all notifications as read for the authenticated user
+     */
+    markAllAsRead: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            
+            if (!userId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் ஐடி தேவையானது.' }
+                });
+            }
+
+            const result = await Notification.markAllAsRead(userId);
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: { 
+                    message: 'அனைத்து அறிவிப்புகளும் வெற்றிகரமாக படிக்கப்பட்டதாக குறிக்கப்பட்டது.',
+                    updatedCount: result.changedRows
+                }
+            });
+        } catch (error) {
+            logger.error('Error marking all as read:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }

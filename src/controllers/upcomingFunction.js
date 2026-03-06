@@ -1,119 +1,508 @@
 const Model = require('../models/upcomingFunction');
 const User = require('../models/user');
 const moment = require('moment');
+const logger = require('../config/logger');
 
+// Valid status enum values
+const VALID_STATUSES = ['ACTIVE', 'CANCELLED', 'COMPLETED'];
+
+/**
+ * Parse and convert date to YYYY-MM-DD format for MySQL
+ * Accepts: DD-MMM-YYYY, DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY
+ * Returns: YYYY-MM-DD or throws error
+ */
+const parseDateToMySQL = (dateString) => {
+    if (!dateString) return null;
+    
+    // Try different date formats
+    const formats = ['DD-MMM-YYYY', 'DD-MM-YYYY', 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD-MM-YYYY'];
+    
+    let parsedDate = null;
+    for (const format of formats) {
+        const date = moment(dateString, format, true);
+        if (date.isValid()) {
+            parsedDate = date;
+            break;
+        }
+    }
+    
+    if (!parsedDate || !parsedDate.isValid()) {
+        throw new Error(`Invalid date format: '${dateString}'. Expected: DD-MMM-YYYY, DD-MM-YYYY, or YYYY-MM-DD`);
+    }
+    
+    // Return in MySQL format (YYYY-MM-DD)
+    return parsedDate.format('YYYY-MM-DD');
+};
 
 exports.controller = {
+    /**
+     * List all upcoming functions for authenticated user
+     * Uses userId from JWT token (req.user.userId)
+     */
     list: async (req, res) => {
-        const { userId } = req.body;
         try {
+            // Get userId from authenticated token
+            const userId = req.user?.userId || req.body.userId;
+            
+            if (!userId) {
+                return res.status(401).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "Authentication required!" } 
+                });
+            }
+
+            // Verify user exists
             const user = await User.findById(userId);
             if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } 
+                });
             }
 
+            // Fetch all functions for user
             const result = await Model.readAll(userId);
-            if (result.length === 0) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } });
-            }
+            
+            // Transform to camelCase response
+            const transformKeys = result.map(row => ({
+                id: row.id,
+                userId: row.user_id,
+                title: row.title,
+                description: row.description,
+                functionDate: moment(row.function_date).local().format('DD-MMM-YYYY'),
+                location: row.location,
+                invitationUrl: row.invitation_url,
+                status: row.status,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at
+            }));
 
-            const changeKeyNames = (arr) => {
-                return arr.map(({ uf_id: id, uf_user_id: userId, uf_date: functionDate, uf_name: functionName,
-                    uf_place: place, uf_invitation_url: invitationUrl, status
-                }) => ({ id, userId, functionName, functionDate, place, invitationUrl, status }))
-                    .map(event => {
-                        return {
-                            ...event,
-                            functionDate: moment(event.functionDate).local().format('DD-MMM-YYYY')
-                        };
-                    });
-            };
-            const transformKeys = changeKeyNames(result);
-
-            return res.status(200).json({ responseType: "S", count: transformKeys.length, responseValue: transformKeys });
+            return res.status(200).json({ 
+                responseType: "S", 
+                count: transformKeys.length, 
+                responseValue: transformKeys 
+            });
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            logger.error('Error listing upcoming functions:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
+    
+    /**
+     * Create new upcoming function
+     * Uses userId from JWT token (req.user.userId)
+     */
     create: async (req, res) => {
         try {
-            const user = await User.findById(req.body.userId);
-            if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
+            // Get userId from authenticated token
+            const userId = req.user?.userId || req.body.userId;
+            
+            if (!userId) {
+                return res.status(401).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "பயனர் ID தேவை!" } 
+                });
             }
-            var query = await Model.create(req.body);
+
+            // Verify user exists
+            const user = await User.findById(userId);
+            if (!user) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } 
+                });
+            }
+
+            // Validate required fields
+            const title = req.body.title || req.body.functionName;
+            const rawDate = req.body.functionDate || req.body.date;
+            const location = req.body.location || req.body.place;
+
+            if (!title || !rawDate || !location) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: "தலைப்பு, தேதி மற்றும் இடம் அவசியம்!" 
+                    } 
+                });
+            }
+
+            // Parse and validate date format
+            let functionDate;
+            try {
+                functionDate = parseDateToMySQL(rawDate);
+            } catch (dateError) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: dateError.message 
+                    } 
+                });
+            }
+
+            // Prepare payload
+            const payload = {
+                userId,
+                title,
+                description: req.body.description || null,
+                functionDate,
+                location,
+                invitationUrl: req.body.invitationUrl || req.body.invitation_url || null
+            };
+
+            // Create function
+            const query = await Model.create(payload);
+            
             if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது." } });
+                return res.status(201).json({ 
+                    responseType: "S", 
+                    responseValue: { 
+                        message: "உங்கள் தரவு வெற்றிகரமாக சேமிக்கப்பட்டது.",
+                        id: query.insertId 
+                    } 
+                });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு சேமிப்பு தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: "தரவு சேமிப்பு தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." 
+                    } 
+                });
             }
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            logger.error('Error creating upcoming function:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
+    
+    /**
+     * Update existing upcoming function
+     * User can only update their own functions
+     */
     update: async (req, res) => {
         try {
-            const user = await User.findById(req.body.userId);
-            if (!user) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
-            }
-            const moidata = await Model.readById(req.body.id);
-            if (!moidata) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } });
+            // Get userId from authenticated token
+            const userId = req.user?.userId || req.body.userId;
+            const functionId = req.body.id;
+
+            if (!functionId) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "செயல்பாட்டு ID அவசியம்!" } 
+                });
             }
 
-            var query = await Model.update(req.body);
-            if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
+            // Check if function exists
+            const existingFunction = await Model.readById(functionId);
+            if (!existingFunction) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } 
+                });
+            }
+
+            // Verify ownership (user can only update their own functions)
+            if (existingFunction.user_id !== userId) {
+                return res.status(403).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "இந்த செயல்பாட்டை புதுப்பிக்க உங்களுக்கு அனுமதி இல்லை!" } 
+                });
+            }
+
+            // Parse date if provided, otherwise keep existing
+            let functionDate = existingFunction.function_date;
+            if (req.body.functionDate || req.body.date) {
+                try {
+                    functionDate = parseDateToMySQL(req.body.functionDate || req.body.date);
+                } catch (dateError) {
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { 
+                            message: dateError.message 
+                        } 
+                    });
+                }
+            }
+
+            // Prepare update payload
+            const payload = {
+                id: functionId,
+                title: req.body.title || req.body.functionName || existingFunction.title,
+                description: req.body.description !== undefined ? req.body.description : existingFunction.description,
+                functionDate,
+                location: req.body.location || req.body.place || existingFunction.location,
+                invitationUrl: req.body.invitationUrl || req.body.invitation_url || existingFunction.invitation_url
+            };
+
+            // Update function
+            const query = await Model.update(payload);
+            
+            if (query && query.affectedRows > 0) {
+                return res.status(200).json({ 
+                    responseType: "S", 
+                    responseValue: { message: "உங்கள் தரவு வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } 
+                });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "தரவு புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: "தரவு புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." 
+                    } 
+                });
             }
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            logger.error('Error updating upcoming function:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
+    
+    /**
+     * Delete (soft delete) upcoming function
+     * User can only delete their own functions
+     */
     delete: async (req, res) => {
         try {
-            const id = parseInt(req.params.id);
-            var already = await Model.readById(id);
-            if (!already) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: 'The specified records does not exist!' } });
+            const id = req.params.id;
+            const userId = req.user?.userId || req.body.userId;
+
+            if (!id) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "செயல்பாட்டு ID அவசியம்!" } 
+                });
             }
 
-            var del = await Model.delete(id);
+            // Check if function exists
+            const existingFunction = await Model.readById(id);
+            if (!existingFunction) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: 'குறிப்பிடப்பட்ட பதிவுகள் இல்லை!' } 
+                });
+            }
+
+            // Verify ownership (user can only delete their own functions)
+            if (existingFunction.user_id !== userId) {
+                return res.status(403).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "இந்த செயல்பாட்டை நீக்க உங்களுக்கு அனுமதி இல்லை!" } 
+                });
+            }
+
+            // Soft delete
+            const del = await Model.delete(id);
+            
             if (del && del.affectedRows > 0) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "பொருள் வெற்றிகரமாக நீக்கப்பட்டது." } });
+                return res.status(200).json({ 
+                    responseType: "S", 
+                    responseValue: { message: "பொருள் வெற்றிகரமாக நீக்கப்பட்டது." } 
+                });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "இந்த பதிவுகளை நீக்க முடியவில்லை!" } });
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "இந்த பதிவுகளை நீக்க முடியவில்லை!" } 
+                });
             }
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            logger.error('Error deleting upcoming function:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
+    
+    /**
+     * Update status of upcoming function
+     * Allowed statuses: ACTIVE, CANCELLED, COMPLETED
+     * User can only update their own functions
+     */
     updateStatus: async (req, res) => {
         try {
             const { id, status } = req.body;
+            const userId = req.user?.userId || req.body.userId;
             
             if (!id) {
-                return res.status(400).json({ responseType: "F", responseValue: { message: "ID is required!" } });
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "செயல்பாட்டு ID அவசியம்!" } 
+                });
             }
 
-            const moidata = await Model.readById(id);
-            if (!moidata) {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } });
+            if (!status) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "நிலை அவசியம்!" } 
+                });
             }
 
-            // Validate status value - should be 'completed' or null/empty
-            const validStatus = status === 'completed' ? 'completed' : (status === '' || status === null ? null : status);
+            // Validate status enum
+            const upperStatus = status.toString().toUpperCase();
+            if (!VALID_STATUSES.includes(upperStatus)) {
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: `தவறான நிலை! அனுமதிக்கப்பட்ட மதிப்புகள்: ${VALID_STATUSES.join(', ')}` 
+                    } 
+                });
+            }
+
+            // Check if function exists
+            const existingFunction = await Model.readById(id);
+            if (!existingFunction) {
+                return res.status(404).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "குறிப்பிடப்பட்ட பதிவுகள் இல்லை!" } 
+                });
+            }
+
+            // Verify ownership (user can only update their own functions)
+            if (existingFunction.user_id !== userId) {
+                return res.status(403).json({ 
+                    responseType: "F", 
+                    responseValue: { message: "இந்த செயல்பாட்டை புதுப்பிக்க உங்களுக்கு அனுமதி இல்லை!" } 
+                });
+            }
+
+            // Update status
+            const query = await Model.updateStatus(id, upperStatus);
             
-            var query = await Model.updateStatus(id, validStatus);
-            if (query) {
-                return res.status(200).json({ responseType: "S", responseValue: { message: "நிலை வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } });
+            if (query && query.affectedRows > 0) {
+                return res.status(200).json({ 
+                    responseType: "S", 
+                    responseValue: { message: "நிலை வெற்றிகரமாக புதுப்பிக்கப்பட்டது." } 
+                });
             } else {
-                return res.status(404).json({ responseType: "F", responseValue: { message: "நிலை புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." } });
+                return res.status(400).json({ 
+                    responseType: "F", 
+                    responseValue: { 
+                        message: "நிலை புதுப்பித்தல் தோல்வியடைந்தது. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்." 
+                    } 
+                });
             }
         } catch (error) {
-            return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            logger.error('Error updating function status:', error);
+            return res.status(500).json({ 
+                responseType: "F", 
+                responseValue: { message: error.toString() } 
+            });
         }
     },
+
+    // ==================== ADMIN ENDPOINTS ====================
+
+    /**
+     * Admin: Get all upcoming functions across all users
+     * Body: { limit, offset, status, userId }
+     */
+    adminListAll: async (req, res) => {
+        try {
+            const { limit = 50, offset = 0, status = null, userId = null } = req.body;
+            
+            const functions = await Model.getAllFunctions({
+                limit: Math.min(parseInt(limit), 200),
+                offset: parseInt(offset),
+                status,
+                userId
+            });
+            
+            const formattedFunctions = functions.map(f => ({
+                id: f.id,
+                userId: f.userId,
+                userName: f.userName,
+                userEmail: f.userEmail,
+                title: f.title,
+                description: f.description,
+                functionDate: moment(f.functionDate).format('DD-MMM-YYYY'),
+                location: f.location,
+                invitationUrl: f.invitationUrl,
+                status: f.status,
+                createdAt: f.createdAt,
+                updatedAt: f.updatedAt
+            }));
+            
+            return res.status(200).json({
+                responseType: "S",
+                count: formattedFunctions.length,
+                responseValue: formattedFunctions
+            });
+        } catch (error) {
+            logger.error('Error fetching all upcoming functions:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Get upcoming functions statistics
+     */
+    adminStats: async (req, res) => {
+        try {
+            const stats = await Model.getFunctionStats();
+            
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: stats
+            });
+        } catch (error) {
+            logger.error('Error fetching function stats:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Admin: Get upcoming functions by date range
+     * Body: { startDate, endDate }
+     */
+    adminGetByDateRange: async (req, res) => {
+        try {
+            const { startDate, endDate } = req.body;
+            
+            if (!startDate || !endDate) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: "Start date and end date are required!" }
+                });
+            }
+            
+            const functions = await Model.getFunctionsByDateRange(startDate, endDate);
+            
+            const formattedFunctions = functions.map(f => ({
+                id: f.id,
+                userId: f.userId,
+                userName: f.userName,
+                userEmail: f.userEmail,
+                title: f.title,
+                functionDate: moment(f.functionDate).format('DD-MMM-YYYY'),
+                location: f.location,
+                status: f.status
+            }));
+            
+            return res.status(200).json({
+                responseType: "S",
+                count: formattedFunctions.length,
+                responseValue: formattedFunctions
+            });
+        } catch (error) {
+            logger.error('Error fetching functions by date range:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    }
 }

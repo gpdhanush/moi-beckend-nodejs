@@ -154,6 +154,10 @@ Key dependencies:
 
 ISC
 
+## Additional Dependencies
+
+* `pdfkit` — required for generating PDF statements. Run `npm install pdfkit` before starting the server.
+
 ## Author
 
 gpdhanush
