@@ -1,6 +1,7 @@
 const MoiFunctions = require('../models/moiFunctions');
 const { sendPushNotification } = require('../controllers/notificationController');
 const { NotificationType } = require('../models/notificationModels');
+const { fromBinaryUUID } = require('../helpers/uuid');
 const logger = require('../config/logger');
 
 /**
@@ -25,20 +26,21 @@ async function checkAndNotifyUpcomingFunctions() {
         for (const functionData of upcomingFunctions) {
             if (functionData.um_notification_token) {
                 try {
+                    const userId = fromBinaryUUID(functionData.um_id);
                     await sendPushNotification({
-                        userId: functionData.f_um_id,
+                        userId: userId,
                         title: 'விழா நினைவூட்டல்',
-                        body: `நாளை உங்களுக்கு ${functionData.function_name} விழா உள்ளது. இடம்: ${functionData.place || 'இடம் குறிப்பிடப்படவில்லை'}. தயவுசெய்து தயாராக இருங்கள்.`,
+                        body: `நாளை உங்களுக்கு ${functionData.title} விழா உள்ளது. இடம்: ${functionData.location || 'இடம் குறிப்பிடப்படவில்லை'}. தயவுசெய்து தயாராக இருங்கள்.`,
                         token: functionData.um_notification_token,
                         type: NotificationType.FUNCTION
                     });
-                    logger.info(`Function reminder notification sent to user ${functionData.f_um_id} (${functionData.um_email}) for function: ${functionData.function_name}`);
+                    logger.info(`Function reminder notification sent to user ${userId} (${functionData.um_email}) for function: ${functionData.title}`);
                 } catch (notificationError) {
-                    logger.error(`Error sending function reminder notification to user ${functionData.f_um_id}:`, notificationError);
+                    logger.error(`Error sending function reminder notification to user ${fromBinaryUUID(functionData.um_id)}:`, notificationError);
                     // Continue with other functions even if one fails
                 }
             } else {
-                logger.info(`User ${functionData.f_um_id} (${functionData.um_email}) does not have a notification token, skipping.`);
+                logger.info(`User ${fromBinaryUUID(functionData.um_id)} (${functionData.um_email}) does not have a notification token, skipping.`);
             }
         }
 

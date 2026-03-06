@@ -50,30 +50,51 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
         token: token, // Target device FCM token
     };
 
+    // Save notification to database first (unless skipDbSave is true)
+    let notificationId = null;
+    if (!skipDbSave) {
+        try {
+            const notificationResult = await Notification.create({
+                userId: userId,
+                title: title,
+                body: body,
+                type: type || NotificationType.GENERAL
+            });
+            notificationId = notificationResult.insertId;
+        } catch (dbError) {
+            logger.error('Error saving notification to database:', dbError);
+            // Continue trying to send FCM even if DB save fails
+        }
+    }
+
     try {
         // Send notification via FCM
         await admin.messaging().send(message);
-        
-        // If FCM send is successful, save notification to database (unless skipDbSave is true)
-        if (!skipDbSave) {
-            try {
-                await Notification.create({
-                    userId: userId,
-                    title: title,
-                    body: body,
-                    type: type || NotificationType.GENERAL // Use provided type or default to 'general'
-                });
-            } catch (dbError) {
-                // Log database error but don't fail the request since FCM send was successful
-                logger.error('Error saving notification to database:', dbError);
-                // Continue - notification was sent successfully
-            }
-        }
-
         return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };
     } catch (error) {
-        // FCM send failed, don't save to database
+        // FCM send failed
         logger.error('FCM send error:', error);
+        
+        // If the token is invalid, deactivate it in the database
+        if (error.code === 'messaging/invalid-registration-token' || 
+            error.code === 'messaging/registration-token-not-registered') {
+            try {
+                const db = require('../config/database');
+                await db.query(
+                    'UPDATE user_devices SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?',
+                    [token]
+                );
+                logger.info(`Deactivated invalid FCM token for user ${userId}`);
+            } catch (dbError) {
+                logger.error('Error deactivating FCM token:', dbError);
+            }
+        }
+        
+        // Return success if notification was saved to DB, even if FCM failed
+        if (notificationId) {
+            return { success: true, message: 'அறிவிப்பு தரவுத்தளத்தில் சேமிக்கப்பட்டது, ஆனால் FCM அனுப்ப முடியவில்லை' };
+        }
+        
         throw error;
     }
 }
