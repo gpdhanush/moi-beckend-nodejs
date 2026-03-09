@@ -88,10 +88,6 @@ exports.controller = {
 
             const functions = await Model.readAll(userId, filters);
             if (functions.length == 0) {
-                // return res.status(404).json({
-                //     responseType: "F",
-                //     responseValue: { message: 'No Data Found!' }
-                // });
                 return res.status(404).json({ 
                     responseType: "F", 
                     responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } 

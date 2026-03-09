@@ -14,16 +14,15 @@ const defaults = require('./default');
 const feedbacks = require('./feedbacks');
 const email = require('./emailRoutes');
 const uploadRoutes = require('./uploadRoutes');
-const adminRoutes = require('./adminRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const moiCreditDebit = require('./moiCreditDebit');
 const moiDefaultFunctions = require('./moiDefaultFunctions');
 const moiPersons = require('./moiPersons');
-const employeeRoutes = require('./employee');
 const sessionRoutes = require('./sessions');
 const logsRoutes = require('./logs');
 const transactionRoutes = require('./transactions');
 const transactionFunctionRoutes = require('./transactionFunctions');
+const userOTPRoutes = require('./userOTP');
 
 
 router.use('/users', user);
@@ -41,14 +40,11 @@ router.use('/logs', logsRoutes);
 // TRANSACTION MANAGEMENT ROUTES
 router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
+router.use('/user-otps', userOTPRoutes);
 // NEW MOI CREDIT/DEBIT ROUTES
 router.use('/moi-credit-debit', moiCreditDebit);
 router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/persons', moiPersons);
-// ADMIN ROUTES
-router.use('/admin', adminRoutes);
-// EMPLOYEE ROUTES
-router.use('/employee', employeeRoutes);
 
 
 

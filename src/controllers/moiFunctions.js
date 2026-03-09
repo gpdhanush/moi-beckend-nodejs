@@ -1,6 +1,5 @@
 const Model = require('../models/moiFunctions');
 const User = require('../models/user');
-const Employee = require('../models/employee');
 const moment = require('moment');
 
 
@@ -8,17 +7,14 @@ exports.controller = {
     list: async (req, res) => {
         const { userId } = req.body;
         try {
-            // Check if user exists (either regular user or employee)
+            // Check if user exists
             const user = await User.findById(userId);
-            const employee = user ? null : await Employee.findById(userId);
             
-            if (!user && !employee) {
+            if (!user) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
 
-            // For employees, use employee ID; for users, use user ID
-            const actualUserId = user ? userId : userId;
-            const result = await Model.readAll(actualUserId);
+            const result = await Model.readAll(userId);
             if (result.length === 0) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: 'விவரங்கள் எதுவும் கிடைக்கவில்லை.' } });
             }
@@ -48,23 +44,11 @@ exports.controller = {
         try {
             const { userId, functionId } = req.body;
             
-            // Check if user exists (either regular user or employee)
+            // Check if user exists
             const user = await User.findById(userId);
-            const employee = user ? null : await Employee.findById(userId);
             
-            if (!user && !employee) {
+            if (!user) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
-            }
-
-            // If it's an employee, check if they have FUNCTION_CREATE permission
-            if (employee) {
-                const hasPermission = await Employee.hasPermission(userId, functionId || null, 'FUNCTION_CREATE');
-                if (!hasPermission) {
-                    return res.status(403).json({ 
-                        responseType: "F", 
-                        responseValue: { message: "விழா உருவாக்க அனுமதி இல்லை. நிர்வாகியைத் தொடர்பு கொள்ளவும்." } 
-                    });
-                }
             }
 
             var query = await Model.create(req.body);
@@ -103,15 +87,11 @@ exports.controller = {
             const id = parseInt(req.params.id);
             const userId = parseInt(req.query.userId || req.body.userId);
             
-            // Check if user is an employee - employees cannot delete
-            if (userId) {
-                const employee = await Employee.findById(userId);
-                if (employee && employee.em_status === 'Y') {
-                    return res.status(403).json({ 
-                        responseType: "F", 
-                        responseValue: { message: "பணியாளர்களுக்கு நீக்கும் அனுமதி இல்லை. நிர்வாகியைத் தொடர்பு கொள்ளவும்." } 
-                    });
-                }
+            // Check if user exists
+            const user = await User.findById(userId);
+            
+            if (!user) {
+                return res.status(404).json({ responseType: "F", responseValue: { message: "குறிப்பிடப்பட்ட பயனர் இல்லை!" } });
             }
 
             var already = await Model.readById(id);

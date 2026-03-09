@@ -3,10 +3,6 @@ const { toBinaryUUID } = require('../helpers/uuid');
 
 const Model = {
 
-    async readAllPayment() {
-        const [result] = await db.query(`SELECT * FROM gp_moi_default_payment WHERE dp_active = 'Y' ORDER BY dp_mode ASC`);
-        return result;
-    },
     async totalAmount(userId) {
         const userIdBin = toBinaryUUID(userId);
         

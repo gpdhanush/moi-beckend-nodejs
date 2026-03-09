@@ -1,27 +1,3 @@
-// const express = require('express');
-// const { userController } = require('../controllers/user');
-// const { authenticateToken } = require('../middlewares/auth');
-// const { registrationRateLimiter } = require('../middlewares/apiSecurity');
-
-// const router = express.Router();
-
-// router.post('/login', userController.login);
-// // Signup: no API key or token required; rate limit only (5 per 15 min per IP)
-// router.post('/create', registrationRateLimiter, userController.create);
-// router.post('/update', authenticateToken, userController.update);
-// router.get('/details/:id', authenticateToken, userController.getUser);
-// router.post('/updatePassword', authenticateToken, userController.updatePassword);
-// router.post('/deleteUser', authenticateToken, userController.deleteUser);
-// router.post('/updateNotificationToken', userController.updateNotificationToken);
-// router.post('/updateProfilePicture', authenticateToken, userController.updateProfilePicture);
-// router.get('/importantDetails/:id', authenticateToken, userController.getImportantUserDetails);
-
-// router.post('/resetPassword', userController.resetPassword);
-
-// module.exports = router;
-
-// src/routes/user.js
-
 const express = require('express');
 const router = express.Router();
 const { userController } = require('../controllers/user');
@@ -35,6 +11,18 @@ const fs = require('fs');
 // User Authentication Routes
 router.post('/login', userController.login);
 router.post('/create', userController.create);
+// OTP Routes
+router.post('/request-verification-otp', userController.requestVerificationOTP);
+router.post('/verify-email-otp', userController.verifyEmailOTP);
+router.post('/resend-verification-otp', userController.resendVerificationOTP);
+router.post('/request-restore-otp', userController.requestRestoreOTP);
+router.post('/verify-restore-otp', userController.verifyRestoreOTP);
+router.get('/verification-status/:id', userController.checkVerificationStatus);
+// Password Management Routes
+router.post('/update-password', authenticateToken, userController.updatePassword);
+router.post('/reset-password', userController.resetPassword);
+// Device & Notification Routes
+router.post('/update-notification-token', authenticateToken, userController.updateNotificationToken);
 
 // User Profile Routes
 // Explicit referral-code route (must be before '/:id' to avoid route collision)
@@ -46,18 +34,9 @@ router.post('/delete', authenticateToken, userController.deleteUser);
 // Direct account restore (no OTP) - kept for admin/backend use
 router.post('/restore', userController.restoreAccount);
 
-// Password Management Routes
-router.post('/update-password', authenticateToken, userController.updatePassword);
-router.post('/reset-password', userController.resetPassword);
-
-// Device & Notification Routes
-router.post('/update-notification-token', authenticateToken, userController.updateNotificationToken);
 
 // Profile Picture Routes
 // (multer configuration with diskStorage for profile picture uploads)
-
-
-
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

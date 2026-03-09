@@ -4,7 +4,6 @@ const { authenticateToken } = require('../middlewares/auth'); // Middleware for 
 
 const router = express.Router();
 
-router.get('/payment-lists', authenticateToken, controller.paymentLists);
 router.post('/total-amount', authenticateToken, controller.totalAmount);
 
 module.exports = router;
