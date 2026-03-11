@@ -26,13 +26,15 @@ const userOTPRoutes = require('./userOTP');
 
 
 router.use('/users', user);
+router.use("/default", defaults);
+router.use("/feedbacks", feedbacks);
+router.use("/email", email);
+router.use("/upcoming-functions", upcomingFunction);
+
+
 router.use('/moi', moi);
 router.use('/moi-out', moiOut);
 router.use('/moi-function', moiFunctions);
-router.use('/upcoming-functions', upcomingFunction);
-router.use('/default', defaults);
-router.use('/feedbacks', feedbacks);
-router.use('/email', email);
 router.use('/uploads', uploadRoutes);
 router.use('/notification', notificationRoutes);
 router.use('/sessions', sessionRoutes);
@@ -40,7 +42,7 @@ router.use('/logs', logsRoutes);
 // TRANSACTION MANAGEMENT ROUTES
 router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
-router.use('/user-otps', userOTPRoutes);
+// router.use('/user-otps', userOTPRoutes);
 // NEW MOI CREDIT/DEBIT ROUTES
 router.use('/moi-credit-debit', moiCreditDebit);
 router.use('/moi-default-functions', moiDefaultFunctions);

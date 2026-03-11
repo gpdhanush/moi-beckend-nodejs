@@ -309,36 +309,36 @@ const User = {
         if (fcm_token) {
             await db.query(
                 `
-    INSERT INTO user_devices (
-      user_id,
-      device_name,
-      device_id,
-      brand,
-      manufacturer,
-      model,
-      ram_size,
-      fcm_token,
-      android_version,
-      is_active,
-      last_used_at,
-      is_deleted,
-      deleted_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, NULL)
-    ON DUPLICATE KEY UPDATE
-      last_used_at = VALUES(last_used_at),
-      is_active = 1,
-      is_deleted = 0,
-      deleted_at = NULL,
-      updated_at = CURRENT_TIMESTAMP,
+                    INSERT INTO user_devices (
+                    user_id,
+                    device_name,
+                    device_id,
+                    brand,
+                    manufacturer,
+                    model,
+                    ram_size,
+                    fcm_token,
+                    android_version,
+                    is_active,
+                    last_used_at,
+                    is_deleted,
+                    deleted_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, NULL)
+                    ON DUPLICATE KEY UPDATE
+                    last_used_at = VALUES(last_used_at),
+                    is_active = 1,
+                    is_deleted = 0,
+                    deleted_at = NULL,
+                    updated_at = CURRENT_TIMESTAMP,
 
-      device_name = COALESCE(VALUES(device_name), device_name),
-      brand = COALESCE(VALUES(brand), brand),
-      manufacturer = COALESCE(VALUES(manufacturer), manufacturer),
-      model = COALESCE(VALUES(model), model),
-      ram_size = COALESCE(VALUES(ram_size), ram_size),
-      android_version = COALESCE(VALUES(android_version), android_version),
-      fcm_token = COALESCE(VALUES(fcm_token), fcm_token)
+                    device_name = COALESCE(VALUES(device_name), device_name),
+                    brand = COALESCE(VALUES(brand), brand),
+                    manufacturer = COALESCE(VALUES(manufacturer), manufacturer),
+                    model = COALESCE(VALUES(model), model),
+                    ram_size = COALESCE(VALUES(ram_size), ram_size),
+                    android_version = COALESCE(VALUES(android_version), android_version),
+                    fcm_token = COALESCE(VALUES(fcm_token), fcm_token)
     `,
                 [
                     idBin,

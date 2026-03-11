@@ -11,23 +11,24 @@ const fs = require('fs');
 // User Authentication Routes
 router.post('/login', userController.login);
 router.post('/create', userController.create);
+// Device & Notification Routes
+router.post('/update-notification-token', authenticateToken, userController.updateNotificationToken);
+
 // OTP Routes
-router.post('/request-verification-otp', userController.requestVerificationOTP);
-router.post('/verify-email-otp', userController.verifyEmailOTP);
-router.post('/resend-verification-otp', userController.resendVerificationOTP);
-router.post('/request-restore-otp', userController.requestRestoreOTP);
-router.post('/verify-restore-otp', userController.verifyRestoreOTP);
-router.get('/verification-status/:id', userController.checkVerificationStatus);
+// router.post('/request-verification-otp', userController.requestVerificationOTP);
+// router.post('/verify-email-otp', userController.verifyEmailOTP);
+// router.post('/resend-verification-otp', userController.resendVerificationOTP);
+// router.post('/request-restore-otp', userController.requestRestoreOTP);
+// router.post('/verify-restore-otp', userController.verifyRestoreOTP);
+// router.get('/verification-status/:id', userController.checkVerificationStatus);
 // Password Management Routes
 router.post('/update-password', authenticateToken, userController.updatePassword);
 router.post('/reset-password', userController.resetPassword);
-// Device & Notification Routes
-router.post('/update-notification-token', authenticateToken, userController.updateNotificationToken);
 
 // User Profile Routes
 // Explicit referral-code route (must be before '/:id' to avoid route collision)
 router.get('/referral-code', authenticateToken, userController.getReferralCode);
-router.get('/:id', authenticateToken, userController.getUser);
+// router.get('/:id', authenticateToken, userController.getUser);
 router.post('/update', authenticateToken, userController.update);
 router.get('/details/:id', authenticateToken, userController.getImportantUserDetails);
 router.post('/delete', authenticateToken, userController.deleteUser);

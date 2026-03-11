@@ -5,7 +5,7 @@ const { authenticateToken } = require('../middlewares/auth');
 const router = express.Router();
 
 // Public route - send notification (admin/system can send to any user)
-router.post('/send', controller.sendNotification);
+// router.post('/send', controller.sendNotification);
 
 // Protected routes - require authentication
 // Get all notifications for authenticated user (with pagination support)
