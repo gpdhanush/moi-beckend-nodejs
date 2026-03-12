@@ -277,7 +277,7 @@ exports.userController = {
           timeZone: "Asia/Kolkata",
         });
         // Welcome email content (HTML)
-        const emailContent = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;padding:30px;background:linear-gradient(180deg,#fff 0,#f9faff 100%);border:1px solid #e5e7f2;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.06)"><div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #eee"><h2 style="color:#2f3490;margin:0;font-size:24px">🎉 Welcome to<span style="color:#4346d2"> Moi Kanakku!</span></h2><p style="margin-top:8px;color:#555;font-size:14px">Your personal event & relation manager</p></div><div style="padding:20px 10px"><p style="font-size:16px;color:#333;margin:0 0 10px">Hi<strong style="color:#2f3490"> ${name}</strong>,</p><p style="color:#444;margin:0 0 16px;line-height:1.6">We're excited to have you join our community! Moi Kanakku is built to make your experience <strong>seamless, productive, and enjoyable.</strong></p><div style="background-color:#f4f6ff;border-left:4px solid #2f3490;border-radius:8px;padding:15px 18px;margin:18px 0"><p style="margin:0 0 10px;color:#2f3490;font-weight:700">Here’s how you can get started:</p><ul style="list-style:none;padding-left:0;margin:0"><li style="margin-bottom:10px">✨<strong style="color:#2f3490;font-size:15px">Create & maintain special events, relations, and gift records (cash or kind).</strong></li><li style="margin-bottom:10px">📋<strong style="color:#2f3490;font-size:15px">Manage guests attending your events with detailed gift tracking.</strong></li><li style="margin-bottom:10px">📊<strong style="color:#2f3490;font-size:15px">View and filter records easily by function or relation.</strong></li><li>📁<strong style="color:#2f3490;font-size:15px">Export your data anytime in Excel format.</strong></li></ul></div><p style="color:#444;margin-top:20px;line-height:1.6">Thank you for choosing <strong>Moi Kanakku</strong>. We’re here to help you every step of the way!</p><p style="margin-top:15px;color:#333">Best regards,<br><strong style="color:#2f3490">Moi Kanakku Team</strong></p></div><hr style="border:none;border-top:1px solid #eee;margin:25px 0"><small style="display:block;text-align:center;color:#888;font-size:13px;line-height:1.5">© 2025 Moi Kanakku. All rights reserved.<br>If you did not sign up for Moi Kanakku, please ignore this email.</small></div>`;
+        const emailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Welcome to Moi Kanakku</title></head><body style="margin:0;padding:0;background:#f4f6fb;font-family:Segoe UI,Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7f2;border-radius:10px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.06);"><tr><td style="text-align:center;padding:25px;border-bottom:1px solid #eee;"><h2 style="margin:0;color:#2f3490;font-size:24px;">🎉 Welcome to <span style="color:#4346d2;">Moi Kanakku!</span></h2><p style="margin-top:8px;color:#666;font-size:14px;">Your personal event & relation manager</p></td></tr><tr><td style="padding:25px 28px;color:#333;line-height:1.6;"><p style="font-size:16px;margin:0 0 10px;">Hi <strong style="color:#2f3490;">${name}</strong>,</p><p style="margin:0 0 16px;">We're excited to have you join our community! Moi Kanakku helps you manage<strong>events, relations, and gifts easily.</strong></p><div style="background:#f4f6ff;border-left:4px solid #2f3490;border-radius:6px;padding:16px;margin:20px 0;"><p style="margin:0 0 10px;font-weight:700;color:#2f3490;">Here's how you can get started:</p><ul style="padding-left:18px;margin:0;color:#333;"><li style="margin-bottom:8px;">Create and maintain events, relations, and gift records.</li><li style="margin-bottom:8px;">Manage guests attending your events with gift tracking.</li><li style="margin-bottom:8px;">Filter records easily by function or relation.</li><li>Export your data anytime in Excel format.</li></ul></div><p style="margin-top:15px;">🙏 <strong>Thank you for choosing Moi Kanakku.</strong></p><div style="background:#eef4ff;border:1px solid #dbe7ff;border-radius:6px;padding:15px;margin-top:20px;"><p style="margin:0 0 6px;font-weight:600;color:#2f3490;">🚀 Share Moi Kanakku</p><p style="margin:0;font-size:14px;color:#555;">If you like Moi Kanakku, please share it with your friends and family.More features and promotions are coming soon!</p></div><p style="margin-top:20px;">Best regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></p></td></tr><tr><td style="border-top:1px solid #eee;text-align:center;padding:15px;font-size:12px;color:#888;">© 2026 Moi Kanakku. All rights reserved.<br>If you did not sign up for Moi Kanakku, please ignore this email.</td></tr></table></td></tr></table></body></html>`;
 
         // Send welcome email to new user
         try {
@@ -300,49 +300,7 @@ exports.userController = {
         }
 
         // Admin notification email with complete user details
-        const adminEmailContent = `<div style="margin:0;padding:40px 0;background-color:#f7f9fc">
-                    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background-color:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.08)">
-                        <tr>
-                            <td style="background:linear-gradient(135deg,#007bff,#00c6ff);color:#fff;text-align:center;padding:28px 20px">
-                                <h1 style="margin:0;font-size:24px;letter-spacing:.5px">🎉 New User Registered Successfully</h1>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:30px 35px;color:#333;font-size:16px;line-height:1.7">
-                                <p style="margin-top:0">Hello <strong>Admin</strong>,</p>
-                                <p style="margin-bottom:20px">A new user has just registered successfully. Here are the complete details:</p>
-                                <table width="100%" cellspacing="0" cellpadding="10" style="border-collapse:collapse;font-size:15px;background-color:#f9fbfc;border-radius:8px">
-                                    <tr>
-                                        <td style="width:35%;font-weight:600;color:#555">User ID</td>
-                                        <td style="color:#222">${userId}</td>
-                                    </tr>
-                                    <tr style="border-top:1px solid #e5eaf0">
-                                        <td style="font-weight:600;color:#555">Name</td>
-                                        <td style="color:#222">${name}</td>
-                                    </tr>
-                                    <tr style="border-top:1px solid #e5eaf0">
-                                        <td style="font-weight:600;color:#555">Email</td>
-                                        <td><a href="mailto:${email}" style="color:#007bff;text-decoration:none">${email}</a></td>
-                                    </tr>
-                                    <tr style="border-top:1px solid #e5eaf0">
-                                        <td style="font-weight:600;color:#555">Mobile</td>
-                                        <td style="color:#222">${mobile}</td>
-                                    </tr>
-                                    <tr style="border-top:1px solid #e5eaf0">
-                                        <td style="font-weight:600;color:#555">Registration Time</td>
-                                        <td style="color:#222">${registrationTime}</td>
-                                    </tr>
-                                </table>
-                                <div style="margin-top:30px;background-color:#f1f5ff;border-left:4px solid #007bff;padding:14px 18px;border-radius:6px">
-                                    <p style="margin:0;color:#333"><strong>Note: </strong>Please verify the user details in the admin panel for confirmation.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="background-color:#f1f4f7;text-align:center;color:#777;font-size:13px;padding:14px">© 2025 Moi Kanakku. All rights reserved.</td>
-                        </tr>
-                    </table>
-                </div>`;
+        const adminEmailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>New User Registered</title></head><body style="margin:0;padding:0;background-color:#f7f9fc;font-family:Segoe UI,Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 10px;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.08);border:1px solid #e6e9ef"><tr><td style="background:linear-gradient(135deg,#007bff,#00c6ff);color:#ffffff;text-align:center;padding:28px 20px;"><h1 style="margin:0;font-size:24px;letter-spacing:0.5px;"> 🎉 New User Registered Successfully </h1></td></tr><tr><td style="padding:30px 35px;color:#333;font-size:16px;line-height:1.7;"><p style="margin-top:0;"> Hello <strong>Admin</strong>, </p><p style="margin-bottom:20px;"> A new user has successfully registered in <strong>Moi Kanakku</strong>. Here are the registration details: </p><table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse;font-size:15px;background:#f9fbfc;border-radius:8px;"><tr><td width="35%" style="font-weight:600;color:#555;">User ID</td><td style="color:#222;">${userId}</td></tr><tr style="border-top:1px solid #e5eaf0;"><td style="font-weight:600;color:#555;">Name</td><td style="color:#222;">${name}</td></tr><tr style="border-top:1px solid #e5eaf0;"><td style="font-weight:600;color:#555;">Email</td><td><a href="mailto:${email}" style="color:#007bff;text-decoration:none;"> ${email} </a></td></tr><tr style="border-top:1px solid #e5eaf0;"><td style="font-weight:600;color:#555;">Mobile</td><td style="color:#222;">${mobile}</td></tr><tr style="border-top:1px solid #e5eaf0;"><td style="font-weight:600;color:#555;">Registration Time</td><td style="color:#222;">${registrationTime}</td></tr></table><div style="margin-top:28px;background:#f1f5ff;border-left:4px solid #007bff;padding:14px 18px;border-radius:6px;"><p style="margin:0;color:#333;"><strong>Admin Note:</strong> Please verify the user details in the admin panel if needed. </p></div><div style="margin-top:20px;background:#eef8ff;border-left:4px solid #00a2ff;padding:14px 18px;border-radius:6px;"><p style="margin:0;color:#333;"> 🚀 <strong>Moi Kanakku is growing!</strong> New users are joining the platform to manage events, relations, and gifts more efficiently. </p></div></td></tr><tr><td style="background:#f1f4f7;text-align:center;color:#777;font-size:13px;padding:14px;"> © 2026 Moi Kanakku. All rights reserved. </td></tr></table></td></tr></table></body></html>`;
 
         // Send admin notification email to agprakash406@gmail.com
         try {
