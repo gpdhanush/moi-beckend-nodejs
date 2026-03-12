@@ -4,9 +4,6 @@ const { authenticateToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
-// Public route - send notification (admin/system can send to any user)
-// router.post('/send', controller.sendNotification);
-
 // Protected routes - require authentication
 // Get all notifications for authenticated user (with pagination support)
 router.post('/list', authenticateToken, controller.getAllNotifications);
@@ -25,8 +22,16 @@ router.post('/mark-as-unread', authenticateToken, controller.markAsUnread);
 // Mark all notifications as read for authenticated user
 router.post('/mark-all-as-read', authenticateToken, controller.markAllAsRead);
 
+// Diagnostic endpoint - check Firebase and system status
+// GET /notifications/health
+router.get('/health', controller.checkStatus);
+
+// Send bulk notifications to multiple users
+// Body: { userIds: [], title, body, type? }
+router.post("/admin/send-bulk", controller.sendBulkNotifications);
+
 // Delete notification (soft delete)
 // Body: { notificationId }
-router.post('/delete', authenticateToken, controller.delete);
+router.post('/delete', controller.delete);
 
 module.exports = router;

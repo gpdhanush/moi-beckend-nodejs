@@ -1,7 +1,9 @@
 // User controllers: authentication, account management, and notifications
 const User = require("../models/user");
+const Admin = require("../models/admin");
 const SessionModel = require("../models/sessions");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const tokenService = require("../middlewares/tokenService");
 const { sendPushNotification } = require("./notificationController");
 const { NotificationType } = require("../models/notificationModels");
@@ -43,12 +45,10 @@ exports.userController = {
           });
         }
         // User doesn't exist at all
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
+        });
       }
 
       // CHECK IF ACCOUNT IS BLOCKED (BEFORE PASSWORD VERIFICATION)
@@ -104,12 +104,10 @@ exports.userController = {
           }
         } catch (err) {
           logger.warn("Login blocking feature error:", err);
-          return res
-            .status(401)
-            .json({
-              responseType: "F",
-              responseValue: { message: "கடவுச்சொல் தவறானது." },
-            });
+          return res.status(401).json({
+            responseType: "F",
+            responseValue: { message: "கடவுச்சொல் தவறானது." },
+          });
         }
       }
 
@@ -154,12 +152,10 @@ exports.userController = {
         .status(200)
         .json({ responseType: "S", responseValue: response });
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
   /**
@@ -200,40 +196,34 @@ exports.userController = {
     try {
       // Validate required fields
       if (!name || !email || !mobile || !password) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message:
-                "அனைத்து புலங்களும் (பெயர், மின்னஞ்சல், மொபைல், கடவுச்சொல்) தேவையானவை!",
-            },
-          });
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: {
+            message:
+              "அனைத்து புலங்களும் (பெயர், மின்னஞ்சல், மொபைல், கடவுச்சொல்) தேவையானவை!",
+          },
+        });
       }
 
       // Check duplicates by email
       const mail = await User.findByEmail(email);
       if (mail) {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
-            },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: {
+            message: "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
+          },
+        });
       }
       // Check duplicates by mobile number
       const mbl = await User.findByMobile(mobile);
       if (mbl) {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "இந்த மொபைல் எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
-            },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: {
+            message: "இந்த மொபைல் எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
+          },
+        });
       }
       // Hash the password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -354,21 +344,17 @@ exports.userController = {
           },
         });
       } else {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: { message: "பயனர் பதிவு தோல்வியடைந்தது." },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "பயனர் பதிவு தோல்வியடைந்தது." },
+        });
       }
     } catch (error) {
       logger.error("Error in user creation:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
   /**
@@ -382,12 +368,10 @@ exports.userController = {
       if (mobile) {
         const chkMobile = await User.checkMobileNo(mobile, id);
         if (chkMobile) {
-          return res
-            .status(404)
-            .json({
-              responseType: "F",
-              responseValue: { message: mobileError },
-            });
+          return res.status(404).json({
+            responseType: "F",
+            responseValue: { message: mobileError },
+          });
         }
       }
 
@@ -395,14 +379,12 @@ exports.userController = {
       if (email) {
         const chkEmail = await User.findByEmail(email);
         if (chkEmail && chkEmail.id !== id) {
-          return res
-            .status(404)
-            .json({
-              responseType: "F",
-              responseValue: {
-                message: "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
-              },
-            });
+          return res.status(404).json({
+            responseType: "F",
+            responseValue: {
+              message: "இந்த மின்னஞ்சல் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது!",
+            },
+          });
         }
       }
 
@@ -432,23 +414,19 @@ exports.userController = {
           .status(200)
           .json({ responseType: "S", responseValue: response });
       } else {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message:
-                "புதுப்பித்தல் தோல்வியடைந்தது. மாற்றங்களை சேமிக்க முடியவில்லை.",
-            },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: {
+            message:
+              "புதுப்பித்தல் தோல்வியடைந்தது. மாற்றங்களை சேமிக்க முடியவில்லை.",
+          },
+        });
       }
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
   /**
@@ -477,12 +455,10 @@ exports.userController = {
         .status(200)
         .json({ responseType: "S", responseValue: response });
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
 
@@ -502,14 +478,12 @@ exports.userController = {
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
-      return res
-        .status(404)
-        .json({
-          responseType: "F",
-          responseValue: {
-            message: "கடவுச்சொல் எங்கள் பதிவுகளுடன் பொருந்தவில்லை.",
-          },
-        });
+      return res.status(404).json({
+        responseType: "F",
+        responseValue: {
+          message: "கடவுச்சொல் எங்கள் பதிவுகளுடன் பொருந்தவில்லை.",
+        },
+      });
     }
 
     // Password and user verified; hash new password
@@ -541,32 +515,26 @@ exports.userController = {
             );
           }
         }
-        return res
-          .status(200)
-          .json({
-            responseType: "S",
-            responseValue: {
-              message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது.",
-            },
-          });
+        return res.status(200).json({
+          responseType: "S",
+          responseValue: {
+            message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது.",
+          },
+        });
       } else {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message:
-                "கடவுச்சொல்லை மாற்ற முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
-            },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: {
+            message:
+              "கடவுச்சொல்லை மாற்ற முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.",
+          },
+        });
       }
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
   /**
@@ -586,27 +554,21 @@ exports.userController = {
       if (query) {
         // Remove token from memory when user is deleted (security best practice)
         tokenService.removeToken(chk.id);
-        return res
-          .status(200)
-          .json({
-            responseType: "S",
-            responseValue: { message: "பயனர் கணக்கு நீக்கப்பட்டது." },
-          });
+        return res.status(200).json({
+          responseType: "S",
+          responseValue: { message: "பயனர் கணக்கு நீக்கப்பட்டது." },
+        });
       } else {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: { message: "பயனர் நீக்குதல் தோல்வியடைந்தது!" },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "பயனர் நீக்குதல் தோல்வியடைந்தது!" },
+        });
       }
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
 
@@ -618,35 +580,29 @@ exports.userController = {
     const { email } = req.body;
     try {
       if (!email) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: "மின்னஞ்சல் தேவையானது!" },
-          });
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "மின்னஞ்சல் தேவையானது!" },
+        });
       }
 
       // Check if user exists (including deleted)
       const user = await User.findByEmailIncludingDeleted(email);
       if (!user) {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
+        });
       }
 
       // Check if user is actually deleted
       if (!user.is_deleted) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "இந்த கணக்கு ஏற்கனவே செயல்படுத்தப்பட்டுவிட்டது.",
-            },
-          });
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: {
+            message: "இந்த கணக்கு ஏற்கனவே செயல்படுத்தப்பட்டுவிட்டது.",
+          },
+        });
       }
 
       // Restore the user
@@ -666,20 +622,16 @@ exports.userController = {
           .status(200)
           .json({ responseType: "S", responseValue: response });
       } else {
-        return res
-          .status(500)
-          .json({
-            responseType: "F",
-            responseValue: { message: "கணக்கு மீட்டமைப்பு தோல்வியடைந்தது!" },
-          });
+        return res.status(500).json({
+          responseType: "F",
+          responseValue: { message: "கணக்கு மீட்டமைப்பு தோல்வியடைந்தது!" },
+        });
       }
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
   /**
@@ -725,29 +677,23 @@ exports.userController = {
             );
           }
         }
-        return res
-          .status(200)
-          .json({
-            responseType: "S",
-            responseValue: {
-              message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது.",
-            },
-          });
+        return res.status(200).json({
+          responseType: "S",
+          responseValue: {
+            message: "உங்கள் கடவுச்சொல் வெற்றிகரமாக மீட்டமைக்கப்பட்டது.",
+          },
+        });
       } else {
-        return res
-          .status(404)
-          .json({
-            responseType: "F",
-            responseValue: { message: "கடவுச்சொல்லை மீட்டமைக்க முடியவில்லை." },
-          });
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "கடவுச்சொல்லை மீட்டமைக்க முடியவில்லை." },
+        });
       }
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
 
@@ -1068,12 +1014,10 @@ exports.userController = {
         .status(200)
         .json({ responseType: "S", responseValue: response });
     } catch (error) {
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
     }
   },
 
@@ -1090,340 +1034,12 @@ exports.userController = {
       } else if (email) {
         user = await User.findByEmail(email);
       } else {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "பயனர் ஐடி அல்லது மின்னஞ்சல் சேர்க்கவும்.",
-            },
-          });
-      }
-
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      return res
-        .status(200)
-        .json({
-          responseType: "S",
-          responseValue: { referral_code: user.referral_code || null },
-        });
-    } catch (error) {
-      return res
-        .status(500)
-        .json({
+        return res.status(400).json({
           responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Request email verification OTP
-   * Body: { id } or { email }
-   */
-  requestVerificationOTP: async (req, res) => {
-    const { id, email } = req.body;
-
-    try {
-      // Get user by ID or email
-      let user = null;
-      if (id) {
-        user = await User.findById(id);
-      } else if (email) {
-        user = await User.findByEmail(email);
-      }
-
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      // Check if already verified
-      if (user.is_verified) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "இந்த மின்னஞ்சல் ஏற்கனவே சரிபார்க்கப்பட்டுவிட்டது!",
-            },
-          });
-      }
-
-      // Create OTP
-      const otpData = await User.createVerificationOTP(user.id);
-
-      // Send email with OTP
-      try {
-        const emailContent = `<div style="margin:0;padding:0;background-color:#f4f6fb;font-family:Segoe UI,Arial,sans-serif"><table cellpadding=0 cellspacing=0 role=presentation style="padding:30px 10px"width=100%><tr><td align=center><table cellpadding=0 cellspacing=0 role=presentation style="max-width:600px;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.05)"width=100%><tr><td style="padding:25px 20px;text-align:center;background:linear-gradient(90deg,#4f46e5,#6366f1);color:#fff"><h2 style=margin:0;font-size:22px;font-weight:600>🔐 Moi Kanakku Email Verification</h2><tr><td style="padding:35px 30px;text-align:center"><p style=margin:0;color:#6b7280;font-size:15px>உங்கள் மின்னஞ்சலை சரிபார்க்க கீழே உள்ள OTP ஐ பயன்படுத்தவும்<div style="margin:30px auto;padding:18px 25px;background:#eef2ff;border-radius:10px;display:inline-block"><span style=font-size:42px;letter-spacing:10px;font-weight:700;color:#4338ca;font-family:monospace>${otpData.otp}</span></div><p style="margin:10px 0 0;color:#9ca3af;font-size:14px">This OTP will expire in <strong>10 minutes</strong><tr><td style="padding:0 30px 25px 30px"><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:18px"><p style=margin:0;color:#111827;font-size:14px><strong>நீங்கள் செய்ய வேண்டியது:</strong><ol style="margin:10px 0 0 18px;padding:0;color:#374151;font-size:14px;line-height:1.6"><li>OTP ஐ உள்ளிடவும்<li>மின்னஞ்சல் சரிபார்க்கப்பட்ட பிறகு முழு பயன்பாட்டையும் பயன்படுத்தலாம்</ol></div><tr><td style="padding:20px 30px;text-align:center;border-top:1px solid #f1f1f1;border-bottom:1px solid #f1f1f1;color:#374151;font-size:14px">This request is for<br><strong>${user.full_name}</strong><br>${user.email}<tr><td style=padding:25px;text-align:center><p style=margin:0;color:#374151;font-size:14px>Best regards,<br><strong style=color:#4f46e5>Moi Kanakku Team</strong></table><p style="max-width:600px;margin:20px auto 0;color:#9ca3af;font-size:12px;line-height:1.5;text-align:center">© 2025 Moi Kanakku. All rights reserved.<br>If you did not request this OTP, please ignore this email or contact support.</table></div>`;
-        const mailOptions = {
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          to: user.email,
-          replyTo: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          envelope: { from: process.env.EMAIL_USER, to: user.email },
-          subject: "🔐 Moi Kanakku Email Verification - தமிழ்",
-          html: emailContent,
-        };
-        await sendEmail({
-          to: user.email,
-          subject: mailOptions.subject,
-          html: mailOptions.html,
-        });
-        logger.info(`Verification OTP sent to user ${user.id}`);
-      } catch (emailError) {
-        logger.error("Error sending verification email:", emailError);
-        // Don't fail the request, OTP is created
-      }
-
-      return res
-        .status(200)
-        .json({
-          responseType: "S",
           responseValue: {
-            message: "OTP உங்கள் மின்னஞ்சலுக்கு அனுப்பப்பட்டுவிட்டது!",
-            expires_in_minutes: 10,
+            message: "பயனர் ஐடி அல்லது மின்னஞ்சல் சேர்க்கவும்.",
           },
         });
-    } catch (error) {
-      logger.error("Error in requestVerificationOTP:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Request Restore OTP for a soft-deleted account (sends OTP to email)
-   * Body: { email }
-   */
-  requestRestoreOTP: async (req, res) => {
-    const { email } = req.body;
-    try {
-      if (!email) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: "மின்னஞ்சல் தேவையானது!" },
-          });
-      }
-
-      // Find user including deleted
-      const user = await User.findByEmailIncludingDeleted(email);
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      // Ensure user is deleted
-      if (!user.is_deleted) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: "இந்த கணக்கு நீக்கப்படவில்லை." },
-          });
-      }
-
-      // Create restore OTP
-      const otpData = await User.createRestoreOTP(user.id);
-
-      // Send email with OTP
-      try {
-        const emailContent = `<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:30px;background:#fff;border:1px solid #eaeaea;border-radius:8px"><h2 style="color:#2f3490">🔁 Account Restore OTP</h2><p>Hi <strong>${user.full_name}</strong>,</p><p style="font-size:28px;letter-spacing:6px;text-align:center;font-family:monospace">${otpData.otp}</p><p>This OTP will expire in 10 minutes. Enter this OTP to verify ownership and restore your account.</p><p>If you did not request this, please ignore.</p><p>Regards,<br/>Moi Kanakku Team</p></div>`;
-        const mailOptions = {
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          to: user.email,
-          subject: "🔁 Moi Kanakku - Account Restore OTP",
-          html: emailContent,
-        };
-        await sendEmail({
-          to: user.email,
-          subject: mailOptions.subject,
-          html: mailOptions.html,
-        });
-        logger.info(`Restore OTP sent to user ${user.id}`);
-      } catch (emailError) {
-        logger.error("Error sending restore OTP email:", emailError);
-      }
-
-      return res
-        .status(200)
-        .json({
-          responseType: "S",
-          responseValue: {
-            message: "OTP உங்கள் மின்னஞ்சலுக்கு அனுப்பப்பட்டது!",
-            expires_in_minutes: 10,
-          },
-        });
-    } catch (error) {
-      logger.error("Error in requestRestoreOTP:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Verify email OTP
-   * Body: { id, otp }
-   */
-  verifyEmailOTP: async (req, res) => {
-    const { id, otp } = req.body;
-
-    try {
-      if (!id || !otp) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: "ID மற்றும் OTP இரண்டும் தேவையானவை!" },
-          });
-      }
-
-      // Verify user exists
-      const user = await User.findById(id);
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      // Verify OTP
-      const result = await User.verifyEmailOTP(id, otp);
-
-      if (!result.success) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: result.message },
-          });
-      }
-
-      // Fetch updated user
-      const updatedUser = await User.findById(id);
-      const response = {
-        id: updatedUser.id,
-        name: updatedUser.full_name,
-        email: updatedUser.email,
-        is_verified: updatedUser.is_verified,
-        email_verified_at: updatedUser.email_verified_at,
-        message: result.message,
-      };
-
-      return res
-        .status(200)
-        .json({ responseType: "S", responseValue: response });
-    } catch (error) {
-      logger.error("Error in verifyEmailOTP:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Verify restore OTP and actually restore the soft-deleted account
-   * Body: { id, otp }
-   */
-  verifyRestoreOTP: async (req, res) => {
-    const { id, otp } = req.body;
-
-    try {
-      if (!id || !otp) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: "ID மற்றும் OTP இரண்டும் தேவையானவை!" },
-          });
-      }
-
-      // Ensure the user exists (including deleted)
-      const user = await User.findByIdIncludingDeleted(id);
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      // Verify restore OTP
-      const result = await User.verifyRestoreOTP(id, otp);
-      if (!result.success) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: { message: result.message },
-          });
-      }
-
-      // Perform restore
-      const restoreResult = await User.restoreUser(id);
-      if (!restoreResult) {
-        return res
-          .status(500)
-          .json({
-            responseType: "F",
-            responseValue: { message: "கணக்கு மீட்டமைப்பு தோல்வியடைந்தது!" },
-          });
-      }
-
-      const restoredUser = await User.findById(id);
-      const response = {
-        id: restoredUser.id,
-        name: restoredUser.full_name,
-        email: restoredUser.email,
-        status: restoredUser.status,
-        message:
-          "உங்கள் கணக்கு வெற்றிகரமாக மீட்டமைக்கப்பட்டது. இப்போது நீங்கள் உள்நுழைய முடியும்.",
-      };
-
-      return res
-        .status(200)
-        .json({ responseType: "S", responseValue: response });
-    } catch (error) {
-      logger.error("Error in verifyRestoreOTP:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Resend verification OTP
-   * Body: { id } or { email }
-   */
-  resendVerificationOTP: async (req, res) => {
-    const { id, email } = req.body;
-
-    try {
-      // Get user by ID or email
-      let user = null;
-      if (id) {
-        user = await User.findById(id);
-      } else if (email) {
-        user = await User.findByEmail(email);
       }
 
       if (!user) {
@@ -1431,103 +1047,277 @@ exports.userController = {
           .status(404)
           .json({ responseType: "F", responseValue: { message: userError } });
       }
-
-      // Check if already verified
-      if (user.is_verified) {
-        return res
-          .status(400)
-          .json({
-            responseType: "F",
-            responseValue: {
-              message: "இந்த மின்னஞ்சல் ஏற்கனவே சரிபார்க்கப்பட்டுவிட்டது!",
-            },
-          });
-      }
-
-      // Delete expired OTPs
-      await User.deleteExpiredOTPs();
-
-      // Create new OTP
-      const otpData = await User.createVerificationOTP(user.id);
-
-      // Send email with OTP
-      try {
-        const emailContent = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;padding:30px;background:linear-gradient(180deg,#fff 0,#f9faff 100%);border:1px solid #e5e7f2;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.06)"><div style="text-align:center;padding-bottom:15px;border-bottom:1px solid #eee"><h2 style="color:#2f3490;margin:0;font-size:24px">🔐 Moi Kanakku Email Verification (Resent)</h2></div><div style="padding:30px 0;text-align:center"><h1 style="color:#4346d2;font-size:48px;letter-spacing:10px;margin:20px 0;font-weight:bold;font-family:monospace">${otpData.otp}</h1><p style="color:#666;font-size:16px;margin:20px 0">உங்கள் மின்னஞ்சல் சரிபார்க்க இந்த OTP ஐ பயன்படுத்தவும் (மறு-அனுப்பல்)</p></div><div style="background:#f5f5f5;padding:20px;border-radius:8px;margin:20px 0"><p style="margin:0;color:#333"><strong>நீங்கள் பெற வேண்டியது:</strong><br><span style="color:#4346d2;font-weight:bold">1. OTP ஐ உள்ளிடவும்</span><br>2. மின்னஞ்சல் சரிபார்க்கப்பட்ட பிறகு முழு அ்ற்றக்தையை பயன்படுத்தவும்</p></div></div>`;
-        const mailOptions = {
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          to: user.email,
-          replyTo: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-          envelope: { from: process.env.EMAIL_USER, to: user.email },
-          subject: "🔐 Moi Kanakku Email Verification (Resent) - தமிழ்",
-          html: emailContent,
-        };
-        await sendEmail({
-          to: user.email,
-          subject: mailOptions.subject,
-          html: mailOptions.html,
-        });
-        logger.info(`Verification OTP resent to user ${user.id}`);
-      } catch (emailError) {
-        logger.error("Error sending verification email:", emailError);
-      }
-
-      return res
-        .status(200)
-        .json({
-          responseType: "S",
-          responseValue: {
-            message: "OTP மீண்டும் உங்கள் மின்னஞ்சலுக்கு அனுப்பப்பட்டுவிட்டது!",
-            expires_in_minutes: 10,
-          },
-        });
-    } catch (error) {
-      logger.error("Error in resendVerificationOTP:", error);
-      return res
-        .status(500)
-        .json({
-          responseType: "F",
-          responseValue: { message: error.toString() },
-        });
-    }
-  },
-
-  /**
-   * Check email verification status
-   * Params: { id }
-   */
-  checkVerificationStatus: async (req, res) => {
-    const userId = req.params.id;
-
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res
-          .status(404)
-          .json({ responseType: "F", responseValue: { message: userError } });
-      }
-
-      const verificationStatus = await User.isEmailVerified(userId);
 
       return res.status(200).json({
         responseType: "S",
-        responseValue: {
-          id: user.id,
-          email: user.email,
-          is_verified: verificationStatus.is_verified,
-          email_verified_at: verificationStatus.email_verified_at,
-          message: verificationStatus.is_verified
-            ? "மின்னஞ்சல் சரிபார்க்கப்பட்டுவிட்டது."
-            : "மின்னஞ்சல் இன்னும் சரிபார்க்கப்படவில்லை.",
-        },
+        responseValue: { referral_code: user.referral_code || null },
       });
     } catch (error) {
-      logger.error("Error in checkVerificationStatus:", error);
-      return res
-        .status(500)
-        .json({
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN: retrieve a list of all users with public details.
+   * returns array of objects identical to getImportantUserDetails response.
+   */
+  adminAllUserLists: async (req, res) => {
+    try {
+      const users = await User.getAllPublicDetails();
+      const formatted = users.map(details => ({
+        id: details.id,
+        name: details.full_name,
+        email: details.email,
+        mobile: details.mobile,
+        last_login: details.last_activity_at,
+        profile: details.profile,
+        device: details.device,
+        referrer_id: details.referrer_id,
+        referred_count: details.referred_count,
+        create_date: details.created_at,
+        update_date: details.updated_at,
+        status: details.status,
+        referral_code: details.referral_code || null,
+        is_verified: details.is_verified || 0,
+        email_verified_at: details.email_verified_at || null,
+      }));
+      return res.status(200).json({ responseType: "S", responseValue: formatted });
+    } catch (error) {
+      logger.error('adminAllUserLists failure', error);
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN LOGIN - Authenticate administrator and issue JWT.
+   * Body: { email, password }
+   */
+  adminLogin: async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+      const user = await Admin.findByEmail(email);
+      if (!user) {
+        const deletedUser = await Admin.findByEmailIncludingDeleted(email);
+        if (deletedUser && deletedUser.is_deleted) {
+          return res.status(403).json({
+            responseType: "F",
+            responseValue: {
+              message:
+                "உங்கள் கணக்கு நீக்கப்பட்டுவிட்டது. மீட்டமைக்க கடைய்சு எங்களை தொடர்பு கொள்ளவும்.",
+              deleted_at: deletedUser.deleted_at,
+              account_status: "DELETED",
+            },
+          });
+        }
+        return res.status(404).json({
           responseType: "F",
-          responseValue: { message: error.toString() },
+          responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
         });
+      }
+
+      // check login block
+      try {
+        const blockStatus = await Admin.getLoginBlockStatus(user.id);
+        if (blockStatus.is_blocked) {
+          const minutesRemaining = Math.ceil(
+            (new Date(blockStatus.blocked_until) - new Date()) / (1000 * 60),
+          );
+          return res.status(429).json({
+            responseType: "F",
+            responseValue: {
+              message: `மிக அதிக தோல்வி முயற்சிகள். ${minutesRemaining} நிமிடங்களில் மீண்டும் முயற்சி செய்க.`,
+              retry_after_minutes: minutesRemaining,
+              blocked_until: blockStatus.blocked_until,
+              account_status: "BLOCKED",
+            },
+          });
+        }
+      } catch (blockErr) {
+        logger.warn("adminLogin block check error", blockErr);
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.password_hash,
+      );
+      if (!isPasswordValid) {
+        try {
+          const failureStatus = await Admin.incrementFailedLoginAttempts(user.id);
+          if (failureStatus.blocked) {
+            return res.status(429).json({
+              responseType: "F",
+              responseValue: {
+                message:
+                  "மிக அதிக தோல்வி முயற்சிகள். கணக்கு 15 நிமிடங்களுக்கு தடுக்கப்பட்டுள்ளது.",
+                attempts: failureStatus.attempts,
+                blocked_until: failureStatus.blocked_until,
+                account_status: "BLOCKED",
+              },
+            });
+          } else {
+            return res.status(401).json({
+              responseType: "F",
+              responseValue: {
+                message: `கடவுச்சொல் தவறானது. ${failureStatus.remaining_attempts} முயற்சிகள் மீதமுள்ளது.`,
+                remaining_attempts: failureStatus.remaining_attempts,
+              },
+            });
+          }
+        } catch (err) {
+          logger.warn("adminLogin failureStatus error", err);
+          return res.status(401).json({
+            responseType: "F",
+            responseValue: { message: "கடவுச்சொல் தவறானது." },
+          });
+        }
+      }
+
+      try {
+        await Admin.resetFailedLoginAttempts(user.id);
+      } catch (err) {
+        logger.warn("Failed to reset admin login attempts:", err);
+      }
+
+      const userID = user.id;
+      tokenService.invalidatePreviousToken(userID);
+      const jwtToken = tokenService.generateToken(userID);
+      logger.debug(`admin login for ${userID}, token generated`);
+      const response = {
+        status: user.status,
+        id: user.id,
+        name: user.full_name,
+        mobile: user.mobile,
+        email: user.email,
+        last_login: user.last_login_at || null,
+        profile_image: user.profile_image_url || null,
+        token: jwtToken,
+      };
+
+      if (typeof Admin.updateLastLogin === 'function') {
+        try {
+          await Admin.updateLastLogin(userID);
+          // overwrite response timestamp to reflect the successful login update
+          response.last_login = new Date();
+        } catch (e) {
+          logger.warn('admin updateLastLogin failed', e);
+        }
+      }
+
+      // skip creating a user session for admin accounts – table is tied to users and would
+      // cause a foreign key violation.  Logging only for historical purposes.
+      logger.debug('admin login - session creation skipped');
+
+      return res
+        .status(200)
+        .json({ responseType: "S", responseValue: response });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN FORGOT PASSWORD - send reset token via email
+   * Body: { email }
+   */
+  adminForgotPassword: async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({
+        responseType: "F",
+        responseValue: { message: "மின்னஞ்சல் தேவை!" },
+      });
+    }
+
+    try {
+      const admin = await Admin.findByEmail(email);
+      if (!admin) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
+        });
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const expires = new Date(Date.now() + 60 * 60 * 1000);
+      await Admin.setResetToken(admin.id, token, expires);
+
+      const resetLink = `${process.env.ADMIN_RESET_URL || ''}?token=${token}`;
+      const html = `<p>Hello ${admin.full_name || ''},</p>
+        <p>You requested a password reset for your administrator account. Please use the link below to choose a new password. The link will expire in one hour.</p>
+        <p><a href="${resetLink}">Reset password</a></p>
+        <p>If you did not request this, please ignore this email.</p>`;
+
+      try {
+        await sendEmail({
+          to: admin.email,
+          subject: 'Admin password reset',
+          html,
+        });
+      } catch (emailErr) {
+        logger.error('Failed to send admin forgot password email:', emailErr);
+      }
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: { message: "Reset instructions sent if email exists." },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: err.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN RESET PASSWORD - verify token and update password
+   * Body: { token, password }
+   */
+  adminResetPassword: async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({
+        responseType: "F",
+        responseValue: { message: "token and password required" },
+      });
+    }
+
+    try {
+      const record = await Admin.findByResetToken(token);
+      if (!record) {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "Invalid or expired token" },
+        });
+      }
+      if (record.reset_token_expires_at && new Date(record.reset_token_expires_at) < new Date()) {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "Token has expired" },
+        });
+      }
+      const hashed = await bcrypt.hash(password, 10);
+      await Admin.updatePassword({ id: record.id, password: hashed });
+      await Admin.clearResetToken(record.id);
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: { message: "Password has been reset" },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: err.toString() },
+      });
     }
   },
 };

@@ -20,6 +20,13 @@ router.get('/details/:id', authenticateToken, userController.getImportantUserDet
 router.post('/delete', authenticateToken, userController.deleteUser);
 router.post('/restore', userController.restoreAccount);
 
+// ADMIN USER MANAGEMENT ROUTES
+router.post("/admin/login", userController.adminLogin);
+router.post("/admin/forgot-password", userController.adminForgotPassword);
+router.post("/admin/reset-password", userController.adminResetPassword);
+
+router.get("/admin/all-user-lists", userController.adminAllUserLists);
+
 // Profile Picture Routes
 // (multer configuration with diskStorage for profile picture uploads)
 

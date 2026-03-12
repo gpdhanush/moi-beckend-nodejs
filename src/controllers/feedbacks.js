@@ -134,5 +134,149 @@ exports.controller = {
         } catch (error) {
             return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
         }
-    }
+    },
+
+        adminAllFeedbackLists: async (req, res) => {
+            try {
+                const limit = parseInt(req.query.limit) || 100;
+                const offset = parseInt(req.query.offset) || 0;
+                const status = req.query.status || null;
+                const type = req.query.type || null;
+
+                const feedbacks = await Model.getAllFeedbacks({ limit, offset, status, type });
+                
+                if (!feedbacks || feedbacks.length === 0) {
+                    return res.status(200).json({ responseType: "S", count: 0, responseValue: [] });
+                }
+                
+                const formattedFeedbacks = feedbacks.map(feedback => {
+                    return {
+                        id: feedback.id,
+                        userId: feedback.userId,
+                        userName: feedback.userName,
+                        userEmail: feedback.userEmail,
+                        type: feedback.type,
+                        message: feedback.message || '',
+                        adminResponse: feedback.adminResponse || '',
+                        status: feedback.status,
+                        respondedAt: toISOStringOrNull(feedback.respondedAt),
+                        createdAt: toISOStringOrNull(feedback.createdAt),
+                        updatedAt: toISOStringOrNull(feedback.updatedAt)
+                    };
+                });
+                
+                return res.status(200).json({ 
+                    responseType: "S", 
+                    count: formattedFeedbacks.length, 
+                    responseValue: formattedFeedbacks 
+                });
+            } catch (error) {
+                logger.error('Error fetching all feedbacks: ', error);
+                return res.status(500).json({ responseType: "F", responseValue: { message: error.toString() } });
+            }
+        },
+
+        adminReplyFeedback: async (req, res) => {
+            try {
+                const { feedbackId, adminResponse, status } = req.body;
+
+                if (!feedbackId || !adminResponse) {
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "Feedback ID and admin response are required!" } 
+                    });
+                }
+
+                const adminResponseText = String(adminResponse).trim();
+                if (adminResponseText.length === 0) {
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "Admin response cannot be empty!" } 
+                    });
+                }
+
+                // Validate status if provided
+                const feedbackStatus = status || 'RESOLVED';
+                if (!FEEDBACK_STATUSES.includes(feedbackStatus)) {
+                    return res.status(400).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "Invalid feedback status!" } 
+                    });
+                }
+
+                // Get feedback details to find user
+                const feedback = await Model.readById(feedbackId);
+                if (!feedback) {
+                    return res.status(404).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "Feedback not found!" } 
+                    });
+                }
+
+                // Update feedback with admin response
+                const updated = await Model.addResponse(feedbackId, adminResponseText);
+                if (!updated) {
+                    return res.status(500).json({ 
+                        responseType: "F", 
+                        responseValue: { message: "Failed to update feedback!" } 
+                    });
+                }
+
+                // Update status if provided and different from RESOLVED
+                if (status && status !== 'RESOLVED') {
+                    await Model.updateStatus(feedbackId, status);
+                }
+
+                // Get updated feedback
+                const updatedFeedback = await Model.readById(feedbackId);
+
+                // Send email notification to user
+                if (feedback.userEmail) {
+                    try {
+                        await sendFeedbackReplyEmail(feedback.userEmail, feedback.userName, adminResponseText);
+                    } catch (emailError) {
+                        logger.error('Error sending feedback reply email: ', emailError);
+                    }
+                }
+
+                // Send push notification if token exists
+                if (feedback.userMobile) {
+                    try {
+                        await sendPushNotification(feedback.userId, {
+                            title: 'Feedback Response',
+                            body: 'Your feedback has been responded to by the admin',
+                            type: NotificationType.FEEDBACK
+                        });
+                    } catch (notifyError) {
+                        logger.error('Error sending push notification: ', notifyError);
+                    }
+                }
+
+                return res.status(200).json({ 
+                    responseType: "S", 
+                    responseValue: {
+                        message: "Feedback reply sent successfully!",
+                        feedback: {
+                            id: updatedFeedback.id,
+                            userId: updatedFeedback.userId,
+                            userName: updatedFeedback.userName,
+                            userEmail: updatedFeedback.userEmail,
+                            type: updatedFeedback.type,
+                            message: updatedFeedback.message,
+                            adminResponse: updatedFeedback.adminResponse,
+                            status: updatedFeedback.status,
+                            respondedAt: toISOStringOrNull(updatedFeedback.respondedAt),
+                            createdAt: toISOStringOrNull(updatedFeedback.createdAt),
+                            updatedAt: toISOStringOrNull(updatedFeedback.updatedAt)
+                        }
+                    } 
+                });
+            } catch (error) {
+                logger.error('Error replying to feedback: ', error);
+                return res.status(500).json({ 
+                    responseType: "F", 
+                    responseValue: { message: error.toString() } 
+                });
+            }
+        }
 }

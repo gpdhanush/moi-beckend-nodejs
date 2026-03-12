@@ -935,6 +935,24 @@ const User = {
         };
     },
 
+    // retrieve public details for all active users (admin use)
+    async getAllPublicDetails() {
+        const [rows] = await db.query(
+            `SELECT id FROM users WHERE (is_deleted = 0 OR is_deleted IS NULL)`
+        );
+        const results = [];
+        for (const r of rows) {
+            try {
+                const details = await this.getPublicDetails(fromBinaryUUID(r.id));
+                if (details) results.push(details);
+            } catch (e) {
+                // ignore individual failures but log
+                console.warn('getAllPublicDetails: failed for', r.id, e.message);
+            }
+        }
+        return results;
+    },
+
     /**
      * Get pending OTP for user (if any active/non-expired)
      */

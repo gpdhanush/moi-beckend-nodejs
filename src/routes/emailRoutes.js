@@ -22,13 +22,14 @@ router.post('/sendEmail', controller.sendEmail);
  */
 router.post('/verifyOtp', controller.verifyOtp);
 
-// ==================== DEPRECATED ENDPOINTS (Legacy Support) ====================
-// These are kept for backward compatibility but should be migrated to unified endpoints
+// ==================== ADMIN ENDPOINTS ====================
 
-// router.post('/forgotOtp', controller.forgotOtp);
-// Replaced by: POST /api/email/sendEmail with { type: 'forgot', email }
-
-// router.post('/verifyOtp', controller.verifyOtp);
-// Replaced by: POST /api/email/verifyOtp with { email, otp, type: 'forgot' }
+/**
+ * Send bulk emails to multiple users
+ * POST /api/email/admin/send-bulk
+ * Body: { userIds: [], subject, body, type? }
+ * type: 'notification' | 'announcement' | 'custom' (default: 'custom')
+ */
+router.post('/admin/send-bulk', controller.sendBulkEmails);
 
 module.exports = router;

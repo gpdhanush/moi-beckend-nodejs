@@ -47,7 +47,39 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
             title: title,
             body: body,
         },
+        data: {
+            title: title,
+            body: body,
+            type: type || NotificationType.GENERAL,
+            timestamp: new Date().toISOString(),
+            notificationType: type || 'general'
+        },
         token: token, // Target device FCM token
+        android: {
+            priority: 'high',
+            ttl: 3600,
+            notification: {
+                title: title,
+                body: body,
+                clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+            }
+        },
+        apns: {
+            headers: {
+                'apns-priority': '10'
+            },
+            payload: {
+                aps: {
+                    alert: {
+                        title: title,
+                        body: body
+                    },
+                    sound: 'default',
+                    badge: 1,
+                    'content-available': 1
+                }
+            }
+        }
     };
 
     // Save notification to database first (unless skipDbSave is true)
@@ -69,11 +101,15 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
 
     try {
         // Send notification via FCM
+        logger.info(`Sending FCM to user ${userId} with token ${token.substring(0, 20)}...`);
         await admin.messaging().send(message);
+        logger.info(`FCM sent successfully to user ${userId}`);
         return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };
     } catch (error) {
         // FCM send failed
         logger.error('FCM send error:', error);
+        logger.error('FCM error code:', error.code);
+        logger.error('FCM error message:', error.message);
         
         // If the token is invalid, deactivate it in the database
         if (error.code === 'messaging/invalid-registration-token' || 
@@ -102,6 +138,55 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
 exports.sendPushNotification = sendPushNotification;
 
 exports.controller = {
+    /**
+     * Check Firebase and notification system status (for debugging)
+     */
+    checkStatus: async (req, res) => {
+        try {
+            const status = {
+                firebase: {
+                    initialized: admin.apps.length > 0,
+                    projectId: process.env.FIREBASE_PROJECT_ID || 'NOT_SET',
+                    hasCredentials: !!(process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL)
+                },
+                database: null,
+                tokens: null
+            };
+
+            // Check database connection
+            try {
+                const db = require('../config/database');
+                const [result] = await db.query('SELECT 1');
+                status.database = { connected: true };
+            } catch (dbError) {
+                status.database = { connected: false, error: dbError.message };
+            }
+
+            // Check sample FCM tokens
+            try {
+                const db = require('../config/database');
+                const [tokens] = await db.query(
+                    `SELECT COUNT(*) as total, 
+                            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active
+                     FROM user_devices`
+                );
+                status.tokens = tokens[0];
+            } catch (tokenError) {
+                status.tokens = { error: tokenError.message };
+            }
+
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: status
+            });
+        } catch (error) {
+            logger.error('Error checking status:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
     /**
      * Send push notification via FCM and save notification to database
      * Body: { userId, title, body, token, type }
@@ -426,6 +511,224 @@ exports.controller = {
             });
         } catch (error) {
             logger.error('Error marking all as read:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Send bulk notifications to multiple users
+     * Body: { userIds: [], title, body, type }
+     * Steps:
+     * 1. Validate users exist in users table
+     * 2. Get FCM tokens from user_devices table
+     * 3. Send FCM push notifications
+     * 4. Save notifications to database
+     * 5. Return results with success/failure counts
+     */
+    sendBulkNotifications: async (req, res) => {
+        try {
+            const { userIds, title, body, type } = req.body;
+            
+            // Validate input
+            if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் ஐடிகளின் வரிசை தேவையானது.' }
+                });
+            }
+
+            if (!title || !body) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'தலைப்பு மற்றும் பொருள் தேவையானது.' }
+                });
+            }
+
+            // Validate notification type if provided
+            if (type && !isValidNotificationType(type)) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: `Invalid notification type. Allowed types: ${Object.values(NotificationType).join(', ')}` }
+                });
+            }
+
+            const db = require('../config/database');
+            const { toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+
+            // Step 1: Get all users and their FCM tokens
+            const userIdsFormatted = userIds.map(id => toBinaryUUID(id));
+            const placeholders = userIdsFormatted.map(() => '?').join(',');
+            
+            // Use a subquery to get the most recent active device for each user
+            const [users] = await db.query(
+                `SELECT u.id, u.full_name, u.email,
+                        (SELECT ud.fcm_token FROM user_devices ud 
+                         WHERE ud.user_id = u.id AND ud.is_active = 1 
+                         ORDER BY ud.last_used_at DESC LIMIT 1) AS fcm_token
+                 FROM users u
+                 WHERE u.id IN (${placeholders}) AND (u.is_deleted = 0 OR u.is_deleted IS NULL)`,
+                userIdsFormatted
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'கொடுக்கப்பட்ட பயனர் ஐடிகளுக்கு பயனர்கள் கிடைக்கவில்லை.' }
+                });
+            }
+
+            // Step 2 & 3: Process each user - send FCM and save to DB
+            const results = {
+                totalRequested: userIds.length,
+                usersFound: users.length,
+                successful: 0,
+                failed: 0,
+                noDeviceToken: 0,
+                failedUsers: [],
+                successfulUsers: []
+            };
+
+            for (const user of users) {
+                const userId = fromBinaryUUID(user.id);
+                
+                // Check if user has FCM token
+                if (!user.fcm_token) {
+                    results.noDeviceToken++;
+                    results.failedUsers.push({
+                        userId: userId,
+                        reason: 'FCM device token not found'
+                    });
+                    
+                    // Still save notification to DB even without token
+                    try {
+                        await Notification.create({
+                            userId: userId,
+                            title: title,
+                            body: body,
+                            type: type || NotificationType.GENERAL
+                        });
+                    } catch (dbError) {
+                        logger.error(`Error saving notification to DB for user ${userId}:`, dbError);
+                    }
+                    continue;
+                }
+
+                try {
+                    // Send FCM notification with both notification and data payload
+                    const message = {
+                        notification: {
+                            title: title,
+                            body: body,
+                        },
+                        data: {
+                            title: title,
+                            body: body,
+                            type: type || NotificationType.GENERAL,
+                            timestamp: new Date().toISOString(),
+                            notificationType: type || 'general'
+                        },
+                        token: user.fcm_token,
+                        android: {
+                            priority: 'high',
+                            ttl: 3600,
+                            notification: {
+                                title: title,
+                                body: body,
+                                clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                            }
+                        },
+                        apns: {
+                            headers: {
+                                'apns-priority': '10'
+                            },
+                            payload: {
+                                aps: {
+                                    alert: {
+                                        title: title,
+                                        body: body
+                                    },
+                                    sound: 'default',
+                                    badge: 1,
+                                    'content-available': 1
+                                }
+                            }
+                        }
+                    };
+
+                    logger.info(`Sending FCM to user ${userId} with token ${user.fcm_token.substring(0, 20)}...`);
+                    await admin.messaging().send(message);
+                    logger.info(`FCM sent successfully to user ${userId}`);
+
+                    // Save notification to database
+                    try {
+                        await Notification.create({
+                            userId: userId,
+                            title: title,
+                            body: body,
+                            type: type || NotificationType.GENERAL
+                        });
+                    } catch (dbError) {
+                        logger.error(`Error saving notification to DB for user ${userId}:`, dbError);
+                    }
+
+                    results.successful++;
+                    results.successfulUsers.push({
+                        userId: userId,
+                        email: user.email || 'N/A'
+                    });
+
+                } catch (fcmError) {
+                    logger.error(`FCM send error for user ${userId}:`, fcmError);
+                    
+                    // Handle invalid token
+                    if (fcmError.code === 'messaging/invalid-registration-token' || 
+                        fcmError.code === 'messaging/registration-token-not-registered') {
+                        try {
+                            await db.query(
+                                'UPDATE user_devices SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?',
+                                [user.fcm_token]
+                            );
+                            logger.info(`Deactivated invalid FCM token for user ${userId}`);
+                        } catch (dbError) {
+                            logger.error('Error deactivating FCM token:', dbError);
+                        }
+                    }
+
+                    results.failed++;
+                    results.failedUsers.push({
+                        userId: userId,
+                        email: user.email || 'N/A',
+                        reason: fcmError.message || 'Unknown FCM error'
+                    });
+
+                    // Still try to save notification to DB
+                    try {
+                        await Notification.create({
+                            userId: userId,
+                            title: title,
+                            body: body,
+                            type: type || NotificationType.GENERAL
+                        });
+                    } catch (dbError) {
+                        logger.error(`Error saving notification to DB for user ${userId}:`, dbError);
+                    }
+                }
+            }
+
+            // Return results
+            return res.status(200).json({
+                responseType: results.successful > 0 ? "S" : "F",
+                responseValue: {
+                    message: `${results.successful} பயனர்களுக்கு அறிவிப்புகள் வெற்றிகரமாக அனுப்பப்பட்டன.`,
+                    ...results
+                }
+            });
+
+        } catch (error) {
+            logger.error('Error in sendBulkNotifications:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }

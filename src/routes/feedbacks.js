@@ -8,4 +8,8 @@ const router = express.Router();
 router.post('/list', authenticateToken, controller.list);
 router.post('/create', authenticateToken, controller.create);
 
+/// ADMIN USER MANAGEMENT ROUTES
+router.get("/admin/all-feedback-lists", controller.adminAllFeedbackLists);
+router.post("/admin/reply-feedback", controller.adminReplyFeedback);
+
 module.exports = router;

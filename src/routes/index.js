@@ -12,11 +12,11 @@ const feedbacks = require('./feedbacks');
 const email = require('./emailRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const dashboardRoutes = require('./dashboard');
 const moiDefaultFunctions = require('./moiDefaultFunctions');
 const moiPersons = require('./moiPersons');
 const transactionRoutes = require('./transactions');
 const transactionFunctionRoutes = require('./transactionFunctions');
-
 
 router.use('/users', user);
 router.use("/default", defaults);
@@ -24,16 +24,11 @@ router.use("/feedbacks", feedbacks);
 router.use("/email", email);
 router.use("/upcoming-functions", upcomingFunction);
 router.use("/notification", notificationRoutes);
-
-
+router.use("/dashboard", dashboardRoutes);
 router.use('/uploads', uploadRoutes);
-// TRANSACTION MANAGEMENT ROUTES
 router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
 router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/persons', moiPersons);
-
-
-
 
 module.exports = router;
