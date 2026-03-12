@@ -17,6 +17,7 @@ const moiDefaultFunctions = require('./moiDefaultFunctions');
 const moiPersons = require('./moiPersons');
 const transactionRoutes = require('./transactions');
 const transactionFunctionRoutes = require('./transactionFunctions');
+const adminRoutes = require('./adminRoutes');
 
 router.use('/users', user);
 router.use("/default", defaults);
@@ -30,5 +31,6 @@ router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
 router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/persons', moiPersons);
+router.use('/admin', adminRoutes);
 
 module.exports = router;
