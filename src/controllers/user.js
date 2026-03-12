@@ -1155,18 +1155,23 @@ exports.userController = {
               responseType: "F",
               responseValue: {
                 message:
-                  "மிக அதிக தோல்வி முயற்சிகள். கணக்கு 15 நிமிடங்களுக்கு தடுக்கப்பட்டுள்ளது.",
-                attempts: failureStatus.attempts,
+                  "மிக அதிக தோல்வி முயற்சிகள் (3 முறை). கணக்கு 15 நிமிடங்களுக்கு தடுக்கப்பட்டுள்ளது.",
+                error_type: "ACCOUNT_LOCKED",
+                attempts_made: 3,
                 blocked_until: failureStatus.blocked_until,
                 account_status: "BLOCKED",
               },
             });
           } else {
+            const attempt = 3 - failureStatus.remaining_attempts;
             return res.status(401).json({
               responseType: "F",
               responseValue: {
-                message: `கடவுச்சொல் தவறானது. ${failureStatus.remaining_attempts} முயற்சிகள் மீதமுள்ளது.`,
-                remaining_attempts: failureStatus.remaining_attempts,
+                message: `கடவுச்சொல் தவறானது. முயற்சி ${attempt}/3. ${failureStatus.remaining_attempts} முயற்சிகள் மீதமுள்ளது.`,
+                error_type: "INVALID_PASSWORD",
+                attempt: attempt,
+                attempts_remaining: failureStatus.remaining_attempts,
+                max_attempts: 3,
               },
             });
           }
