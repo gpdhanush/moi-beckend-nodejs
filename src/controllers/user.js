@@ -118,6 +118,17 @@ exports.userController = {
       }
 
       const userID = user.id;
+      
+      // End any previous active session (single-session policy)
+      // This sets logout_at for the previous session and terminates it
+      try {
+        await SessionModel.endSession(userID);
+        logger.debug(`Previous session ended for user ${userID}`);
+      } catch (sessionErr) {
+        logger.warn("Failed to end previous session:", sessionErr);
+        // Continue even if previous session end fails - not critical
+      }
+      
       // Invalidate old token (single-session policy) and generate a new one
       tokenService.invalidatePreviousToken(userID);
       const jwtToken = tokenService.generateToken(userID);
@@ -130,9 +141,9 @@ exports.userController = {
         name: user.full_name,
         mobile: user.mobile,
         email: user.email,
+        referral_code: user.referral_code || null,
         last_login: user.last_activity_at,
         profile_image: user.profile_image_url || null,
-        referral_code: user.referral_code || null,
         fcm_token: user.notification_token || null,
         token: jwtToken,
       };
@@ -140,11 +151,12 @@ exports.userController = {
       // Update last login timestamp
       await User.updateLastLogin(userID);
 
-      // Create session record
+      // Create new session record
       try {
         await SessionModel.createSession(userID);
+        logger.debug(`New session created for user ${userID}`);
       } catch (sessionErr) {
-        logger.warn("Failed to create session record:", sessionErr);
+        logger.warn("Failed to create new session record:", sessionErr);
         // Continue even if session creation fails - not critical
       }
 
@@ -152,6 +164,59 @@ exports.userController = {
         .status(200)
         .json({ responseType: "S", responseValue: response });
     } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  /**
+   * Logout user and end session
+   * Header: Authorization: Bearer <token>
+   */
+  logout: async (req, res) => {
+    try {
+      // Get user ID from authenticated token (via middleware)
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        return res.status(401).json({
+          responseType: "F",
+          responseValue: { message: "JWT டோக்கன் தேவையானது." },
+        });
+      }
+
+      // End the user session (set logout_at timestamp)
+      try {
+        const sessionEnded = await SessionModel.endSession(userId);
+        if (!sessionEnded) {
+          logger.warn(`No active session found for user ${userId}`);
+        }
+      } catch (sessionErr) {
+        logger.error("Error ending session:", sessionErr);
+        // Continue even if session end fails - not critical
+      }
+
+      // Invalidate the token (remove from memory)
+      try {
+        tokenService.removeToken(userId);
+        logger.debug(`Token invalidated for user ${userId}`);
+      } catch (tokenErr) {
+        logger.error("Error invalidating token:", tokenErr);
+        // Continue even if token invalidation fails
+      }
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: {
+          message: "வெற்றிகரமாக வெளியேறினர்.",
+          user_id: userId,
+          logout_at: new Date(),
+        },
+      });
+    } catch (error) {
+      logger.error("Logout Error:", error);
       return res.status(500).json({
         responseType: "F",
         responseValue: { message: error.toString() },

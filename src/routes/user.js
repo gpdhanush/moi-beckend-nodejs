@@ -10,6 +10,8 @@ const fs = require('fs');
 
 // User Authentication Routes
 router.post('/login', userController.login);
+router.post("/logout", authenticateToken, userController.logout);
+
 router.post('/create', userController.create);
 router.post('/update-notification-token', authenticateToken, userController.updateNotificationToken);
 router.post('/update-password', authenticateToken, userController.updatePassword);
