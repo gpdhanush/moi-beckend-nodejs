@@ -120,3 +120,4 @@ yarn.lock
 package.json
 migrations/
 # docs/
+.postman/

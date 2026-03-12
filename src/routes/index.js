@@ -6,23 +6,16 @@ const { generalRateLimiter } = require('../middlewares/apiSecurity');
 router.use(generalRateLimiter);
 
 const user = require('./user');
-const moi = require('./moi');
-const moiOut = require('./moi-out');
-const moiFunctions = require('./moiFunctions');
 const upcomingFunction = require('./upcomingFunction');
 const defaults = require('./default');
 const feedbacks = require('./feedbacks');
 const email = require('./emailRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const notificationRoutes = require('./notificationRoutes');
-const moiCreditDebit = require('./moiCreditDebit');
 const moiDefaultFunctions = require('./moiDefaultFunctions');
 const moiPersons = require('./moiPersons');
-const sessionRoutes = require('./sessions');
-const logsRoutes = require('./logs');
 const transactionRoutes = require('./transactions');
 const transactionFunctionRoutes = require('./transactionFunctions');
-const userOTPRoutes = require('./userOTP');
 
 
 router.use('/users', user);
@@ -30,21 +23,13 @@ router.use("/default", defaults);
 router.use("/feedbacks", feedbacks);
 router.use("/email", email);
 router.use("/upcoming-functions", upcomingFunction);
+router.use("/notification", notificationRoutes);
 
 
-router.use('/moi', moi);
-router.use('/moi-out', moiOut);
-router.use('/moi-function', moiFunctions);
 router.use('/uploads', uploadRoutes);
-router.use('/notification', notificationRoutes);
-router.use('/sessions', sessionRoutes);
-router.use('/logs', logsRoutes);
 // TRANSACTION MANAGEMENT ROUTES
 router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
-// router.use('/user-otps', userOTPRoutes);
-// NEW MOI CREDIT/DEBIT ROUTES
-router.use('/moi-credit-debit', moiCreditDebit);
 router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/persons', moiPersons);
 

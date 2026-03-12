@@ -12,7 +12,7 @@ const router = express.Router();
 router.post('/list', authenticateToken, controller.getAllNotifications);
 
 // Get unread notification count
-router.get('/unread-count', authenticateToken, controller.getUnreadCount);
+// router.get('/unread-count', authenticateToken, controller.getUnreadCount);
 
 // Mark single notification as read
 // Body: { notificationId }

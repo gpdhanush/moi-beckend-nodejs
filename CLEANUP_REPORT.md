@@ -9,6 +9,21 @@ Comprehensive analysis and removal of unused functions and files from the entire
 
 ## Changes Made
 
+### 0. Routes Disabled & Files Removed
+The following route modules were commented out in `src/routes/index.js` and have now been permanently removed along with their controllers and models (features no longer used by the API):
+
+- **moi** (investment)  – `src/routes/moi.js`, `src/controllers/moi.js`, `src/models/moi.js`
+- **moi-out** (return transactions) – `src/routes/moi-out.js`, `src/controllers/moi-out.js`, `src/models/moi-out.js`
+- **moi-functions** (event management) – `src/routes/moiFunctions.js`, `src/controllers/moiFunctions.js`, `src/models/moiFunctions.js`
+- **MOI credit/debit** – `src/routes/moiCreditDebit.js`, `src/controllers/moiCreditDebit.js`, `src/models/moiCreditDebit.js`
+- **sessions** (user session endpoints) – `src/routes/sessions.js`, `src/controllers/sessionController.js` *(model retained for login workflows)*
+- **logs** (admin logs endpoints) – `src/routes/logs.js`, `src/controllers/logsController.js`
+- **userOTP** endpoint – `src/routes/userOTP.js`, `src/controllers/userOTP.js` *(core OTP model still used by email APIs)*
+
+The cron job `functionReminderService` was also deleted and the scheduler in `app.js` updated accordingly.
+
+
+
 ### 1. Controllers - Unused Functions Removed
 
 #### ✂️ [feedbacks.js](src/controllers/feedbacks.js)
@@ -74,6 +89,12 @@ Comprehensive analysis and removal of unused functions and files from the entire
 - Not imported or called anywhere in the codebase
 - Function `updateStatusForPastDates()` had no references
 - No routes depend on this service
+
+#### ✂️ [functionReminderService.js](src/services/) - **DELETED**
+**Reason:** Corresponded to disabled `moiFunctions` feature
+- Required `moiFunctions` model which was removed
+- Cron job scheduling updated in `app.js` (removed call)
+- No other code references the service
 
 ---
 

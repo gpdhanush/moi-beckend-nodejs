@@ -12,9 +12,6 @@ const logger = require("./src/config/logger");
 const {
   checkAndNotifyPasswordExpiration,
 } = require("./src/services/passwordExpirationService");
-const {
-  checkAndNotifyUpcomingFunctions,
-} = require("./src/services/functionReminderService");
 
 const app = express();
 
@@ -103,7 +100,7 @@ cron.schedule(
     try {
       logger.info("Running scheduled daily jobs...");
       await checkAndNotifyPasswordExpiration();
-      await checkAndNotifyUpcomingFunctions();
+      // upcoming functions reminder removed
       logger.info("Daily cron jobs completed successfully.");
     } catch (err) {
       logger.error("Error in daily cron:", err);
