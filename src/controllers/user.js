@@ -1203,7 +1203,7 @@ exports.userController = {
 
       return res.status(200).json({
         responseType: "S",
-        responseValue: formatAdminUserListItem(details),
+        responseValue: formatPublicUserDetails(details),
       });
     } catch (error) {
       logger.error("adminUserDetails failure", error);
