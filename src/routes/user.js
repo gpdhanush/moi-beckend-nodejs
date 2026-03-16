@@ -28,6 +28,7 @@ router.post("/admin/forgot-password", userController.adminForgotPassword);
 router.post("/admin/reset-password", userController.adminResetPassword);
 
 router.get("/admin/all-user-lists", userController.adminAllUserLists);
+router.get("/admin/all-user-lists/:id", userController.adminUserDetails);
 
 // Profile Picture Routes
 // (multer configuration with diskStorage for profile picture uploads)

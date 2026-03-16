@@ -23,6 +23,33 @@ const userError = "குறிப்பிடப்பட்ட பயனர்
 const mobileError =
   "இந்த மொபைல் எண் ஏற்கனவே மற்றொரு பயனருக்கு பதிவு செய்யப்பட்டுள்ளது.";
 
+const formatPublicUserDetails = (details) => ({
+  id: details.id,
+  name: details.full_name,
+  email: details.email,
+  mobile: details.mobile,
+  last_login: details.last_activity_at,
+  profile: details.profile,
+  device: details.device,
+  referrer_id: details.referrer_id,
+  referred_count: details.referred_count,
+  create_date: details.created_at,
+  update_date: details.updated_at,
+  status: details.status,
+  referral_code: details.referral_code || null,
+  is_verified: details.is_verified || 0,
+  email_verified_at: details.email_verified_at || null,
+});
+
+const formatAdminUserListItem = (details) => ({
+  id: details.id,
+  mobile: details.mobile,
+  name: details.full_name,
+  last_login: details.last_activity_at,
+  city: details.profile?.city || null,
+  profile_image_url: details.profile?.profile_image_url || null,
+});
+
 exports.userController = {
   /**
    * Authenticate user and issue JWT.
@@ -1093,27 +1120,9 @@ exports.userController = {
           .json({ responseType: "F", responseValue: { message: userError } });
       }
 
-      // Shape response for API consumers (non-sensitive)
-      const response = {
-        id: details.id,
-        name: details.full_name,
-        email: details.email,
-        mobile: details.mobile,
-        last_login: details.last_activity_at,
-        profile: details.profile,
-        device: details.device, // last-used / currently active device (single)
-        referrer_id: details.referrer_id,
-        referred_count: details.referred_count,
-        create_date: details.created_at,
-        update_date: details.updated_at,
-        status: details.status,
-        referral_code: details.referral_code || null,
-        is_verified: details.is_verified || 0,
-        email_verified_at: details.email_verified_at || null,
-      };
       return res
         .status(200)
-        .json({ responseType: "S", responseValue: response });
+        .json({ responseType: "S", responseValue: formatPublicUserDetails(details) });
     } catch (error) {
       return res.status(500).json({
         responseType: "F",
@@ -1163,31 +1172,41 @@ exports.userController = {
 
   /**
    * ADMIN: retrieve a list of all users with public details.
-   * returns array of objects identical to getImportantUserDetails response.
+   * returns minimal fields for the admin user list.
    */
   adminAllUserLists: async (req, res) => {
     try {
       const users = await User.getAllPublicDetails();
-      const formatted = users.map(details => ({
-        id: details.id,
-        name: details.full_name,
-        email: details.email,
-        mobile: details.mobile,
-        last_login: details.last_activity_at,
-        profile: details.profile,
-        device: details.device,
-        referrer_id: details.referrer_id,
-        referred_count: details.referred_count,
-        create_date: details.created_at,
-        update_date: details.updated_at,
-        status: details.status,
-        referral_code: details.referral_code || null,
-        is_verified: details.is_verified || 0,
-        email_verified_at: details.email_verified_at || null,
-      }));
+      const formatted = users.map(formatAdminUserListItem);
       return res.status(200).json({ responseType: "S", responseValue: formatted });
     } catch (error) {
       logger.error('adminAllUserLists failure', error);
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN: retrieve a single user with the same shape used in adminAllUserLists.
+   */
+  adminUserDetails: async (req, res) => {
+    const userId = req.params.id;
+    try {
+      const details = await User.getPublicDetails(userId);
+      if (!details) {
+        return res
+          .status(404)
+          .json({ responseType: "F", responseValue: { message: userError } });
+      }
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: formatAdminUserListItem(details),
+      });
+    } catch (error) {
+      logger.error("adminUserDetails failure", error);
       return res.status(500).json({
         responseType: "F",
         responseValue: { message: error.toString() },
