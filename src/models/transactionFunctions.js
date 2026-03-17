@@ -69,6 +69,68 @@ const Model = {
     },
 
     /**
+     * Get all transaction functions across users for admin listing
+     */
+    async readAllForAdmin(filters = {}) {
+        const { search = null, userId = null } = filters;
+
+        let query = `
+            SELECT tf.id, tf.user_id, tf.function_name, tf.function_date, tf.location, tf.notes, tf.image_url,
+                   tf.created_at, tf.updated_at,
+                   u.full_name AS user_full_name, u.email AS user_email, u.mobile AS user_mobile
+            FROM transaction_functions tf
+            LEFT JOIN users u ON tf.user_id = u.id
+            WHERE (tf.is_deleted = 0 OR tf.is_deleted IS NULL)
+        `;
+
+        const params = [];
+
+        if (userId) {
+            query += ` AND tf.user_id = ?`;
+            params.push(toBinaryUUID(userId));
+        }
+
+        if (search) {
+            query += ` AND (
+                tf.function_name LIKE ? OR
+                tf.location LIKE ? OR
+                tf.notes LIKE ? OR
+                u.full_name LIKE ? OR
+                u.email LIKE ? OR
+                u.mobile LIKE ?
+            )`;
+            const searchTerm = `%${search}%`;
+            params.push(
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+            );
+        }
+
+        query += ` ORDER BY tf.created_at DESC, tf.function_date DESC`;
+
+        const [rows] = await db.query(query, params);
+
+        return rows.map((r) => ({
+            id: fromBinaryUUID(r.id),
+            userId: fromBinaryUUID(r.user_id),
+            functionName: r.function_name,
+            functionDate: r.function_date,
+            location: r.location,
+            notes: r.notes,
+            imageUrl: r.image_url,
+            userName: r.user_full_name || null,
+            userEmail: r.user_email || null,
+            userMobile: r.user_mobile || null,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at,
+        }));
+    },
+
+    /**
      * Get single transaction function by ID
      */
     async readById(functionId) {

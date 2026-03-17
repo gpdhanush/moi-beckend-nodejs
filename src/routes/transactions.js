@@ -46,4 +46,11 @@ router.post('/stats', authenticateToken, controller.getStats);
 // Body: { userId, personId, limit?, offset? }
 router.post('/person/:personId', authenticateToken, controller.getByPerson);
 
+
+/// ADMIN ROUTES
+
+// Admin: Get all transactions across users with filters
+// Body: { search?, userId?, personId?, transactionFunctionId?, type?, startDate?, endDate?, limit, offset }
+router.post('/admin/list', controller.adminList);
+
 module.exports = router;

@@ -276,5 +276,33 @@ exports.controller = {
                 responseValue: { message: error.toString() }
             });
         }
+    },
+
+    /**
+     * Admin: get all transaction functions across users
+     * Body: { search?, userId? }
+     */
+    adminList: async (req, res) => {
+        try {
+            const search = req.body.search ? String(req.body.search).trim() : null;
+            const userId = req.body.userId ? String(req.body.userId).trim() : null;
+
+            const functions = await Model.readAllForAdmin({
+                search: search || null,
+                userId: userId || null
+            });
+
+            return res.status(200).json({
+                responseType: "S",
+                count: functions.length,
+                responseValue: functions
+            });
+        } catch (error) {
+            logger.error('Error fetching admin transaction function list:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
     }
 };

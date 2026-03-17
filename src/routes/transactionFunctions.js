@@ -34,4 +34,12 @@ router.post('/update', authenticateToken, controller.update);
 // Body: { functionId }
 router.post('/delete', authenticateToken, controller.delete);
 
+
+// ADMIN ROUTES
+
+// Admin: Get all transaction functions across users with filters
+// Body: { search?, userId?}
+router.post('/admin/list', controller.adminList);
+
+
 module.exports = router;

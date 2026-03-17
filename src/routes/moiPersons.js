@@ -1,6 +1,6 @@
 const express = require('express');
 const { controller } = require('../controllers/moiPersons');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -15,6 +15,21 @@ router.post('/create', authenticateToken, controller.create);
 
 // Update person
 router.put('/update', authenticateToken, controller.update);
+
+// ADMIN ROUTES
+// Get all persons (admin)
+router.get('/admin/all', controller.adminList);
+
+// Get person details by ID (admin)
+router.get('/admin/details/:id',  controller.adminGetById);
+
+router.get("/admin/:id", controller.adminGetByUserId);
+
+// Update person (admin)
+router.put('/admin/update',  controller.adminUpdate);
+
+// Delete person (admin)
+router.delete('/admin/:id',  controller.adminDelete);
 
 // Get single person by ID
 router.get('/:id', authenticateToken, controller.getById);

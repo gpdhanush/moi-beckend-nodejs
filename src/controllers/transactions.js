@@ -827,4 +827,46 @@ exports.controller = {
             });
         }
     },
+
+    /**
+     * Admin: get all transactions across users
+     * Body: { search?, userId?, personId?, transactionFunctionId?, type?, startDate?, endDate? }
+     */
+    adminList: async (req, res) => {
+        try {
+            const {
+                search,
+                userId,
+                personId,
+                transactionFunctionId,
+                type,
+                startDate,
+                endDate
+            } = req.body;
+
+            const filters = {
+                search: search ? String(search).trim() : null,
+                userId: userId ? String(userId).trim() : null,
+                personId: personId ? String(personId).trim() : null,
+                transactionFunctionId: transactionFunctionId ? String(transactionFunctionId).trim() : null,
+                type: type || null,
+                startDate: startDate || null,
+                endDate: endDate || null
+            };
+
+            const transactions = await Model.readAllForAdmin(filters);
+
+            return res.status(200).json({
+                responseType: "S",
+                count: transactions.length,
+                responseValue: transactions
+            });
+        } catch (error) {
+            logger.error('Error fetching admin transactions:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
 };

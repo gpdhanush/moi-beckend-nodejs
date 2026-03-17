@@ -136,6 +136,148 @@ const Model = {
     },
 
     /**
+     * Get all transactions across users for admin listing
+     */
+    async readAllForAdmin(filters = {}) {
+        const {
+            search = null,
+            userId = null,
+            personId = null,
+            transactionFunctionId = null,
+            type = null,
+            startDate = null,
+            endDate = null
+        } = filters;
+
+        let query = `
+            SELECT t.id, t.user_id, t.person_id, t.transaction_function_id, t.transaction_function_name,
+                   t.transaction_date, t.type, t.amount, t.item_name, t.notes, t.is_custom, t.custom_function,
+                   t.created_at, t.updated_at,
+                   p.first_name, p.last_name, p.mobile, p.city, p.occupation,
+                   tf.function_name AS user_function_name, tf.function_date, tf.location,
+                   df.name AS default_function_name,
+                   u.full_name AS user_full_name, u.email AS user_email, u.mobile AS user_mobile
+            FROM transactions t
+            LEFT JOIN persons p ON t.person_id = p.id
+            LEFT JOIN transaction_functions tf ON t.transaction_function_id = tf.id
+            LEFT JOIN default_functions df ON t.transaction_function_id = df.id
+            LEFT JOIN users u ON t.user_id = u.id
+            WHERE (t.is_deleted = 0 OR t.is_deleted IS NULL)
+        `;
+
+        const params = [];
+
+        if (userId) {
+            query += ` AND t.user_id = ?`;
+            params.push(toBinaryUUID(userId));
+        }
+
+        if (personId) {
+            query += ` AND t.person_id = ?`;
+            params.push(toBinaryUUID(personId));
+        }
+
+        if (transactionFunctionId) {
+            query += ` AND t.transaction_function_id = ?`;
+            params.push(toBinaryUUID(transactionFunctionId));
+        }
+
+        if (type) {
+            query += ` AND t.type = ?`;
+            params.push(type);
+        }
+
+        if (startDate) {
+            query += ` AND DATE(t.transaction_date) >= ?`;
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            query += ` AND DATE(t.transaction_date) <= ?`;
+            params.push(endDate);
+        }
+
+        if (search) {
+            query += ` AND (
+                p.first_name LIKE ? OR
+                p.last_name LIKE ? OR
+                p.mobile LIKE ? OR
+                p.city LIKE ? OR
+                p.occupation LIKE ? OR
+                tf.function_name LIKE ? OR
+                df.name LIKE ? OR
+                t.transaction_function_name LIKE ? OR
+                t.item_name LIKE ? OR
+                t.notes LIKE ? OR
+                t.custom_function LIKE ? OR
+                u.full_name LIKE ? OR
+                u.email LIKE ? OR
+                u.mobile LIKE ? OR
+                CAST(t.amount AS CHAR) LIKE ?
+            )`;
+            const searchTerm = `%${search}%`;
+            params.push(
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm,
+                searchTerm
+            );
+        }
+
+        query += ` ORDER BY t.transaction_date DESC, t.created_at DESC`;
+
+        const [rows] = await db.query(query, params);
+
+        return rows.map(r => {
+            const resolvedFunctionName =
+                r.user_function_name || r.default_function_name || r.transaction_function_name || null;
+
+            return {
+                id: fromBinaryUUID(r.id),
+                userId: fromBinaryUUID(r.user_id),
+                userName: r.user_full_name || null,
+                userEmail: r.user_email || null,
+                userMobile: r.user_mobile || null,
+                personId: fromBinaryUUID(r.person_id),
+                transactionFunctionId: r.transaction_function_id ? fromBinaryUUID(r.transaction_function_id) : null,
+                transactionFunctionName: resolvedFunctionName,
+                transactionDate: r.transaction_date,
+                type: r.type,
+                amount: r.amount,
+                itemName: r.item_name,
+                notes: r.notes,
+                isCustom: r.is_custom === 1,
+                customFunction: r.custom_function,
+                person: {
+                    firstName: r.first_name,
+                    lastName: r.last_name,
+                    mobile: r.mobile,
+                    city: r.city,
+                    occupation: r.occupation
+                },
+                function: resolvedFunctionName ? {
+                    name: resolvedFunctionName,
+                    date: r.function_date,
+                    location: r.location
+                } : null,
+                createdAt: r.created_at,
+                updatedAt: r.updated_at
+            };
+        });
+    },
+
+    /**
      * Get single transaction by ID
      */
     async readById(transactionId) {

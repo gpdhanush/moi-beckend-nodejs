@@ -3,6 +3,46 @@ const crypto = require('crypto');
 const { toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
 
 const Admin = {
+  async findById(id) {
+    const [rows] = await db.query(
+      `SELECT id,
+              full_name,
+              email,
+              mobile,
+              password_hash,
+              status,
+              failed_login_attempts,
+              locked_until,
+              email_verified_at,
+              reset_token,
+              reset_token_expires_at,
+              last_login_at,
+              is_deleted,
+              deleted_at
+       FROM admins
+       WHERE id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+      [toBinaryUUID(id)],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      id: fromBinaryUUID(r.id),
+      full_name: r.full_name,
+      email: r.email,
+      mobile: r.mobile,
+      password_hash: r.password_hash,
+      status: r.status,
+      failed_login_attempts: r.failed_login_attempts,
+      locked_until: r.locked_until,
+      email_verified_at: r.email_verified_at,
+      reset_token: r.reset_token,
+      reset_token_expires_at: r.reset_token_expires_at,
+      last_login_at: r.last_login_at,
+      is_deleted: r.is_deleted,
+      deleted_at: r.deleted_at,
+    };
+  },
+
   async findByEmail(email) {
     const [rows] = await db.query(
       `SELECT id,

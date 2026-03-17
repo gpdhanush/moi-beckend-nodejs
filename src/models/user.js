@@ -938,7 +938,10 @@ const User = {
     // retrieve public details for all active users (admin use)
     async getAllPublicDetails() {
         const [rows] = await db.query(
-            `SELECT id FROM users WHERE (is_deleted = 0 OR is_deleted IS NULL)`
+            `SELECT id
+             FROM users
+             WHERE (is_deleted = 0 OR is_deleted IS NULL)
+             ORDER BY created_at DESC`
         );
         const results = [];
         for (const r of rows) {

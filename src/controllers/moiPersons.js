@@ -1,6 +1,29 @@
 const Model = require("../models/moiPersons");
 const User = require("../models/user");
 
+const formatPersonSummary = (person) => ({
+  id: person.mp_id,
+  firstName: person.mp_first_name,
+  secondName: person.mp_second_name,
+  business: person.mp_business,
+  city: person.mp_city,
+  mobile: person.mp_mobile,
+});
+
+const formatPersonDetails = (person) => ({
+  ...formatPersonSummary(person),
+  userId: person.mp_um_id,
+});
+
+const formatAdminPerson = (person) => ({
+  ...formatPersonDetails(person),
+  userName: person.userName || null,
+  userEmail: person.userEmail || null,
+  userMobile: person.userMobile || null,
+  createdAt: person.created_at || person.mp_create_dt || null,
+  updatedAt: person.updated_at || person.mp_update_dt || null,
+});
+
 exports.controller = {
   list: async (req, res) => {
     const { userId, search } = req.body;
@@ -22,14 +45,7 @@ exports.controller = {
         });
       }
 
-      const transformed = persons.map((p) => ({
-        id: p.mp_id,
-        firstName: p.mp_first_name,
-        secondName: p.mp_second_name,
-        business: p.mp_business,
-        city: p.mp_city,
-        mobile: p.mp_mobile,
-      }));
+      const transformed = persons.map(formatPersonSummary);
 
       return res.status(200).json({
         responseType: "S",
@@ -203,8 +219,8 @@ exports.controller = {
   delete: async (req, res) => {
     try {
       const id = req.params.id; // UUID as string, no parseInt
-      
-      if (!id || id.trim() === '') {
+
+      if (!id || id.trim() === "") {
         return res.status(400).json({
           responseType: "F",
           responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
@@ -243,8 +259,8 @@ exports.controller = {
   getById: async (req, res) => {
     try {
       const id = req.params.id; // UUID as string, no parseInt
-      
-      if (!id || id.trim() === '') {
+
+      if (!id || id.trim() === "") {
         return res.status(400).json({
           responseType: "F",
           responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
@@ -262,15 +278,7 @@ exports.controller = {
 
       return res.status(200).json({
         responseType: "S",
-        responseValue: {
-          id: person.mp_id,
-          userId: person.mp_um_id,
-          firstName: person.mp_first_name,
-          secondName: person.mp_second_name,
-          business: person.mp_business,
-          city: person.mp_city,
-          mobile: person.mp_mobile,
-        },
+        responseValue: formatPersonDetails(person),
       });
     } catch (error) {
       return res.status(500).json({
@@ -302,14 +310,208 @@ exports.controller = {
 
       return res.status(200).json({
         responseType: "S",
+        responseValue: formatPersonSummary(person),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  adminList: async (req, res) => {
+    try {
+      const search = req.query.search ? String(req.query.search).trim() : null;
+      const userId = req.query.userId ? String(req.query.userId).trim() : null;
+      const requestedLimit = Number.parseInt(req.query.limit, 10);
+      const requestedOffset = Number.parseInt(req.query.offset, 10);
+      const limit =
+        Number.isInteger(requestedLimit) && requestedLimit > 0
+          ? Math.min(requestedLimit, 500)
+          : 100;
+      const offset =
+        Number.isInteger(requestedOffset) && requestedOffset >= 0
+          ? requestedOffset
+          : 0;
+
+      const persons = await Model.readAllForAdmin({
+        search: search || null,
+        userId: userId || null,
+        limit,
+        offset,
+      });
+
+      return res.status(200).json({
+        responseType: "S",
+        count: persons.length,
+        responseValue: persons.map(formatAdminPerson),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  adminGetById: async (req, res) => {
+    try {
+      const id = req.params.id;
+
+      if (!id || id.trim() === "") {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
+        });
+      }
+
+      const person = await Model.readByIdForAdmin(id);
+
+      if (!person) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "குறிப்பிடப்பட்ட நபர் இல்லை!" },
+        });
+      }
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: formatAdminPerson(person),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  adminGetByUserId: async (req, res) => {
+    try {
+      const userId = req.params.id;
+      if (!userId || userId.trim() === "") {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "பயனர் ID வழங்கப்படவில்லை." },
+        });
+      }
+
+      const persons = await Model.readByUserIdForAdmin(userId);
+
+      return res.status(200).json({
+        responseType: "S",
+        count: persons.length,
+        responseValue: persons.map(formatAdminPerson),
+      });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  adminUpdate: async (req, res) => {
+    try {
+      const { id, firstName, secondName, business, city, mobile } = req.body;
+
+      if (!id || !firstName) {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." },
+        });
+      }
+
+      const existing = await Model.readById(id);
+      if (!existing) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "குறிப்பிடப்பட்ட நபர் இல்லை!" },
+        });
+      }
+
+      const personUserId =
+        existing.user_id || existing.userId || existing.mp_um_id;
+      if (mobile && mobile !== existing.mobile) {
+        const conflict = await Model.findByMobile(personUserId, mobile);
+        if (conflict && conflict.id !== id) {
+          return res.status(400).json({
+            responseType: "F",
+            responseValue: {
+              message: "இந்த மொபைல் எண் ஏற்கனவே பயன்படுத்தப்படுகிறது.",
+            },
+          });
+        }
+      }
+
+      const result = await Model.update({
+        id,
+        firstName,
+        secondName,
+        business,
+        city,
+        mobile,
+      });
+
+      if (!result || result.affectedRows <= 0) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "தரவு புதுப்பித்தல் தோல்வியடைந்தது." },
+        });
+      }
+
+      const updatedPerson = await Model.readByIdForAdmin(id);
+
+      return res.status(200).json({
+        responseType: "S",
         responseValue: {
-          id: person.mp_id,
-          firstName: person.mp_first_name,
-          secondName: person.mp_second_name,
-          business: person.mp_business,
-          city: person.mp_city,
-          mobile: person.mp_mobile,
+          message: "நபர் விவரங்கள் வெற்றிகரமாக புதுப்பிக்கப்பட்டது.",
+          person: updatedPerson ? formatAdminPerson(updatedPerson) : null,
         },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: error.toString() },
+      });
+    }
+  },
+
+  adminDelete: async (req, res) => {
+    try {
+      const id = req.params.id;
+
+      if (!id || id.trim() === "") {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
+        });
+      }
+
+      const existing = await Model.readByIdForAdmin(id);
+
+      if (!existing) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "குறிப்பிடப்பட்ட நபர் இல்லை!" },
+        });
+      }
+
+      const result = await Model.delete(id);
+      if (result && result.affectedRows > 0) {
+        return res.status(200).json({
+          responseType: "S",
+          responseValue: {
+            message: "நபர் வெற்றிகரமாக நீக்கப்பட்டது.",
+            id,
+          },
+        });
+      }
+
+      return res.status(404).json({
+        responseType: "F",
+        responseValue: { message: "இந்த நபரை நீக்க முடியவில்லை!" },
       });
     } catch (error) {
       return res.status(500).json({
