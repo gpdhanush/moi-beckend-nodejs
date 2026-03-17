@@ -26,7 +26,6 @@ const Model = {
     let query = `SELECT id, user_id, first_name, last_name, mobile, city, occupation, created_at, updated_at FROM ${table} 
             WHERE user_id = ?`;
     const params = [toBinaryUUID(userId)];
-
     if (search) {
       query += ` AND (first_name LIKE ? OR last_name LIKE ? OR city LIKE ? OR mobile LIKE ?)`;
       const searchTerm = `%${search}%`;

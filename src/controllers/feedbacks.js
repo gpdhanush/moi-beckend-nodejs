@@ -1,8 +1,9 @@
 const Model = require('../models/feedbacks');
 const User = require('../models/user');
 const db = require('../config/database');
+const { generateUUID, toBinaryUUID } = require('../helpers/uuid');
 const { sendPushNotification } = require('./notificationController');
-const { NotificationType } = require('../models/notificationModels');
+const { Notification, NotificationType } = require('../models/notificationModels');
 const { sendFeedbackConfirmationEmail, sendFeedbackReplyEmail } = require('../services/emailService');
 const logger = require('../config/logger');
 
@@ -178,6 +179,7 @@ exports.controller = {
 
         adminReplyFeedback: async (req, res) => {
             try {
+                const traceId = generateUUID();
                 const { feedbackId, adminResponse, status } = req.body;
 
                 if (!feedbackId || !adminResponse) {
@@ -186,6 +188,8 @@ exports.controller = {
                         responseValue: { message: "Feedback ID and admin response are required!" } 
                     });
                 }
+
+                logger.info('adminReplyFeedback start', { traceId, feedbackId });
 
                 const adminResponseText = String(adminResponse).trim();
                 if (adminResponseText.length === 0) {
@@ -212,6 +216,8 @@ exports.controller = {
                         responseValue: { message: "Feedback not found!" } 
                     });
                 }
+
+                logger.info('adminReplyFeedback loaded feedback', { traceId, feedbackId, userId: feedback.userId });
 
                 // Update feedback with admin response
                 const updated = await Model.addResponse(feedbackId, adminResponseText);
@@ -240,22 +246,153 @@ exports.controller = {
                 }
 
                 // Send push notification if token exists
-                if (feedback.userMobile) {
-                    try {
-                        await sendPushNotification(feedback.userId, {
-                            title: 'Feedback Response',
-                            body: 'Your feedback has been responded to by the admin',
-                            type: NotificationType.FEEDBACK
-                        });
-                    } catch (notifyError) {
-                        logger.error('Error sending push notification: ', notifyError);
+                const notificationTitle = 'Feedback Response';
+                const notificationBody = adminResponseText.length > 120
+                    ? `${adminResponseText.slice(0, 117)}...`
+                    : adminResponseText;
+
+                let pushNotification = {
+                    traceId,
+                    attempted: false,
+                    fcmSent: false,
+                    dbSaved: false,
+                    notificationId: null,
+                    dbSaveError: null,
+                    message: null,
+                    reason: null,
+                    tokensFound: 0,
+                    tokensTried: 0,
+                    tokensSent: 0,
+                    fcmError: null,
+                    attempts: req.body?.debug ? [] : undefined
+                };
+                try {
+                    const [deviceRows] = await db.query(
+                        `SELECT fcm_token
+                         FROM user_devices
+                         WHERE user_id = ?
+                           AND is_active = 1
+                           AND (is_deleted = 0 OR is_deleted IS NULL)
+                         ORDER BY last_used_at DESC, updated_at DESC`,
+                        [toBinaryUUID(feedback.userId)]
+                    );
+
+                    const tokens = (deviceRows || []).map(r => r.fcm_token).filter(Boolean);
+                    pushNotification.tokensFound = tokens.length;
+                    logger.info('adminReplyFeedback device tokens', { traceId, userId: feedback.userId, tokensFound: tokens.length });
+
+                    if (tokens.length === 0) {
+                        pushNotification.reason = 'NO_ACTIVE_FCM_TOKEN';
+                        logger.info(`User ${feedback.userId} has no active FCM token; skipping FCM send (will still save notification).`);
+
+                        // Still save to DB so user can see it in in-app notifications list
+                        try {
+                            const n = await Notification.create({
+                                userId: feedback.userId,
+                                title: notificationTitle,
+                                body: notificationBody,
+                                type: NotificationType.GENERAL
+                            });
+                            pushNotification.dbSaved = true;
+                            pushNotification.notificationId = n?.insertId || null;
+                            pushNotification.message = 'Notification saved to DB (no active device token)';
+                        } catch (dbError) {
+                            pushNotification.reason = 'NOTIFICATION_DB_SAVE_FAILED';
+                            pushNotification.message = dbError?.message || String(dbError);
+                            logger.error('Error saving notification to DB (no token): ', dbError);
+                        }
+                    } else {
+                        pushNotification.attempted = true;
+
+                        for (let i = 0; i < tokens.length; i++) {
+                            pushNotification.tokensTried++;
+                            const tokenPrefix = String(tokens[i]).substring(0, 12);
+                            const tokenLength = String(tokens[i]).length;
+                            try {
+                                const result = await sendPushNotification({
+                                    userId: feedback.userId,
+                                    title: notificationTitle,
+                                    body: notificationBody,
+                                    token: tokens[i],
+                                    type: NotificationType.GENERAL,
+                                    skipDbSave: i > 0,
+                                    traceId
+                                });
+
+                                if (result?.fcmSent) pushNotification.tokensSent++;
+                                if (pushNotification.attempts) {
+                                    pushNotification.attempts.push({
+                                        tokenPrefix,
+                                        tokenLength,
+                                        fcmSent: !!result?.fcmSent,
+                                        dbSaved: !!result?.dbSaved,
+                                        messageId: result?.messageId || null,
+                                        fcmError: result?.fcmError || null
+                                    });
+                                }
+
+                                // Keep first token result as the primary status details
+                                if (i === 0) {
+                                    pushNotification.fcmSent = !!result?.fcmSent;
+                                    pushNotification.dbSaved = !!result?.dbSaved;
+                                    pushNotification.notificationId = result?.notificationId || null;
+                                    pushNotification.dbSaveError = result?.dbSaveError || null;
+                                    pushNotification.message = result?.message || null;
+                                    pushNotification.fcmError = result?.fcmError || null;
+                                } else if (result?.fcmSent) {
+                                    pushNotification.fcmSent = true;
+                                }
+                            } catch (tokenError) {
+                                if (pushNotification.attempts) {
+                                    pushNotification.attempts.push({
+                                        tokenPrefix,
+                                        tokenLength,
+                                        fcmSent: false,
+                                        dbSaved: false,
+                                        messageId: null,
+                                        fcmError: {
+                                            code: tokenError?.code || null,
+                                            message: tokenError?.message || String(tokenError)
+                                        }
+                                    });
+                                }
+                                logger.error(
+                                    `Error sending push notification (token ${i + 1}/${tokens.length}) for user ${feedback.userId}: `,
+                                    tokenError
+                                );
+                            }
+                        }
+
+                        if (!pushNotification.fcmSent && pushNotification.tokensSent === 0) {
+                            pushNotification.reason = 'FCM_SEND_FAILED';
+                        }
+
+                        // If DB save failed inside sendPushNotification, attempt DB save here (avoid losing in-app notification)
+                        if (!pushNotification.dbSaved) {
+                            try {
+                                const n = await Notification.create({
+                                    userId: feedback.userId,
+                                    title: notificationTitle,
+                                    body: notificationBody,
+                                    type: NotificationType.GENERAL
+                                });
+                                pushNotification.dbSaved = true;
+                                pushNotification.notificationId = n?.insertId || pushNotification.notificationId;
+                            } catch (dbError) {
+                                logger.error('Fallback notification DB save failed: ', dbError);
+                            }
+                        }
                     }
+                } catch (notifyError) {
+                    pushNotification.reason = notifyError?.message || 'PUSH_NOTIFICATION_ERROR';
+                    logger.error('Error sending push notification: ', notifyError);
                 }
 
                 return res.status(200).json({ 
                     responseType: "S", 
                     responseValue: {
                         message: "Feedback reply sent successfully!",
+                        pushNotification,
                         feedback: {
                             id: updatedFeedback.id,
                             userId: updatedFeedback.userId,
@@ -278,5 +415,52 @@ exports.controller = {
                     responseValue: { message: error.toString() } 
                 });
             }
+        },
+
+        adminDeleteFeedback: async (req, res) => {
+            try {
+                const traceId = generateUUID();
+                const { feedbackId } = req.body;
+
+                if (!feedbackId) {
+                    return res.status(400).json({
+                        responseType: "F",
+                        responseValue: { message: "Feedback ID is required!" }
+                    });
+                }
+
+                logger.info('adminDeleteFeedback start', { traceId, feedbackId });
+
+                const feedback = await Model.readById(feedbackId);
+                if (!feedback) {
+                    return res.status(404).json({
+                        responseType: "F",
+                        responseValue: { message: "Feedback not found!" }
+                    });
+                }
+
+                const deleted = await Model.delete(feedbackId);
+                if (!deleted) {
+                    return res.status(500).json({
+                        responseType: "F",
+                        responseValue: { message: "Failed to delete feedback!" }
+                    });
+                }
+
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: "Feedback deleted successfully!",
+                        traceId,
+                        feedbackId
+                    }
+                });
+            } catch (error) {
+                logger.error('Error deleting feedback: ', error);
+                return res.status(500).json({
+                    responseType: "F",
+                    responseValue: { message: error.toString() }
+                });
+            }
         }
-}
+};

@@ -24,10 +24,10 @@ if (!admin.apps.length) {
 
 /**
  * Helper function to send push notification (can be called directly without HTTP request/response)
- * @param {Object} params - { userId, title, body, token, type, skipDbSave }
- * @returns {Promise<Object>} - { success: boolean, message: string }
+ * @param {Object} params - { userId, title, body, token, type, skipDbSave, traceId }
+ * @returns {Promise<Object>} - { success: boolean, message: string, fcmSent: boolean, dbSaved: boolean, messageId?: string, fcmError?: {code?: string, message?: string} }
  */
-async function sendPushNotification({ userId, title, body, token, type, skipDbSave = false }) {
+async function sendPushNotification({ userId, title, body, token, type, skipDbSave = false, traceId = null }) {
     // Validate required fields
     if (!token || !title || !body) {
         throw new Error('Token, title, and body are required.');
@@ -57,7 +57,7 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
         token: token, // Target device FCM token
         android: {
             priority: 'high',
-            ttl: 3600,
+            ttl: 3600 * 1000,
             notification: {
                 title: title,
                 body: body,
@@ -84,6 +84,7 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
 
     // Save notification to database first (unless skipDbSave is true)
     let notificationId = null;
+    let dbSaveError = null;
     if (!skipDbSave) {
         try {
             const notificationResult = await Notification.create({
@@ -93,23 +94,38 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
                 type: type || NotificationType.GENERAL
             });
             notificationId = notificationResult.insertId;
+            logger.info('Notification saved to DB', { traceId, userId, notificationId, type: type || NotificationType.GENERAL });
         } catch (dbError) {
-            logger.error('Error saving notification to database:', dbError);
+            dbSaveError = { message: dbError?.message || String(dbError) };
+            logger.error('Error saving notification to database:', { traceId, userId, error: dbSaveError.message });
             // Continue trying to send FCM even if DB save fails
         }
     }
 
     try {
         // Send notification via FCM
-        logger.info(`Sending FCM to user ${userId} with token ${token.substring(0, 20)}...`);
-        await admin.messaging().send(message);
-        logger.info(`FCM sent successfully to user ${userId}`);
-        return { success: true, message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது' };
+        const tokenPrefix = String(token).substring(0, 12);
+        const tokenLength = String(token).length;
+        logger.info('Sending FCM push', { traceId, userId, type: type || NotificationType.GENERAL, tokenPrefix, tokenLength, skipDbSave });
+        const messageId = await admin.messaging().send(message);
+        logger.info('FCM sent successfully', { traceId, userId, messageId });
+        return {
+            success: true,
+            message: 'அறிவிப்பு வெற்றிகரமாக அனுப்பப்பட்டது',
+            fcmSent: true,
+            dbSaved: !!notificationId,
+            notificationId,
+            dbSaveError,
+            messageId
+        };
     } catch (error) {
         // FCM send failed
-        logger.error('FCM send error:', error);
-        logger.error('FCM error code:', error.code);
-        logger.error('FCM error message:', error.message);
+        logger.error('FCM send error:', {
+            traceId,
+            userId,
+            code: error?.code || null,
+            message: error?.message || String(error)
+        });
         
         // If the token is invalid, deactivate it in the database
         if (error.code === 'messaging/invalid-registration-token' || 
@@ -120,17 +136,29 @@ async function sendPushNotification({ userId, title, body, token, type, skipDbSa
                     'UPDATE user_devices SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE fcm_token = ?',
                     [token]
                 );
-                logger.info(`Deactivated invalid FCM token for user ${userId}`);
+                logger.info('Deactivated invalid FCM token', { traceId, userId });
             } catch (dbError) {
-                logger.error('Error deactivating FCM token:', dbError);
+                logger.error('Error deactivating FCM token:', { traceId, userId, error: dbError?.message || String(dbError) });
             }
         }
         
         // Return success if notification was saved to DB, even if FCM failed
         if (notificationId) {
-            return { success: true, message: 'அறிவிப்பு தரவுத்தளத்தில் சேமிக்கப்பட்டது, ஆனால் FCM அனுப்ப முடியவில்லை' };
+            return {
+                success: true,
+                message: 'அறிவிப்பு தரவுத்தளத்தில் சேமிக்கப்பட்டது, ஆனால் FCM அனுப்ப முடியவில்லை',
+                fcmSent: false,
+                dbSaved: true,
+                notificationId,
+                dbSaveError,
+                fcmError: {
+                    code: error.code || null,
+                    message: error.message || String(error)
+                }
+            };
         }
         
+        if (traceId) error.traceId = traceId;
         throw error;
     }
 }
@@ -190,7 +218,7 @@ exports.controller = {
     /**
      * Send push notification via FCM and save notification to database
      * Body: { userId, title, body, token, type }
-     * type: moi, moiOut, function, account, settings, general (default: general)
+     * type: moi, moiOut, function, account, settings, feedback, general (default: general)
      */
     sendNotification: async (req, res) => {
         const { userId, title, body, token, type } = req.body;
@@ -633,7 +661,7 @@ exports.controller = {
                         token: user.fcm_token,
                         android: {
                             priority: 'high',
-                            ttl: 3600,
+                            ttl: 3600 * 1000,
                             notification: {
                                 title: title,
                                 body: body,

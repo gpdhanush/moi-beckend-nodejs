@@ -8,6 +8,7 @@ const NotificationType = {
     FUNCTION: 'function',
     ACCOUNT: 'account',
     SETTINGS: 'settings',
+    FEEDBACK: 'feedback',
     GENERAL: 'general'
 };
 

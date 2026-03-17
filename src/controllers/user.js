@@ -48,6 +48,7 @@ const formatAdminUserListItem = (details) => ({
   last_login: details.last_activity_at,
   city: details.profile?.city || null,
   profile_image_url: details.profile?.profile_image_url || null,
+  device_name: details.device?.device_name || null,
 });
 
 exports.userController = {
