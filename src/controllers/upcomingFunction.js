@@ -2,6 +2,7 @@ const Model = require('../models/upcomingFunction');
 const User = require('../models/user');
 const moment = require('moment');
 const logger = require('../config/logger');
+const { validateUuid, sendUuidError } = require('../helpers/idParams');
 
 // Valid status enum values
 const VALID_STATUSES = ['ACTIVE', 'CANCELLED', 'COMPLETED'];
@@ -50,6 +51,9 @@ exports.controller = {
                     responseValue: { message: "Authentication required!" } 
                 });
             }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Verify user exists
             const user = await User.findById(userId);
@@ -106,6 +110,9 @@ exports.controller = {
                     responseValue: { message: "பயனர் ID தேவை!" } 
                 });
             }
+
+            const userIdCheck = validateUuid(userId, 'userId');
+            if (!userIdCheck.ok) return sendUuidError(res, userIdCheck.message);
 
             // Verify user exists
             const user = await User.findById(userId);
@@ -198,6 +205,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(functionId, 'id');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Check if function exists
             const existingFunction = await Model.readById(functionId);
             if (!existingFunction) {
@@ -281,6 +291,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(id, 'id');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Check if function exists
             const existingFunction = await Model.readById(id);
             if (!existingFunction) {
@@ -337,6 +350,9 @@ exports.controller = {
                     responseValue: { message: "செயல்பாட்டு ID அவசியம்!" } 
                 });
             }
+
+            const idCheck = validateUuid(id, 'id');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             if (!status) {
                 return res.status(400).json({ 

@@ -1,4 +1,5 @@
 const Model = require('../models/defaults');
+const { validateUuid, sendUuidError } = require('../helpers/idParams');
 
 
 exports.controller = {
@@ -13,6 +14,9 @@ exports.controller = {
                     responseValue: { message: 'பயனர் ID தேவை!' } 
                 });
             }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
             
             const result = await Model.totalAmount(userId);
             if (!result || result.length === 0) {

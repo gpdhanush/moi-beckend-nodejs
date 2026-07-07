@@ -24,6 +24,7 @@ router.use("/default", defaults);
 router.use("/feedbacks", feedbacks);
 router.use("/email", email);
 router.use("/upcoming-functions", upcomingFunction);
+router.use("/upcoming-function", upcomingFunction);
 router.use("/notification", notificationRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use('/uploads', uploadRoutes);

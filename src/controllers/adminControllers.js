@@ -51,10 +51,10 @@ exports.adminControllers = {
       // Convert binary user_id to UUID string
       const formattedOTPs = rows.map(row => ({
         id: row.id,
-        // user_id: fromBinaryUUID(row.user_id),
-        name: row.name || row.username || "N/A",
-        // email: row.email,
-        // mobile: row.mobile,
+        user_id: fromBinaryUUID(row.user_id),
+        name: row.username || row.name || "N/A",
+        email: row.email,
+        mobile: row.mobile,
         code: row.code,
         type: row.type,
         expires_at: row.expires_at,

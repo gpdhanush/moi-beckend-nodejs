@@ -1,5 +1,6 @@
 const Model = require("../models/moiPersons");
 const User = require("../models/user");
+const { validateUuid, validateUuidFields, sendUuidError } = require("../helpers/idParams");
 
 const formatPersonSummary = (person) => ({
   id: person.mp_id,
@@ -28,6 +29,9 @@ exports.controller = {
   list: async (req, res) => {
     const { userId, search } = req.body;
     try {
+      const idCheck = validateUuid(userId, "userId");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -71,6 +75,9 @@ exports.controller = {
           responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." },
         });
       }
+
+      const idCheck = validateUuid(userId, "userId");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const user = await User.findById(userId);
       if (!user) {
@@ -156,6 +163,9 @@ exports.controller = {
         });
       }
 
+      const idCheck = validateUuidFields({ userId, id });
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -218,7 +228,7 @@ exports.controller = {
 
   delete: async (req, res) => {
     try {
-      const id = req.params.id; // UUID as string, no parseInt
+      const id = req.params.id;
 
       if (!id || id.trim() === "") {
         return res.status(400).json({
@@ -226,6 +236,9 @@ exports.controller = {
           responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
         });
       }
+
+      const idCheck = validateUuid(id, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const existing = await Model.readById(id);
 
@@ -258,7 +271,7 @@ exports.controller = {
 
   getById: async (req, res) => {
     try {
-      const id = req.params.id; // UUID as string, no parseInt
+      const id = req.params.id;
 
       if (!id || id.trim() === "") {
         return res.status(400).json({
@@ -266,6 +279,9 @@ exports.controller = {
           responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
         });
       }
+
+      const idCheck = validateUuid(id, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const person = await Model.readById(id);
 
@@ -291,6 +307,9 @@ exports.controller = {
   getPersonDetails: async (req, res) => {
     try {
       const { userId } = req.body;
+      const idCheck = validateUuid(userId, "userId");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -324,6 +343,10 @@ exports.controller = {
     try {
       const search = req.query.search ? String(req.query.search).trim() : null;
       const userId = req.query.userId ? String(req.query.userId).trim() : null;
+      if (userId) {
+        const idCheck = validateUuid(userId, "userId");
+        if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+      }
       const requestedLimit = Number.parseInt(req.query.limit, 10);
       const requestedOffset = Number.parseInt(req.query.offset, 10);
       const limit =
@@ -366,6 +389,9 @@ exports.controller = {
         });
       }
 
+      const idCheck = validateUuid(id, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const person = await Model.readByIdForAdmin(id);
 
       if (!person) {
@@ -397,6 +423,9 @@ exports.controller = {
         });
       }
 
+      const idCheck = validateUuid(userId, "userId");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const persons = await Model.readByUserIdForAdmin(userId);
 
       return res.status(200).json({
@@ -422,6 +451,9 @@ exports.controller = {
           responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." },
         });
       }
+
+      const idCheck = validateUuid(id, 'id');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const existing = await Model.readById(id);
       if (!existing) {
@@ -488,6 +520,9 @@ exports.controller = {
           responseValue: { message: "நபர் ID வழங்கப்படவில்லை." },
         });
       }
+
+      const idCheck = validateUuid(id, 'id');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const existing = await Model.readByIdForAdmin(id);
 

@@ -11,6 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const logger = require("../config/logger");
+const { validateUuid, sendUuidError } = require("../helpers/idParams");
 
 const { 
   sendEmail, 
@@ -493,6 +494,16 @@ exports.userController = {
   update: async (req, res) => {
     const { id, name, mobile, email } = req.body;
     try {
+      if (!id) {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "பயனர் ID தேவை!" },
+        });
+      }
+
+      const idCheck = validateUuid(id, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       // Check that mobile number is unique (excluding current user)
       if (mobile) {
         const chkMobile = await User.checkMobileNo(mobile, id);
@@ -565,6 +576,9 @@ exports.userController = {
   getUser: async (req, res) => {
     const userId = req.params.id;
     try {
+      const idCheck = validateUuid(userId, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const user = await User.findById(userId);
       if (!user) {
         return res
@@ -597,6 +611,16 @@ exports.userController = {
    */
   updatePassword: async (req, res) => {
     const { id, password, newPassword } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        responseType: "F",
+        responseValue: { message: "பயனர் ID தேவை!" },
+      });
+    }
+
+    const idCheck = validateUuid(id, "id");
+    if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
     const user = await User.findById(id);
     if (!user) {
@@ -850,6 +874,9 @@ exports.userController = {
       });
     }
 
+    const idCheck = validateUuid(userId, "userId");
+    if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
     const user = await User.findById(userId);
     if (!user) {
       return res
@@ -940,6 +967,16 @@ exports.userController = {
           responseType: "F",
           responseValue: { message: "பயனர் ஐடி தேவையானது!" },
         });
+      }
+
+      const idCheck = validateUuid(userId, "userId");
+      if (!idCheck.ok) {
+        try {
+          if (req.file.path && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+          }
+        } catch (_) {}
+        return sendUuidError(res, idCheck.message);
       }
 
       // Verify user exists
@@ -1114,6 +1151,9 @@ exports.userController = {
   getImportantUserDetails: async (req, res) => {
     const userId = req.params.id;
     try {
+      const idCheck = validateUuid(userId, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const details = await User.getPublicDetails(userId);
       if (!details) {
         return res
@@ -1141,6 +1181,8 @@ exports.userController = {
     try {
       let user = null;
       if (id) {
+        const idCheck = validateUuid(id, "id");
+        if (!idCheck.ok) return sendUuidError(res, idCheck.message);
         user = await User.findById(id);
       } else if (email) {
         user = await User.findByEmail(email);
@@ -1195,6 +1237,9 @@ exports.userController = {
   adminUserDetails: async (req, res) => {
     const userId = req.params.id;
     try {
+      const idCheck = validateUuid(userId, "id");
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const details = await User.getPublicDetails(userId);
       if (!details) {
         return res

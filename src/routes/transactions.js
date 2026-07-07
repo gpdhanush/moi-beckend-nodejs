@@ -43,7 +43,7 @@ router.post('/delete', authenticateToken, controller.delete);
 router.post('/stats', authenticateToken, controller.getStats);
 
 // Get all transactions for a person
-// Body: { userId, personId, limit?, offset? }
+// Params: personId (UUID) | Body: { userId, limit?, offset? }
 router.post('/person/:personId', authenticateToken, controller.getByPerson);
 
 

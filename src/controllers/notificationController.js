@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const { Notification, NotificationType, isValidNotificationType } = require('../models/notificationModels');
 const logger = require('../config/logger');
+const { validateUuid, validateUuidList, sendUuidError } = require('../helpers/idParams');
 
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE,
@@ -222,6 +223,9 @@ exports.controller = {
      */
     sendNotification: async (req, res) => {
         const { userId, title, body, token, type } = req.body;
+
+        const idCheck = validateUuid(userId, 'userId');
+        if (!idCheck.ok) return sendUuidError(res, idCheck.message);
         
         try {
             const result = await sendPushNotification({ userId, title, body, token, type });
@@ -361,6 +365,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(notificationId, 'notificationId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Check if notification exists
             const notification = await Notification.findById(notificationId);
             if (!notification) {
@@ -417,6 +424,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(notificationId, 'notificationId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Check if notification exists
             const notification = await Notification.findById(notificationId);
             if (!notification) {
@@ -472,6 +482,9 @@ exports.controller = {
                     responseValue: { message: 'அறிவிப்பு ஐடி தேவையானது.' }
                 });
             }
+
+            const idCheck = validateUuid(notificationId, 'notificationId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Check if notification exists
             const notification = await Notification.findById(notificationId);
@@ -567,6 +580,9 @@ exports.controller = {
                     responseValue: { message: 'பயனர் ஐடிகளின் வரிசை தேவையானது.' }
                 });
             }
+
+            const listCheck = validateUuidList(userIds, 'userIds');
+            if (!listCheck.ok) return sendUuidError(res, listCheck.message);
 
             if (!title || !body) {
                 return res.status(400).json({

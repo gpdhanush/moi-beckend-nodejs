@@ -2,6 +2,7 @@ const Model = require('../models/transactionFunctions');
 const DefaultModel = require('../models/moiDefaultFunctions');
 const User = require('../models/user');
 const logger = require('../config/logger');
+const { validateUuid, validateUuidFields, sendUuidError } = require('../helpers/idParams');
 
 exports.controller = {
     /**
@@ -18,6 +19,9 @@ exports.controller = {
                     responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." }
                 });
             }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Verify user exists
             const user = await User.findById(userId);
@@ -70,6 +74,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify user exists
             const user = await User.findById(userId);
             if (!user) {
@@ -117,6 +124,8 @@ exports.controller = {
             if (!userId) {
                 return res.status(400).json({ responseType: "F", responseValue: { message: "userId required" } });
             }
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
             const user = await User.findById(userId);
             if (!user) {
                 return res.status(404).json({ responseType: "F", responseValue: { message: "User not found" } });
@@ -156,6 +165,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(functionId, 'functionId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             const func = await Model.getFunctionWithStats(functionId);
 
             if (!func) {
@@ -192,6 +204,9 @@ exports.controller = {
                     responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." }
                 });
             }
+
+            const idCheck = validateUuid(functionId, 'functionId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Verify function exists
             const func = await Model.readById(functionId);
@@ -247,6 +262,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(functionId, 'functionId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify function exists
             const func = await Model.readById(functionId);
             if (!func) {
@@ -286,6 +304,11 @@ exports.controller = {
         try {
             const search = req.body.search ? String(req.body.search).trim() : null;
             const userId = req.body.userId ? String(req.body.userId).trim() : null;
+
+            if (userId) {
+                const idCheck = validateUuid(userId, 'userId');
+                if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+            }
 
             const functions = await Model.readAllForAdmin({
                 search: search || null,

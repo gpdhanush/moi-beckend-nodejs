@@ -1,6 +1,7 @@
 const Model = require("../models/moiDefaultFunctions");
 const TransactionFunctionModel = require("../models/transactionFunctions");
 const User = require("../models/user");
+const { validateUuid, sendUuidError } = require("../helpers/idParams");
 
 exports.controller = {
   // Return all global default functions
@@ -33,6 +34,9 @@ exports.controller = {
   getById: async (req, res) => {
     try {
       const id = req.params.id;
+      const idCheck = validateUuid(id, 'id');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const func = await Model.readById(id);
 
       if (!func) {
@@ -91,6 +95,9 @@ exports.controller = {
           responseValue: { message: "தவறான தரவுகள்." },
         });
       }
+      const idCheck = validateUuid(id, 'id');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const existing = await Model.readById(id);
       if (!existing) {
         return res.status(404).json({
@@ -127,6 +134,9 @@ exports.controller = {
           responseValue: { message: "ID required." },
         });
       }
+      const idCheck = validateUuid(id, 'id');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const existing = await Model.readById(id);
       if (!existing) {
         return res.status(404).json({
@@ -164,6 +174,9 @@ exports.controller = {
           responseValue: { message: "userId is required" },
         });
       }
+      const idCheck = validateUuid(userId, 'userId');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({

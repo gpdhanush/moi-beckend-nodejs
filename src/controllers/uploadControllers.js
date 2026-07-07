@@ -3,6 +3,7 @@ const path = require("path");
 const multer = require("multer");
 const fs = require("fs");
 const logger = require("../config/logger");
+const { validateUuid, sendUuidError } = require("../helpers/idParams");
 
 // Support both environments: local ('./uploads') and production ('./../gp.prasowlabs.in/uploads')
 const uploadDir = process.env.UPLOAD_DIR
@@ -105,6 +106,14 @@ exports.controller = {
               responseType: "F",
               responseValue: { message: "பயனர் ஐடி தேவையானது!" },
             });
+        }
+
+        const idCheck = validateUuid(userId, 'userId');
+        if (!idCheck.ok) {
+          if (req.file && req.file.path) {
+            try { fs.unlinkSync(req.file.path); } catch (_) {}
+          }
+          return sendUuidError(res, idCheck.message);
         }
 
         if (!filePath) {
@@ -221,6 +230,9 @@ exports.controller = {
         });
       }
 
+      const idCheck = validateUuid(userId, 'userId');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
       const fullFilePath = path.join(uploadDir, userId, filePath, filename);
 
       // Check if file exists
@@ -258,6 +270,9 @@ exports.controller = {
           },
         });
       }
+
+      const idCheck = validateUuid(userId, 'userId');
+      if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
       const fullFilePath = path.join(uploadDir, userId, filePath, filename);
 

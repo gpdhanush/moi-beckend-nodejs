@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const User = require('../models/user');
 const logger = require('../config/logger');
 const { sendPushNotification } = require('./notificationController');
+const { validateUuid, validateUuidList, sendUuidError } = require('../helpers/idParams');
 
 exports.controller = {
     /**
@@ -30,6 +31,8 @@ exports.controller = {
                     ? await User.findByEmailIncludingDeleted(email)
                     : await User.findByEmail(email);
             } else if (id) {
+                const idCheck = validateUuid(id, 'id');
+                if (!idCheck.ok) return sendUuidError(res, idCheck.message);
                 user = useIncludingDeleted 
                     ? await User.findByIdIncludingDeleted(id)
                     : await User.findById(id);
@@ -141,8 +144,11 @@ exports.controller = {
             // Handler for verification: send VERIFY OTP
             if (type === 'verification' || type === 'verify') {
                 let user = null;
-                if (id) user = await User.findById(id);
-                else if (email) user = await User.findByEmail(email);
+                if (id) {
+                    const idCheck = validateUuid(id, 'id');
+                    if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+                    user = await User.findById(id);
+                } else if (email) user = await User.findByEmail(email);
                 if (!user) return res.status(404).json({ responseType: "F", responseValue: { message: userError } });
                 if (user.is_verified) return res.status(400).json({ responseType: "F", responseValue: { message: 'இந்த மின்னஞ்சல் ஏற்கனவே சரிபார்க்கப்பட்டுவிட்டது!' } });
 
@@ -226,6 +232,9 @@ exports.controller = {
                     responseValue: { message: 'பயனர் ஐடிகளின் வரிசை தேவையானது.' }
                 });
             }
+
+            const listCheck = validateUuidList(userIds, 'userIds');
+            if (!listCheck.ok) return sendUuidError(res, listCheck.message);
 
             if (!subject || !body) {
                 return res.status(400).json({

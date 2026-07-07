@@ -7,32 +7,57 @@ function generateUUID() {
     return crypto.randomUUID();
 }
 
+function formatUuidHex(hex) {
+    return hex.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+}
+
+/**
+ * True when the value is a legacy auto-increment ID (DB not yet migrated to BINARY(16)).
+ */
+function isLegacyNumericId(value) {
+    if (value == null) return false;
+    if (typeof value === 'number' && Number.isSafeInteger(value)) return true;
+    const s = String(value).trim();
+    return /^\d+$/.test(s) && s.length <= 19;
+}
+
 /**
  * Convert UUID string to 16-byte Buffer for BINARY(16) columns.
- * Works on MariaDB 10.4 and earlier (no UUID_TO_BIN).
- * @param {string} uuid - e.g. '550e8400-e29b-41d4-a716-446655440000'
- * @returns {Buffer} 16 bytes
+ * Legacy bigint IDs are returned as numbers for BIGINT columns.
+ * @param {string|number} uuid - UUID string or legacy numeric id
+ * @returns {Buffer|number|null}
  */
 function toBinaryUUID(uuid) {
-    if (!uuid) return null;
-    const str = typeof uuid === 'string' ? uuid.replace(/-/g, '') : String(uuid).replace(/-/g, '');
+    if (uuid == null || uuid === '') return null;
+    if (Buffer.isBuffer(uuid)) {
+        return uuid.length === 16 ? uuid : null;
+    }
+    if (isLegacyNumericId(uuid)) {
+        return parseInt(String(uuid).trim(), 10);
+    }
+    const str = String(uuid).trim().replace(/-/g, '');
     if (str.length !== 32) return null;
     return Buffer.from(str, 'hex');
 }
 
 /**
- * Convert BINARY(16) from DB (Buffer or hex string) to UUID string.
- * @param {Buffer|string} buf - 16-byte buffer or 32-char hex string
- * @returns {string} UUID with hyphens
+ * Convert BINARY(16) from DB (Buffer) or legacy BIGINT to string id.
+ * @param {Buffer|string|number} buf
+ * @returns {string|null}
  */
 function fromBinaryUUID(buf) {
     if (buf == null) return null;
     if (Buffer.isBuffer(buf)) {
         const hex = buf.toString('hex');
-        return hex.length === 32 ? hex.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5') : null;
+        return hex.length === 32 ? formatUuidHex(hex) : null;
     }
-    const str = String(buf).replace(/-/g, '');
-    return str.length === 32 ? str.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5') : null;
+    if (isLegacyNumericId(buf)) {
+        return String(buf).trim();
+    }
+    const str = String(buf).trim();
+    const hex = str.replace(/-/g, '');
+    if (hex.length === 32) return formatUuidHex(hex);
+    return null;
 }
 
-module.exports = { generateUUID, toBinaryUUID, fromBinaryUUID };
+module.exports = { generateUUID, toBinaryUUID, fromBinaryUUID, isLegacyNumericId };

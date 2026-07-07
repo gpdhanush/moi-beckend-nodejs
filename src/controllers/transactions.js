@@ -4,6 +4,25 @@ const FunctionModel = require('../models/transactionFunctions');
 const DefaultModel = require('../models/moiDefaultFunctions');
 const User = require('../models/user');
 const logger = require('../config/logger');
+const { validateUuid, validateUuidFields, sendUuidError } = require('../helpers/idParams');
+
+async function resolveTransactionFunction(transactionFunctionId, userId, transactionFunctionName) {
+    let func = await DefaultModel.readById(transactionFunctionId);
+    if (func) {
+        return { id: transactionFunctionId, name: func.name };
+    }
+
+    func = await FunctionModel.readById(transactionFunctionId);
+    const funcUserId = func && (func.user_id || func.userId);
+    if (!func || funcUserId !== userId) {
+        return { error: 'இந்த நிகழ்வு கிடைக்கவில்லை அல்லது உங்களுக்கு சொந்தமாக இல்லை.' };
+    }
+
+    return {
+        id: transactionFunctionId,
+        name: func.functionName || transactionFunctionName || null,
+    };
+}
 
 exports.controller = {
     /**
@@ -34,6 +53,9 @@ exports.controller = {
                     responseValue: { message: "தேவையான தரவுகள் வழங்கப்படவில்லை." }
                 });
             }
+
+            const idCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Validate type
             if (!['INVEST', 'RETURN'].includes(type)) {
@@ -86,7 +108,7 @@ exports.controller = {
                 });
             }
 
-            // For INVEST transactions, transactionFunctionId is required (must be linked to an existing function)
+            // For INVEST transactions, transactionFunctionId is required
             if (type === 'INVEST') {
                 if (!transactionFunctionId) {
                     return res.status(400).json({
@@ -95,25 +117,28 @@ exports.controller = {
                     });
                 }
 
-                const func = await FunctionModel.readById(transactionFunctionId);
-                const funcUserId = func && (func.user_id || func.userId);
-                if (!func || funcUserId !== userId) {
+                const resolved = await resolveTransactionFunction(
+                    transactionFunctionId,
+                    userId,
+                    transactionFunctionName
+                );
+                if (resolved.error) {
                     return res.status(404).json({
                         responseType: "F",
-                        responseValue: { message: "இந்த நிகழ்வு கிடைக்கவில்லை அல்லது உங்களுக்கு சொந்தமாக இல்லை." }
+                        responseValue: { message: resolved.error }
                     });
                 }
-            } else {
-                // For RETURN transactions, transactionFunctionId is optional. If provided, validate ownership.
-                if (transactionFunctionId) {
-                    const func = await FunctionModel.readById(transactionFunctionId);
-                    const funcUserId = func && (func.user_id || func.userId);
-                    if (!func || funcUserId !== userId) {
-                        return res.status(404).json({
-                            responseType: "F",
-                            responseValue: { message: "இந்த நிகழ்வு கிடைக்கவில்லை அல்லது உங்களுக்கு சொந்தமாக இல்லை." }
-                        });
-                    }
+            } else if (transactionFunctionId) {
+                const resolved = await resolveTransactionFunction(
+                    transactionFunctionId,
+                    userId,
+                    transactionFunctionName
+                );
+                if (resolved.error) {
+                    return res.status(404).json({
+                        responseType: "F",
+                        responseValue: { message: resolved.error }
+                    });
                 }
             }
 
@@ -187,6 +212,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Validate type
             if (!['INVEST', 'RETURN'].includes(type)) {
                 return res.status(400).json({
@@ -249,27 +277,19 @@ exports.controller = {
             let finalFunctionName = transactionFunctionName || null;
             
             if (transactionFunctionId) {
-                // First check if it's a default function
-                let func = await DefaultModel.readById(transactionFunctionId);
-                
-                if (func) {
-                    // It's a default function - we can now store the ID as well.
-                    finalFunctionId = transactionFunctionId;
-                    finalFunctionName = func.name;
-                } else {
-                    // Check if it's a user's transaction function
-                    func = await FunctionModel.readById(transactionFunctionId);
-                    const funcUserId = func && (func.user_id || func.userId);
-                    if (!func || funcUserId !== userId) {
-                        return res.status(404).json({
-                            responseType: "F",
-                            responseValue: { message: "Transaction function not found or does not belong to user." }
-                        });
-                    }
-                    // It's a user's transaction function - store the ID
-                    finalFunctionId = transactionFunctionId;
-                    finalFunctionName = func.functionName || transactionFunctionName || null;
+                const resolved = await resolveTransactionFunction(
+                    transactionFunctionId,
+                    userId,
+                    transactionFunctionName
+                );
+                if (resolved.error) {
+                    return res.status(404).json({
+                        responseType: "F",
+                        responseValue: { message: resolved.error }
+                    });
                 }
+                finalFunctionId = resolved.id;
+                finalFunctionName = resolved.name;
             }
 
             const payload = {
@@ -358,6 +378,12 @@ exports.controller = {
                         continue;
                     }
 
+                    const rowIdCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+                    if (!rowIdCheck.ok) {
+                        errors.push({ index: i, error: rowIdCheck.message });
+                        continue;
+                    }
+
                     // Validate type
                     if (!['INVEST', 'RETURN'].includes(type)) {
                         errors.push({ index: i, error: "Type must be INVEST or RETURN." });
@@ -411,25 +437,17 @@ exports.controller = {
                     let finalFunctionName = transactionFunctionName || null;
 
                     if (transactionFunctionId) {
-                        // First check if it's a default function
-                        let func = await DefaultModel.readById(transactionFunctionId);
-                        
-                        if (func) {
-                            // It's a default function - we can now store the ID as well.
-                            finalFunctionId = transactionFunctionId;
-                            finalFunctionName = func.name;
-                        } else {
-                            // Check if it's a user's transaction function
-                            func = await FunctionModel.readById(transactionFunctionId);
-                            const funcUserId = func && (func.user_id || func.userId);
-                            if (!func || funcUserId !== userId) {
-                                errors.push({ index: i, error: "Transaction function not found or does not belong to user." });
-                                continue;
-                            }
-                            // It's a user's transaction function - store the ID
-                            finalFunctionId = transactionFunctionId;
-                            finalFunctionName = func.functionName || transactionFunctionName || null;
+                        const resolved = await resolveTransactionFunction(
+                            transactionFunctionId,
+                            userId,
+                            transactionFunctionName
+                        );
+                        if (resolved.error) {
+                            errors.push({ index: i, error: resolved.error });
+                            continue;
                         }
+                        finalFunctionId = resolved.id;
+                        finalFunctionName = resolved.name;
                     }
 
                     const payload = {
@@ -501,6 +519,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify user exists
             const user = await User.findById(userId);
             if (!user) {
@@ -549,6 +570,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(transactionId, 'transactionId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             const transaction = await Model.readById(transactionId);
 
             if (!transaction) {
@@ -592,6 +616,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuidFields({ userId, transactionId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify transaction exists
             const transaction = await Model.readById(transactionId);
             if (!transaction) {
@@ -629,22 +656,19 @@ exports.controller = {
             let finalFunctionId = null;
             let finalFunctionName = transactionFunctionName || null;
             if (transactionFunctionId) {
-                let func = await DefaultModel.readById(transactionFunctionId);
-                if (func) {
-                    finalFunctionId = transactionFunctionId;
-                    finalFunctionName = func.name;
-                } else {
-                    func = await FunctionModel.readById(transactionFunctionId);
-                    const funcUserId = func && (func.user_id || func.userId);
-                    if (!func || funcUserId !== (await User.findById(userId))?.id) {
-                        return res.status(404).json({
-                            responseType: "F",
-                            responseValue: { message: "Transaction function not found or does not belong to user." }
-                        });
-                    }
-                    finalFunctionId = transactionFunctionId;
-                    finalFunctionName = func.functionName || transactionFunctionName || null;
+                const resolved = await resolveTransactionFunction(
+                    transactionFunctionId,
+                    userId || transaction.userId,
+                    transactionFunctionName
+                );
+                if (resolved.error) {
+                    return res.status(404).json({
+                        responseType: "F",
+                        responseValue: { message: resolved.error }
+                    });
                 }
+                finalFunctionId = resolved.id;
+                finalFunctionName = resolved.name;
             }
 
             const payload = {
@@ -701,6 +725,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuid(transactionId, 'transactionId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify transaction exists
             const transaction = await Model.readById(transactionId);
             if (!transaction) {
@@ -747,6 +774,9 @@ exports.controller = {
                 });
             }
 
+            const idCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
             // Verify user exists
             const user = await User.findById(userId);
             if (!user) {
@@ -780,11 +810,12 @@ exports.controller = {
 
     /**
      * Get all transactions for a specific person
-     * Body: { userId, personId, limit?, offset? }
+     * Params: personId (UUID) | Body: { userId, limit?, offset? }
      */
     getByPerson: async (req, res) => {
         try {
-            const { userId, personId, limit = 50, offset = 0 } = req.body;
+            const { userId, limit = 50, offset = 0 } = req.body;
+            const personId = req.params.personId || req.body.personId;
 
             if (!userId || !personId) {
                 return res.status(400).json({
@@ -792,6 +823,9 @@ exports.controller = {
                     responseValue: { message: "பயனர் ID மற்றும் நபர் ID தேவை!" }
                 });
             }
+
+            const idCheck = validateUuidFields({ userId, personId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             // Verify user exists
             const user = await User.findById(userId);
@@ -843,6 +877,9 @@ exports.controller = {
                 startDate,
                 endDate
             } = req.body;
+
+            const idCheck = validateUuidFields({ userId, personId, transactionFunctionId });
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             const filters = {
                 search: search ? String(search).trim() : null,

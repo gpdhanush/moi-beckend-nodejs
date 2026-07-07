@@ -2,6 +2,7 @@ const Model = require('../models/feedbacks');
 const User = require('../models/user');
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID } = require('../helpers/uuid');
+const { validateUuid, sendUuidError } = require('../helpers/idParams');
 const { sendPushNotification } = require('./notificationController');
 const { Notification, NotificationType } = require('../models/notificationModels');
 const { sendFeedbackConfirmationEmail, sendFeedbackReplyEmail } = require('../services/emailService');
@@ -26,6 +27,9 @@ exports.controller = {
             if (!userId || !message) {
                 return res.status(400).json({ responseType: "F", responseValue: { message: "பயனர் ID மற்றும் செய்தி தேவை!" } });
             }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             if (!FEEDBACK_TYPES.includes(type)) {
                 return res.status(400).json({
@@ -89,6 +93,9 @@ exports.controller = {
             if (!userId) {
                 return res.status(400).json({ responseType: "F", responseValue: { message: "பயனர் ID தேவை!" } });
             }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
             if (status && !FEEDBACK_STATUSES.includes(status)) {
                 return res.status(400).json({
@@ -188,6 +195,9 @@ exports.controller = {
                         responseValue: { message: "Feedback ID and admin response are required!" } 
                     });
                 }
+
+                const idCheck = validateUuid(feedbackId, 'feedbackId');
+                if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
                 logger.info('adminReplyFeedback start', { traceId, feedbackId });
 
@@ -428,6 +438,9 @@ exports.controller = {
                         responseValue: { message: "Feedback ID is required!" }
                     });
                 }
+
+                const idCheck = validateUuid(feedbackId, 'feedbackId');
+                if (!idCheck.ok) return sendUuidError(res, idCheck.message);
 
                 logger.info('adminDeleteFeedback start', { traceId, feedbackId });
 

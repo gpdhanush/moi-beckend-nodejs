@@ -918,7 +918,7 @@ const User = {
                 profile_image_url: profile.profile_image_url || null
             },
             device: dRows && dRows[0] ? {
-                id: dRows[0].id ? (typeof dRows[0].id === 'object' ? fromBinaryUUID(dRows[0].id) : dRows[0].id) : null,
+                id: dRows[0].id ? fromBinaryUUID(dRows[0].id) : null,
                 fcm_token: dRows[0].fcm_token || null,
                 device_name: dRows[0].device_name || null,
                 device_id: dRows[0].device_id || null,
@@ -930,7 +930,7 @@ const User = {
                 androidVersion: dRows[0].android_version || null,
                 ram_size: dRows[0].ram_size || null,
             } : null,
-            referrer_id: referrerRows && referrerRows[0] ? (referrerRows[0].referrer_user_id ? (typeof referrerRows[0].referrer_user_id === 'object' ? fromBinaryUUID(referrerRows[0].referrer_user_id) : referrerRows[0].referrer_user_id) : null) : null,
+            referrer_id: referrerRows && referrerRows[0] ? fromBinaryUUID(referrerRows[0].referrer_user_id) : null,
             referred_count: referredCountRows && referredCountRows[0] ? referredCountRows[0].cnt : 0
         };
     },

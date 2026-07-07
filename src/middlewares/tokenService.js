@@ -4,15 +4,13 @@ const jwt = require('jsonwebtoken');
 const userTokens = {};
 
 /**
- * Normalize user ID (supports both legacy integer and new UUID string)
- * @param {string|number} userId
- * @returns {string|number}
+ * Normalize user/admin ID to UUID string for in-memory token storage.
+ * @param {string} userId
+ * @returns {string}
  */
 function normalizeUserId(userId) {
     if (userId == null) return userId;
-    if (typeof userId === 'string' && userId.length === 36) return userId; // UUID
-    const n = Number(userId);
-    return isNaN(n) ? userId : n;
+    return String(userId).trim();
 }
 
 /**
