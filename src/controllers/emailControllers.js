@@ -3,7 +3,7 @@ const User = require('../models/user');
 const logger = require('../config/logger');
 const { sendPushNotification } = require('./notificationController');
 const { validateUuid, validateUuidList, sendUuidError } = require('../helpers/idParams');
-const { createEmailTransporter, formatEmailFrom } = require('../services/emailService');
+const { createEmailTransporter, formatEmailFrom, buildMailOptions } = require('../services/emailService');
 
 const userError = 'பயனர் கிடைக்கவில்லை!';
 
@@ -121,13 +121,14 @@ exports.controller = {
                 const otpData = await User.createRestoreOTP(user.id);
                 const emailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f5f7fb;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #eaeaea;border-radius:8px;overflow:hidden;"><tr><td style="background:#2f3490;color:#ffffff;text-align:center;padding:20px;"><h2 style="margin:0;font-size:22px;">🔁 Account Restore OTP</h2></td></tr><tr><td style="padding:30px;color:#333333;"><p style="margin:0 0 15px 0;font-size:16px;">Hi <strong>${user.full_name || user.um_full_name}</strong>,</p><p style="margin:0 0 20px 0;font-size:15px;color:#555;">Use the OTP below to verify ownership and restore your account.</p><div style="text-align:center;margin:30px 0;"><span style="display:inline-block;padding:16px 26px;background:#f3f4ff;border-radius:8px;font-size:34px;letter-spacing:8px;font-family:monospace;font-weight:700;color:#2f3490;">${otpData.otp}</span></div><p style="text-align:center;font-size:14px;color:#666;margin:0;">This OTP will expire in <strong>10 minutes</strong>.</p><p style="margin-top:20px;font-size:14px;color:#777;">If you did not request this account restore, please ignore this email.</p></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table><p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">© 2026 Moi Kanakku. All rights reserved.</p></td></tr></table></body></html>`;
 
-                const mailOptions = {
+                const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: targetEmail,
                     subject: subject || '🔁 Moi Kanakku - Account Restore OTP',
-                    html: emailContent
-                };
-                await transporter.sendMail(mailOptions);
+                    html: emailContent,
+                });
+                const sent = await transporter.sendMail(mailOptions);
+                logger.info(`Restore OTP email sent to ${targetEmail}: ${sent.response}`);
                 await sendNotifIfRequested(user.id, 'Account restored', 'Your account restore OTP was sent', user.notification_token, 'account');
                 return res.status(200).json({ responseType: "S", responseValue: { message: 'OTP sent for restore', expires_in_minutes: 10 } });
             }
@@ -151,13 +152,14 @@ exports.controller = {
                 });
                 const emailContent = `<!doctype html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;"><tr><td style="background:#2f3490;padding:22px;text-align:center;color:#ffffff;"><h2 style="margin:0;font-size:22px;">🔐 Email Verification</h2></td></tr><tr><td style="padding:30px 28px;color:#333333;"><p style="margin:0 0 18px 0;font-size:16px;">Hi <strong>${user.full_name}</strong>,</p><p style="margin:0 0 20px 0;font-size:15px;color:#555;">Use the following OTP to verify your email address.</p><div style="text-align:center;margin:30px 0;"><span style="display:inline-block;padding:16px 26px;background:#f3f4ff;border-radius:8px;font-size:34px;letter-spacing:10px;font-family:monospace;font-weight:700;color:#2f3490;">${otpData.otp}</span></div><p style="text-align:center;font-size:14px;color:#666;margin:0;">This OTP will expire in <strong>10 minutes</strong></p><p style="text-align:center;font-size:13px;color:#999;margin-top:6px;">Expires at: <strong>${otpData.expireTime}</strong></p></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px 28px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table></td></tr></table></body></html>`;
 
-                const mailOptions = {
+                const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: user.email,
                     subject: subject || '🔐 Moi Kanakku - Email Verification',
-                    html: emailContent
-                };
-                await transporter.sendMail(mailOptions);
+                    html: emailContent,
+                });
+                const sent = await transporter.sendMail(mailOptions);
+                logger.info(`Verification OTP email sent to ${user.email}: ${sent.response}`);
                 await sendNotifIfRequested(user.id, 'Verify email', 'Verification OTP sent to your email', user.notification_token, 'account');
                 return res.status(200).json({ responseType: "S", responseValue: { message: 'Verification OTP sent', expires_in_minutes: 10 } });
             }
@@ -174,13 +176,14 @@ exports.controller = {
 
                 const emailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.06);"><tr><td style="background:#2f3490;padding:22px;text-align:center;color:#ffffff;"><h2 style="margin:0;font-size:22px;font-weight:600;">🔑 Forgot Password - OTP</h2></td></tr><tr><td style="padding:30px 28px;color:#333333;"><p style="margin:0 0 18px 0;font-size:16px;">Hi <strong>${user.full_name || user.um_full_name}</strong>,</p><p style="margin:0 0 20px 0;font-size:15px;color:#555;">Use the following OTP to reset your password.</p><div style="text-align:center;margin:30px 0;"><span style="display:inline-block;padding:16px 28px;background:#f3f4ff;border-radius:8px;font-size:34px;letter-spacing:10px;font-family:monospace;font-weight:700;color:#2f3490;">${otpData.otp}</span></div><p style="text-align:center;font-size:14px;color:#666;margin:0;">This OTP will expire in <strong>10 minutes</strong>.</p><p style="margin-top:20px;font-size:14px;color:#777;">If you did not request a password reset, please ignore this email.</p></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px 28px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table><p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">© 2026 Moi Kanakku. All rights reserved.</p></td></tr></table></body></html>`;
 
-                const mailOptions = {
+                const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: targetEmail,
                     subject: subject || 'Forgot Password - OTP',
-                    html: emailContent
-                };
-                await transporter.sendMail(mailOptions);
+                    html: emailContent,
+                });
+                const sent = await transporter.sendMail(mailOptions);
+                logger.info(`Forgot OTP email sent to ${targetEmail}: ${sent.response}`);
                 await sendNotifIfRequested(user.id, 'Forgot password', 'Forgot password OTP sent to your email', user.notification_token, 'account');
                 return res.status(200).json({ responseType: "S", responseValue: { message: 'Forgot OTP sent' } });
             }
@@ -188,13 +191,14 @@ exports.controller = {
             // Fallback: custom/raw send using provided subject/content
             if (type === 'custom' || type === 'raw') {
                 if (!email || !content) return res.status(400).json({ responseType: "F", responseValue: { message: 'email and content required for custom send' } });
-                const mailOptions = {
+                const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku'),
                     to: email,
                     subject: subject || 'Moi Kanakku',
                     html: content,
-                };
-                await transporter.sendMail(mailOptions);
+                });
+                const sent = await transporter.sendMail(mailOptions);
+                logger.info(`Custom email sent to ${email}: ${sent.response}`);
                 // No user context available for notification here; try with provided notification payload
                 await sendNotifIfRequested(null, subject || 'Moi Kanakku', subject || 'Email sent', null, 'general');
                 return res.status(200).json({ responseType: "S", responseValue: { message: 'மின்னஞ்சல் வெற்றிகரமாக அனுப்பப்பட்டது.' } });
@@ -270,12 +274,12 @@ exports.controller = {
 
             for (const user of users) {
                 try {
-                    const mailOptions = {
+                    const mailOptions = buildMailOptions({
                       from: formatEmailFrom('Moi Kanakku'),
                       to: user.email,
                       subject: subject,
                       html: `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Moi Kanakku</title></head><body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;"><div style="display:none;font-size:1px;color:#f5f7fb;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Moi Kanakku notification</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #eaeaea;border-radius:8px;overflow:hidden;"><tr><td style="background:#2f3490;color:#ffffff;text-align:center;padding:20px;"><h2 style="margin:0;font-size:22px;">📧 Moi Kanakku</h2><p style="margin:5px 0 0;font-size:13px;color:#dcdcff;">Manage events, relations & gifts easily</p></td></tr><tr><td style="padding:30px;color:#333333;line-height:1.6;"><p style="margin:0 0 15px;font-size:16px;">Hi <strong>${user.full_name || "User"}</strong>,</p><div style="margin:20px 0;font-size:15px;color:#555;">${body}</div></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table><p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">© 2026 Moi Kanakku. All rights reserved.<br>If you received this email by mistake, please ignore it.</p></td></tr></table></body></html>`,
-                    };
+                    });
 
                     await transporter.sendMail(mailOptions);
                     results.successful++;
