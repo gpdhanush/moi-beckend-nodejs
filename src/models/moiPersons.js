@@ -1,25 +1,36 @@
 const db = require('../config/database');
-const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { toBinaryUUID, fromBinaryUUID, generateUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 const table = "persons";
 
 const Model = {
   async create(data) {
-    const id = data.id || generateUUID();
+    const idMode = await getDbIdMode(db);
+    const rowValues = [
+      toBinaryUUID(data.userId),
+      data.firstName,
+      data.lastName || data.secondName || null,
+      data.mobile || null,
+      data.city || null,
+      data.occupation || data.business || null,
+    ];
+
+    if (idMode === 'uuid') {
+      const id = data.id || generateUUID();
+      const [result] = await db.query(
+        `INSERT INTO ${table} (id, user_id, first_name, last_name, mobile, city, occupation)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [toBinaryUUID(id), ...rowValues],
+      );
+      return { insertId: String(id), affectedRows: result.affectedRows };
+    }
+
     const [result] = await db.query(
-      `INSERT INTO ${table} 
-            (id, user_id, first_name, last_name, mobile, city, occupation) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        toBinaryUUID(id),
-        toBinaryUUID(data.userId),
-        data.firstName,
-        data.lastName || data.secondName || null,
-        data.mobile || null,
-        data.city || null,
-        data.occupation || data.business || null,
-      ],
+      `INSERT INTO ${table} (user_id, first_name, last_name, mobile, city, occupation)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      rowValues,
     );
-    return { insertId: id, affectedRows: result.affectedRows };
+    return { insertId: String(result.insertId), affectedRows: result.affectedRows };
   },
 
   async readAll(userId, search = null) {

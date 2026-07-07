@@ -1,16 +1,36 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 const Model = {
     async create(payload) {
-        const id = generateUUID();
         const { userId, title, description, functionDate, location, invitationUrl } = payload;
-        await db.query(
-            `INSERT INTO upcoming_functions (id, user_id, title, description, function_date,  location, invitation_url, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
-            [toBinaryUUID(id), toBinaryUUID(userId), title || payload.functionName || '', description || null, functionDate || payload.date, location || payload.place || '', invitationUrl || payload.invitationUrl || null]
+        const idMode = await getDbIdMode(db);
+        const rowValues = [
+            toBinaryUUID(userId),
+            title || payload.functionName || '',
+            description || null,
+            functionDate || payload.date,
+            location || payload.place || '',
+            invitationUrl || payload.invitationUrl || null
+        ];
+
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            await db.query(
+                `INSERT INTO upcoming_functions (id, user_id, title, description, function_date, location, invitation_url, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+                [toBinaryUUID(id), ...rowValues]
+            );
+            return { insertId: String(id) };
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO upcoming_functions (user_id, title, description, function_date, location, invitation_url, status)
+             VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')`,
+            rowValues
         );
-        return { insertId: id };
+        return { insertId: String(result.insertId) };
     },
 
     async readAll(userId) {

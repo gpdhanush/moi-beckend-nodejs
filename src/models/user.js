@@ -1,6 +1,7 @@
 const db = require('../config/database');
 const crypto = require('crypto');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 /**
  * LOGIN SECURITY FEATURE STATUS
@@ -263,7 +264,6 @@ const User = {
     },
 
     async create(payload) {
-        const id = payload.id || generateUUID();
         const {
             name,
             email,
@@ -279,7 +279,7 @@ const User = {
             android_version
         } = payload;
         const now = new Date();
-        const idBin = toBinaryUUID(id);
+        const idMode = await getDbIdMode(db);
 
         let referralCode = null;
         for (let attempt = 0; attempt < REFERRAL_CODE_MAX_ATTEMPTS; attempt++) {
@@ -292,19 +292,35 @@ const User = {
         }
         if (!referralCode) referralCode = generateReferralCode() + Date.now().toString(36).slice(-4);
 
-        await db.query(
-            `INSERT INTO users (id, full_name, email, mobile, referral_code, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
-            [idBin, name, email, mobile || null, referralCode, now, now]
-        );
+        let userId;
+        let userIdForFk;
+
+        if (idMode === 'uuid') {
+            userId = payload.id || generateUUID();
+            userIdForFk = toBinaryUUID(userId);
+            await db.query(
+                `INSERT INTO users (id, full_name, email, mobile, referral_code, status, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+                [userIdForFk, name, email, mobile || null, referralCode, now, now]
+            );
+        } else {
+            const [userResult] = await db.query(
+                `INSERT INTO users (full_name, email, mobile, referral_code, status, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?)`,
+                [name, email, mobile || null, referralCode, now, now]
+            );
+            userId = userResult.insertId;
+            userIdForFk = userId;
+        }
+
         await db.query(
             `INSERT INTO user_credentials (user_id, password_hash, password_changed_at)
              VALUES (?, ?, ?)`,
-            [idBin, password, now]
+            [userIdForFk, password, now]
         );
         await db.query(
             `INSERT INTO user_profiles (user_id) VALUES (?)`,
-            [idBin]
+            [userIdForFk]
         );
         if (fcm_token) {
             await db.query(
@@ -341,7 +357,7 @@ const User = {
                     fcm_token = COALESCE(VALUES(fcm_token), fcm_token)
     `,
                 [
-                    idBin,
+                    userIdForFk,
                     device_name ?? null,
                     device_id ?? null,
                     brand ?? null,
@@ -354,7 +370,7 @@ const User = {
                 ]
             );
         }
-        return { insertId: id };
+        return { insertId: String(userId) };
     },
 
     async update(payload) {

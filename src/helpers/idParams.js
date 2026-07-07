@@ -1,10 +1,9 @@
-const { isValidUUID } = require('./validators');
 const { isLegacyNumericId } = require('./uuid');
 
-const INVALID_UUID_MESSAGE = 'செல்லுபடியாகாத ID வடிவம். UUID string தேவை (எ.கா. 550e8400-e29b-41d4-a716-446655440000).';
+const INVALID_ID_MESSAGE = 'செல்லுபடியாகாத ID. எண் ID மட்டும் அனுமதிக்கப்படுகிறது (எ.கா. 2, 29).';
 
 /**
- * Reject legacy integer IDs and invalid UUID strings.
+ * Validate numeric entity IDs (bigint auto-increment).
  */
 function validateUuid(value, fieldName = 'id') {
     if (value == null || String(value).trim() === '') {
@@ -12,19 +11,15 @@ function validateUuid(value, fieldName = 'id') {
     }
 
     const str = String(value).trim();
-    if (isLegacyNumericId(str)) {
-        return { ok: true, value: str };
-    }
-
-    if (!isValidUUID(str)) {
-        return { ok: false, message: `${fieldName}: ${INVALID_UUID_MESSAGE}` };
+    if (!isLegacyNumericId(str)) {
+        return { ok: false, message: `${fieldName}: ${INVALID_ID_MESSAGE}` };
     }
 
     return { ok: true, value: str };
 }
 
 /**
- * Validate multiple UUID fields. Skips null/undefined/empty optional fields.
+ * Validate multiple ID fields. Skips null/undefined/empty optional fields.
  */
 function validateUuidFields(fieldMap) {
     for (const [fieldName, value] of Object.entries(fieldMap)) {
@@ -58,5 +53,5 @@ module.exports = {
     validateUuidFields,
     validateUuidList,
     sendUuidError,
-    INVALID_UUID_MESSAGE,
+    INVALID_ID_MESSAGE,
 };

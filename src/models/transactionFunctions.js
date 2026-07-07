@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 const Model = {
     /**
@@ -7,23 +8,32 @@ const Model = {
      */
     async create(payload) {
         const { userId, functionName, functionDate, location, notes, imageUrl } = payload;
-        const id = generateUUID();
+        const idMode = await getDbIdMode(db);
+        const rowValues = [
+            toBinaryUUID(userId),
+            functionName,
+            functionDate || null,
+            location || null,
+            notes || null,
+            imageUrl || null
+        ];
+
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            const [result] = await db.query(
+                `INSERT INTO transaction_functions (id, user_id, function_name, function_date, location, notes, image_url)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [toBinaryUUID(id), ...rowValues]
+            );
+            return { insertId: String(id), affectedRows: result.affectedRows };
+        }
 
         const [result] = await db.query(
-            `INSERT INTO transaction_functions (id, user_id, function_name, function_date, location, notes, image_url)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-                toBinaryUUID(id),
-                toBinaryUUID(userId),
-                functionName,
-                functionDate || null,
-                location || null,
-                notes || null,
-                imageUrl || null
-            ]
+            `INSERT INTO transaction_functions (user_id, function_name, function_date, location, notes, image_url)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            rowValues
         );
-
-        return { insertId: id, affectedRows: result.affectedRows };
+        return { insertId: String(result.insertId), affectedRows: result.affectedRows };
     },
 
     /**

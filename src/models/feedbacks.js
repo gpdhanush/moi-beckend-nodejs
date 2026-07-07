@@ -1,17 +1,30 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 const Model = {
     async create(payload) {
-        const id = generateUUID();
         const { userId, type, message } = payload;
         const feedbackType = ['GENERAL', 'BUG', 'FEATURE', 'COMPLAINT'].includes(type) ? type : 'GENERAL';
-        await db.query(
-            `INSERT INTO feedbacks (id, user_id, type, message, status)
-             VALUES (?, ?, ?, ?, 'OPEN')`,
-            [toBinaryUUID(id), toBinaryUUID(userId), feedbackType, message]
+        const idMode = await getDbIdMode(db);
+        const rowValues = [toBinaryUUID(userId), feedbackType, message];
+
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            await db.query(
+                `INSERT INTO feedbacks (id, user_id, type, message, status)
+                 VALUES (?, ?, ?, ?, 'OPEN')`,
+                [toBinaryUUID(id), ...rowValues]
+            );
+            return { insertId: String(id) };
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO feedbacks (user_id, type, message, status)
+             VALUES (?, ?, ?, 'OPEN')`,
+            rowValues
         );
-        return { insertId: id };
+        return { insertId: String(result.insertId) };
     },
 
     async readAll(userId, options = {}) {

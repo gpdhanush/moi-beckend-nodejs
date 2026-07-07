@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 // Notification Type Enum
 const NotificationType = {
@@ -24,15 +25,31 @@ const Notification = {
      * @returns {Promise} Database result
      */
     async create(notificationData) {
-        const id = generateUUID();
         const type = notificationData.type || NotificationType.GENERAL;
-        
+        const idMode = await getDbIdMode(db);
+        const rowValues = [
+            toBinaryUUID(notificationData.userId),
+            notificationData.title,
+            notificationData.body,
+            type
+        ];
+
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            await db.query(
+                `INSERT INTO notifications (id, user_id, title, body, type, is_read, created_at)
+                 VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+                [toBinaryUUID(id), ...rowValues]
+            );
+            return { insertId: String(id) };
+        }
+
         const [result] = await db.query(
-            `INSERT INTO notifications (id, user_id, title, body, type, is_read, created_at)
-             VALUES (?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
-            [toBinaryUUID(id), toBinaryUUID(notificationData.userId), notificationData.title, notificationData.body, type]
+            `INSERT INTO notifications (user_id, title, body, type, is_read, created_at)
+             VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+            rowValues
         );
-        return { insertId: id };
+        return { insertId: String(result.insertId) };
     },
 
     /**

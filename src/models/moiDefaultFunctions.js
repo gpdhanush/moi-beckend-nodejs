@@ -1,15 +1,24 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 const table = 'default_functions';
 
 const Model = {
     async create(name) {
-        const id = generateUUID();
+        const idMode = await getDbIdMode(db);
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            await db.query(
+                `INSERT INTO ${table} (id, name) VALUES (?, ?)`,
+                [toBinaryUUID(id), name]
+            );
+            return { insertId: String(id) };
+        }
         const [result] = await db.query(
-            `INSERT INTO ${table} (id, name) VALUES (?, ?)`,
-            [toBinaryUUID(id), name]
+            `INSERT INTO ${table} (name) VALUES (?)`,
+            [name]
         );
-        return { insertId: id };
+        return { insertId: String(result.insertId) };
     },
 
     // Read all global default functions

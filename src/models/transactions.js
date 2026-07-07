@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
+const { getDbIdMode } = require('../helpers/dbIdMode');
 
 const Model = {
     /**
@@ -21,30 +22,41 @@ const Model = {
             customFunction = null
         } = payload;
 
-        const id = generateUUID();
+        const idMode = await getDbIdMode(db);
+        const rowValues = [
+            toBinaryUUID(userId),
+            toBinaryUUID(personId),
+            transactionFunctionId ? toBinaryUUID(transactionFunctionId) : null,
+            transactionFunctionName || null,
+            transactionDate,
+            type,
+            amount ?? null,
+            itemName || null,
+            notes || null,
+            isCustom ? 1 : 0,
+            customFunction || null
+        ];
+
+        if (idMode === 'uuid') {
+            const id = generateUUID();
+            const [result] = await db.query(
+                `INSERT INTO transactions (
+                    id, user_id, person_id, transaction_function_id, transaction_function_name,
+                    transaction_date, type, amount, item_name, notes, is_custom, custom_function
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [toBinaryUUID(id), ...rowValues]
+            );
+            return { insertId: String(id), affectedRows: result.affectedRows };
+        }
 
         const [result] = await db.query(
             `INSERT INTO transactions (
-                id, user_id, person_id, transaction_function_id, transaction_function_name,
+                user_id, person_id, transaction_function_id, transaction_function_name,
                 transaction_date, type, amount, item_name, notes, is_custom, custom_function
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                toBinaryUUID(id),
-                toBinaryUUID(userId),
-                toBinaryUUID(personId),
-                transactionFunctionId ? toBinaryUUID(transactionFunctionId) : null,
-                transactionFunctionName || null,
-                transactionDate,
-                type,
-                amount ?? null,
-                itemName || null,
-                notes || null,
-                isCustom ? 1 : 0,
-                customFunction || null
-            ]
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            rowValues
         );
-
-        return { insertId: id, affectedRows: result.affectedRows };
+        return { insertId: String(result.insertId), affectedRows: result.affectedRows };
     },
 
     /**
