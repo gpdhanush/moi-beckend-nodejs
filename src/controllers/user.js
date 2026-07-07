@@ -16,7 +16,8 @@ const { validateUuid, sendUuidError } = require("../helpers/idParams");
 const { 
   sendEmail, 
   getWelcomeEmailContent, 
-  getAdminRegistrationEmailContent 
+  getAdminRegistrationEmailContent,
+  formatEmailFrom,
 } = require("../services/emailService");
 
 // Common response messages
@@ -380,7 +381,7 @@ exports.userController = {
               to: email,
               subject: "Welcome to Moi Kanakku!",
               html: emailContent,
-              from: `"Info - Moi Kanakku" <${process.env.EMAIL_FROM || process.env.EMAIL_USER}>`,
+              from: formatEmailFrom("Info - Moi Kanakku"),
             });
           } catch (emailError) {
             logger.error("Error sending welcome email:", emailError);
@@ -407,7 +408,7 @@ exports.userController = {
               to: "agprakash406@gmail.com",
               subject: "New user registered successfully",
               html: adminEmailContent,
-              from: `"Info - Moi Kanakku" <${process.env.EMAIL_USER}>`,
+              from: formatEmailFrom("Info - Moi Kanakku"),
             });
           } catch (adminEmailError) {
             logger.error(
