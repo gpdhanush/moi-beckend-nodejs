@@ -3,7 +3,7 @@ const User = require('../models/user');
 const logger = require('../config/logger');
 const { sendPushNotification } = require('./notificationController');
 const { validateUuid, validateUuidList, sendUuidError } = require('../helpers/idParams');
-const { createEmailTransporter, formatEmailFrom, buildMailOptions } = require('../services/emailService');
+const { createEmailTransporter, formatEmailFrom, buildMailOptions, normalizeEmailAddress } = require('../services/emailService');
 
 const userError = 'பயனர் கிடைக்கவில்லை!';
 
@@ -112,7 +112,7 @@ exports.controller = {
 
             // Handler for restore: send RESTORE OTP to deleted account
             if (type === 'restore') {
-                const targetEmail = email;
+                const targetEmail = normalizeEmailAddress(email);
                 if (!targetEmail) return res.status(400).json({ responseType: "F", responseValue: { message: 'email is required for restore' } });
                 const user = await User.findByEmailIncludingDeleted(targetEmail);
                 if (!user) return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான மின்னஞ்சல் ஐடி!' } });
@@ -124,7 +124,8 @@ exports.controller = {
                 const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: targetEmail,
-                    subject: subject || '🔁 Moi Kanakku - Account Restore OTP',
+                    subject: subject || 'Moi Kanakku - Account Restore OTP',
+                    text: `Your account restore OTP is ${otpData.otp}. It expires in 10 minutes.`,
                     html: emailContent,
                 });
                 const sent = await transporter.sendMail(mailOptions);
@@ -140,7 +141,7 @@ exports.controller = {
                     const idCheck = validateUuid(id, 'id');
                     if (!idCheck.ok) return sendUuidError(res, idCheck.message);
                     user = await User.findById(id);
-                } else if (email) user = await User.findByEmail(email);
+                } else if (email) user = await User.findByEmail(normalizeEmailAddress(email));
                 if (!user) return res.status(404).json({ responseType: "F", responseValue: { message: userError } });
                 if (user.is_verified) return res.status(400).json({ responseType: "F", responseValue: { message: 'இந்த மின்னஞ்சல் ஏற்கனவே சரிபார்க்கப்பட்டுவிட்டது!' } });
 
@@ -155,7 +156,8 @@ exports.controller = {
                 const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: user.email,
-                    subject: subject || '🔐 Moi Kanakku - Email Verification',
+                    subject: subject || 'Moi Kanakku - Email Verification OTP',
+                    text: `Your email verification OTP is ${otpData.otp}. It expires in 10 minutes.`,
                     html: emailContent,
                 });
                 const sent = await transporter.sendMail(mailOptions);
@@ -166,7 +168,7 @@ exports.controller = {
 
             // Handler for forgot password: use unified user_otps table
             if (type === 'forgot') {
-                const targetEmail = email;
+                const targetEmail = normalizeEmailAddress(email);
                 if (!targetEmail) return res.status(400).json({ responseType: "F", responseValue: { message: 'email is required for forgot' } });
                 const user = await User.findByEmail(targetEmail);
                 if (!user) return res.status(404).json({ responseType: "F", responseValue: { message: 'தவறான மின்னஞ்சல் ஐடி!' } });
@@ -174,18 +176,28 @@ exports.controller = {
                 // Create forgot OTP using unified method
                 const otpData = await User.createForgotOTP(user.id);
 
-                const emailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.06);"><tr><td style="background:#2f3490;padding:22px;text-align:center;color:#ffffff;"><h2 style="margin:0;font-size:22px;font-weight:600;">🔑 Forgot Password - OTP</h2></td></tr><tr><td style="padding:30px 28px;color:#333333;"><p style="margin:0 0 18px 0;font-size:16px;">Hi <strong>${user.full_name || user.um_full_name}</strong>,</p><p style="margin:0 0 20px 0;font-size:15px;color:#555;">Use the following OTP to reset your password.</p><div style="text-align:center;margin:30px 0;"><span style="display:inline-block;padding:16px 28px;background:#f3f4ff;border-radius:8px;font-size:34px;letter-spacing:10px;font-family:monospace;font-weight:700;color:#2f3490;">${otpData.otp}</span></div><p style="text-align:center;font-size:14px;color:#666;margin:0;">This OTP will expire in <strong>10 minutes</strong>.</p><p style="margin-top:20px;font-size:14px;color:#777;">If you did not request a password reset, please ignore this email.</p></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px 28px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table><p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">© 2026 Moi Kanakku. All rights reserved.</p></td></tr></table></body></html>`;
+                const emailContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background-color:#f5f7fb;font-family:Arial,Helvetica,sans-serif;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;"><tr><td align="center"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.06);"><tr><td style="background:#2f3490;padding:22px;text-align:center;color:#ffffff;"><h2 style="margin:0;font-size:22px;font-weight:600;">Forgot Password - OTP</h2></td></tr><tr><td style="padding:30px 28px;color:#333333;"><p style="margin:0 0 18px 0;font-size:16px;">Hi <strong>${user.full_name || user.um_full_name}</strong>,</p><p style="margin:0 0 20px 0;font-size:15px;color:#555;">Use the following OTP to reset your password.</p><div style="text-align:center;margin:30px 0;"><span style="display:inline-block;padding:16px 28px;background:#f3f4ff;border-radius:8px;font-size:34px;letter-spacing:10px;font-family:monospace;font-weight:700;color:#2f3490;">${otpData.otp}</span></div><p style="text-align:center;font-size:14px;color:#666;margin:0;">This OTP will expire in <strong>10 minutes</strong>.</p><p style="margin-top:20px;font-size:14px;color:#777;">If you did not request a password reset, please ignore this email.</p></td></tr><tr><td style="border-top:1px solid #f1f1f1;padding:20px 28px;font-size:14px;color:#666;">Regards,<br><strong style="color:#2f3490;">Moi Kanakku Team</strong></td></tr></table><p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">© 2026 Moi Kanakku. All rights reserved.</p></td></tr></table></body></html>`;
 
                 const mailOptions = buildMailOptions({
                     from: formatEmailFrom('Admin - Moi Kanakku Team'),
                     to: targetEmail,
-                    subject: subject || 'Forgot Password - OTP',
+                    subject: subject || 'Moi Kanakku - Password Reset OTP',
+                    text: `Your password reset OTP is ${otpData.otp}. It expires in 10 minutes.`,
                     html: emailContent,
                 });
                 const sent = await transporter.sendMail(mailOptions);
-                logger.info(`Forgot OTP email sent to ${targetEmail}: ${sent.response}`);
+                logger.info(`Forgot OTP email sent to ${targetEmail} from ${mailOptions.from}: ${sent.messageId} ${sent.response}`);
                 await sendNotifIfRequested(user.id, 'Forgot password', 'Forgot password OTP sent to your email', user.notification_token, 'account');
-                return res.status(200).json({ responseType: "S", responseValue: { message: 'Forgot OTP sent' } });
+                const responseValue = {
+                    message: 'Forgot OTP sent',
+                    expires_in_minutes: 10,
+                };
+                if (process.env.EMAIL_DEBUG === 'true') {
+                    responseValue.mail_message_id = sent.messageId;
+                    responseValue.sent_to = targetEmail;
+                    responseValue.sent_from = mailOptions.from;
+                }
+                return res.status(200).json({ responseType: "S", responseValue });
             }
 
             // Fallback: custom/raw send using provided subject/content

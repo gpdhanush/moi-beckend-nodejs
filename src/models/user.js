@@ -68,7 +68,7 @@ const User = {
              FROM users u
              INNER JOIN user_credentials uc ON uc.user_id = u.id
              LEFT JOIN user_profiles up ON up.user_id = u.id
-             WHERE u.email = ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)`,
+             WHERE LOWER(u.email) = LOWER(?) AND (u.is_deleted = 0 OR u.is_deleted IS NULL)`,
             [email]
         );
         const row = rows[0];
@@ -90,7 +90,7 @@ const User = {
              FROM users u
              INNER JOIN user_credentials uc ON uc.user_id = u.id
              LEFT JOIN user_profiles up ON up.user_id = u.id
-             WHERE u.email = ?`,
+             WHERE LOWER(u.email) = LOWER(?)`,
             [email]
         );
         const row = rows[0];

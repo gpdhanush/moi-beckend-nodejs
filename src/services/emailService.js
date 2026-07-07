@@ -46,10 +46,21 @@ function formatEmailFrom(displayName = 'Moi Kanakku') {
 function getReplyToEmail() {
     const smtpUser = (process.env.EMAIL_USER || '').trim();
     const { replyTo } = parseEmailFromEnv();
-    if (replyTo && replyTo.toLowerCase() !== smtpUser.toLowerCase()) {
-        return replyTo;
+    if (!replyTo || replyTo.toLowerCase() === smtpUser.toLowerCase()) {
+        return undefined;
     }
-    return undefined;
+    // Cross-domain Reply-To (e.g. noreply@moikanakku.com while sending as gp@prasowlabs.in)
+    // often causes Gmail/Outlook to drop or spam-filter transactional mail.
+    const smtpDomain = smtpUser.split('@')[1]?.toLowerCase();
+    const replyDomain = replyTo.split('@')[1]?.toLowerCase();
+    if (!smtpDomain || !replyDomain || smtpDomain !== replyDomain) {
+        return undefined;
+    }
+    return replyTo;
+}
+
+function normalizeEmailAddress(email) {
+    return String(email || '').trim().toLowerCase();
 }
 
 function buildMailOptions({ to, subject, html, from, text }) {
@@ -208,6 +219,7 @@ module.exports = {
     createEmailTransporter,
     formatEmailFrom,
     getReplyToEmail,
+    normalizeEmailAddress,
     buildMailOptions,
     verifyEmailTransport,
 };
