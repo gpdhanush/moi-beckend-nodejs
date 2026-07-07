@@ -565,6 +565,20 @@ const User = {
     },
 
     /**
+     * Hard delete a user and all dependent rows.
+     * Used to roll back failed signups so the email/mobile are freed for retry.
+     */
+    async hardDeleteUser(userId) {
+        const idForFk = toBinaryUUID(userId);
+        await db.query(`DELETE FROM user_devices WHERE user_id = ?`, [idForFk]);
+        await db.query(`DELETE FROM user_otps WHERE user_id = ?`, [idForFk]);
+        await db.query(`DELETE FROM user_profiles WHERE user_id = ?`, [idForFk]);
+        await db.query(`DELETE FROM user_credentials WHERE user_id = ?`, [idForFk]);
+        const [result] = await db.query(`DELETE FROM users WHERE id = ?`, [idForFk]);
+        return result;
+    },
+
+    /**
      * Restore a soft-deleted user account
      */
     async restoreUser(userId) {

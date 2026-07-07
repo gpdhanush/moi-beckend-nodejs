@@ -306,9 +306,21 @@ exports.userController = {
         });
       }
 
-      // Check duplicates by email
-      const mail = await User.findByEmail(email);
+      // Check duplicates by email (including soft-deleted accounts,
+      // since the unique key uk_users_email still holds the email)
+      const mail = await User.findByEmailIncludingDeleted(email);
       if (mail) {
+        if (mail.is_deleted) {
+          return res.status(409).json({
+            responseType: "F",
+            responseValue: {
+              message:
+                "இந்த மின்னஞ்சலுடன் நீக்கப்பட்ட கணக்கு உள்ளது. கணக்கை மீட்டெடுக்கவும் (restore).",
+              account_status: "DELETED",
+              can_restore: true,
+            },
+          });
+        }
         return res.status(404).json({
           responseType: "F",
           responseValue: {
@@ -448,10 +460,10 @@ exports.userController = {
             },
           });
         } catch (postCreationError) {
-          // Rollback: Delete the user if any critical operation fails
+          // Rollback: hard delete the user so the email/mobile are freed for retry
           logger.error("Critical error after user creation, rolling back:", postCreationError);
           try {
-            await User.deleteUser(userId);
+            await User.hardDeleteUser(userId);
             logger.info(`User ${userId} rolled back due to: ${postCreationError.message}`);
           } catch (rollbackError) {
             logger.error(`Failed to rollback user ${userId}:`, rollbackError);
@@ -473,10 +485,10 @@ exports.userController = {
       }
     } catch (error) {
       logger.error("Error in user creation:", error);
-      // Rollback if user was created
+      // Rollback if user was created (hard delete frees the email/mobile for retry)
       if (userId) {
         try {
-          await User.deleteUser(userId);
+          await User.hardDeleteUser(userId);
           logger.info(`User ${userId} rolled back due to outer error: ${error.message}`);
         } catch (rollbackError) {
           logger.error(`Failed to rollback user ${userId}:`, rollbackError);
