@@ -16,6 +16,16 @@ const {
 const app = express();
 
 /* =========================
+   REVERSE PROXY (cPanel / nginx)
+   Required for express-rate-limit when X-Forwarded-For is set.
+   Set TRUST_PROXY=false to disable (local dev only).
+========================= */
+if (process.env.TRUST_PROXY !== "false" && process.env.TRUST_PROXY !== "0") {
+  const hops = Number(process.env.TRUST_PROXY);
+  app.set("trust proxy", Number.isFinite(hops) && hops > 0 ? hops : 1);
+}
+
+/* =========================
    GLOBAL ERROR SAFETY
 ========================= */
 process.on("unhandledRejection", (err) => {
