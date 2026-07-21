@@ -273,6 +273,7 @@ exports.userController = {
    *   device_name?,
    *   ram_size?,
    *   android_version? / androidVersion?
+   *   city?
    * }
    */
   create: async (req, res) => {
@@ -281,6 +282,7 @@ exports.userController = {
       email,
       mobile,
       password,
+      city,
       fcm_token,
       device_id,
       brand,
@@ -350,6 +352,7 @@ exports.userController = {
         email,
         mobile,
         password: hashedPassword,
+        city: city != null && String(city).trim() !== "" ? String(city).trim() : null,
         fcm_token: fcm_token || null,
         device_name: device_name || null,
         device_id: device_id || null,
@@ -406,6 +409,7 @@ exports.userController = {
             name,
             email,
             mobile,
+            city: newUser.city,
             referred_by,
             brand,
             model,

@@ -269,6 +269,7 @@ const User = {
             email,
             mobile,
             password,
+            city,
             fcm_token,
             device_name,
             device_id,
@@ -319,8 +320,8 @@ const User = {
             [userIdForFk, password, now]
         );
         await db.query(
-            `INSERT INTO user_profiles (user_id) VALUES (?)`,
-            [userIdForFk]
+            `INSERT INTO user_profiles (user_id, city) VALUES (?, ?)`,
+            [userIdForFk, city || null]
         );
         if (fcm_token) {
             await db.query(
