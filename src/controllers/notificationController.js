@@ -339,7 +339,7 @@ exports.controller = {
             
             return res.status(200).json({
                 responseType: "S",
-                responseValue: { unreadCount: count }
+                responseValue: { unreadCount: Number(count) || 0 }
             });
         } catch (error) {
             logger.error('Error fetching unread count:', error);

@@ -93,7 +93,7 @@ const Notification = {
              WHERE user_id = ? AND is_read = 0 AND (is_deleted = 0 OR is_deleted IS NULL)`,
             [toBinaryUUID(userId)]
         );
-        return rows[0].count;
+        return Number(rows[0]?.count) || 0;
     },
 
     /**
