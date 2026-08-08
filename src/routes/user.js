@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { userController } = require('../controllers/user');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -27,8 +27,13 @@ router.post("/admin/login", userController.adminLogin);
 router.post("/admin/forgot-password", userController.adminForgotPassword);
 router.post("/admin/reset-password", userController.adminResetPassword);
 
-router.get("/admin/all-user-lists", userController.adminAllUserLists);
-router.get("/admin/all-user-lists/:id", userController.adminUserDetails);
+router.post("/admin/update-profile", authenticateAdminToken, userController.adminUpdateProfile);
+router.put("/admin/update", authenticateAdminToken, userController.adminUpdateProfile);
+router.post("/admin/change-password", authenticateAdminToken, userController.adminChangePassword);
+router.post("/admin/update-password", authenticateAdminToken, userController.adminChangePassword);
+
+router.get("/admin/all-user-lists", authenticateAdminToken, userController.adminAllUserLists);
+router.get("/admin/all-user-lists/:id", authenticateAdminToken, userController.adminUserDetails);
 
 // Profile Picture Routes
 // (multer configuration with diskStorage for profile picture uploads)

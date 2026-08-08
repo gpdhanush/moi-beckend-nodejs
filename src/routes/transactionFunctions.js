@@ -1,6 +1,6 @@
 const express = require('express');
 const { controller } = require('../controllers/transactionFunctions');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -39,7 +39,7 @@ router.post('/delete', authenticateToken, controller.delete);
 
 // Admin: Get all transaction functions across users with filters
 // Body: { search?, userId?}
-router.post('/admin/list', controller.adminList);
+router.post('/admin/list', authenticateAdminToken, controller.adminList);
 
 
 module.exports = router;

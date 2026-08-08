@@ -1,6 +1,6 @@
 const express = require('express');
 const { controller } = require('../controllers/emailControllers');
-const { authenticateToken } = require('../middlewares/auth'); // Middleware for token validation
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -30,6 +30,6 @@ router.post('/verifyOtp', controller.verifyOtp);
  * Body: { userIds: [], subject, body, type? }
  * type: 'notification' | 'announcement' | 'custom' (default: 'custom')
  */
-router.post('/admin/send-bulk', controller.sendBulkEmails);
+router.post('/admin/send-bulk', authenticateAdminToken, controller.sendBulkEmails);
 
 module.exports = router;

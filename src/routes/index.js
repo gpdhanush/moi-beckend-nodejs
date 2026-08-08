@@ -18,6 +18,7 @@ const moiPersons = require('./moiPersons');
 const transactionRoutes = require('./transactions');
 const transactionFunctionRoutes = require('./transactionFunctions');
 const adminRoutes = require('./adminRoutes');
+const mfaRoutes = require('./mfaRoutes');
 
 router.use('/users', user);
 router.use("/default", defaults);
@@ -30,8 +31,10 @@ router.use("/dashboard", dashboardRoutes);
 router.use('/uploads', uploadRoutes);
 router.use('/transactions', transactionRoutes);
 router.use('/transaction-functions', transactionFunctionRoutes);
+router.use('/moi-defaultfunctions', moiDefaultFunctions);
 router.use('/moi-default-functions', moiDefaultFunctions);
 router.use('/persons', moiPersons);
 router.use('/admin', adminRoutes);
+router.use('/mfa', mfaRoutes);
 
 module.exports = router;

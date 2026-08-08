@@ -1,6 +1,6 @@
 const express = require('express');
 const { controller } = require('../controllers/transactions');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -51,6 +51,6 @@ router.post('/person/:personId', authenticateToken, controller.getByPerson);
 
 // Admin: Get all transactions across users with filters
 // Body: { search?, userId?, personId?, transactionFunctionId?, type?, startDate?, endDate?, limit, offset }
-router.post('/admin/list', controller.adminList);
+router.post('/admin/list', authenticateAdminToken, controller.adminList);
 
 module.exports = router;

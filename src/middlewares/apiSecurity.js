@@ -3,11 +3,16 @@ const logger = require('../config/logger');
 
 /**
  * General API rate limiter - applies to all /apis routes
- * 100 requests per 15 minutes per IP
+ * 1000 requests per 15 minutes per IP (skips login & auth endpoints)
  */
 const generalRateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 1000,
+    skip: (req) => {
+        // Never rate limit login or auth endpoints
+        const url = req.originalUrl || req.url || req.path;
+        return url.includes('/login') || url.includes('/auth') || url.includes('/forgot-password') || url.includes('/reset-password');
+    },
     message: {
         responseType: "F",
         responseValue: { message: "Too many requests from this IP. Please try again later." }

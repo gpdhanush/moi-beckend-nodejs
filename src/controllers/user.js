@@ -1,6 +1,7 @@
 // User controllers: authentication, account management, and notifications
 const User = require("../models/user");
 const Admin = require("../models/admin");
+const MFA = require("../models/mfaModel");
 const SessionModel = require("../models/sessions");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
@@ -13,9 +14,9 @@ const fs = require("fs");
 const logger = require("../config/logger");
 const { validateUuid, sendUuidError } = require("../helpers/idParams");
 
-const { 
-  sendEmail, 
-  getWelcomeEmailContent, 
+const {
+  sendEmail,
+  getWelcomeEmailContent,
   getAdminRegistrationEmailContent,
   formatEmailFrom,
 } = require("../services/emailService");
@@ -152,7 +153,7 @@ exports.userController = {
       }
 
       const userID = user.id;
-      
+
       // End any previous active session (single-session policy)
       // This sets logout_at for the previous session and terminates it
       try {
@@ -162,7 +163,7 @@ exports.userController = {
         logger.warn("Failed to end previous session:", sessionErr);
         // Continue even if previous session end fails - not critical
       }
-      
+
       // Invalidate old token (single-session policy) and generate a new one
       tokenService.invalidatePreviousToken(userID);
       const jwtToken = tokenService.generateToken(userID);
@@ -295,7 +296,7 @@ exports.userController = {
       referred_by,
     } = req.body;
     let userId = null; // Track user ID for rollback
-    
+
     try {
       // Validate required fields
       if (!name || !email || !mobile || !password) {
@@ -382,11 +383,11 @@ exports.userController = {
               // Don't rollback for referral errors - non-critical
             }
           }
-          
+
           const registrationTime = new Date().toLocaleString("en-IN", {
             timeZone: "Asia/Kolkata",
           });
-          
+
           // Welcome email content (HTML) - generated from emailService
           const emailContent = getWelcomeEmailContent(name);
 
@@ -472,10 +473,10 @@ exports.userController = {
           } catch (rollbackError) {
             logger.error(`Failed to rollback user ${userId}:`, rollbackError);
           }
-          
+
           return res.status(500).json({
             responseType: "F",
-            responseValue: { 
+            responseValue: {
               message: "பயனர் பதிவு தோல்வியடைந்தது. மீண்டும் முயற்சி செய்க.",
               error: postCreationError.toString(),
             },
@@ -992,7 +993,7 @@ exports.userController = {
           if (req.file.path && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
           }
-        } catch (_) {}
+        } catch (_) { }
         return sendUuidError(res, idCheck.message);
       }
 
@@ -1279,21 +1280,29 @@ exports.userController = {
 
   /**
    * ADMIN LOGIN - Authenticate administrator and issue JWT.
-   * Body: { email, password }
+   * Body: { identifier / email / mobile, password }
    */
   adminLogin: async (req, res) => {
-    const { email, password } = req.body;
+    const { identifier, email, mobile, password } = req.body;
+    const loginIdentifier = identifier || email || mobile;
+
+    if (!loginIdentifier || !password) {
+      return res.status(400).json({
+        responseType: "F",
+        responseValue: { message: "மின்னஞ்சல்/கைபேசி எண் மற்றும் கடவுச்சொல் தேவை!" },
+      });
+    }
 
     try {
-      const user = await Admin.findByEmail(email);
+      let user = await Admin.findByIdentifier(loginIdentifier);
       if (!user) {
-        const deletedUser = await Admin.findByEmailIncludingDeleted(email);
-        if (deletedUser && deletedUser.is_deleted) {
+        const deletedUser = await Admin.findByIdentifierIncludingDeleted(loginIdentifier);
+        if (deletedUser && (deletedUser.is_deleted === 1 || deletedUser.is_deleted === true)) {
           return res.status(403).json({
             responseType: "F",
             responseValue: {
               message:
-                "உங்கள் கணக்கு நீக்கப்பட்டுவிட்டது. மீட்டமைக்க கடைய்சு எங்களை தொடர்பு கொள்ளவும்.",
+                "உங்கள் கணக்கு நீக்கப்பட்டுவிட்டது. மீட்டமைக்க எங்களை தொடர்பு கொள்ளவும்.",
               deleted_at: deletedUser.deleted_at,
               account_status: "DELETED",
             },
@@ -1301,21 +1310,38 @@ exports.userController = {
         }
         return res.status(404).json({
           responseType: "F",
-          responseValue: { message: "தவறான மின்னஞ்சல் ஐடி!" },
+          responseValue: { message: "தவறான மின்னஞ்சல் அல்லது கைபேசி எண்!" },
         });
       }
 
-      // check login block
+      // Check account active/inactive status
+      if (user.status === 'INACTIVE') {
+        return res.status(403).json({
+          responseType: "F",
+          responseValue: {
+            message: "உங்கள் கணக்கு செயலிழக்கப்பட்டுள்ளது. தயவுசெய்து நிர்வாகியை தொடர்பு கொள்ளவும்.",
+            account_status: "INACTIVE",
+          },
+        });
+      }
+
+      // Check login block / lock status
       try {
         const blockStatus = await Admin.getLoginBlockStatus(user.id);
         if (blockStatus.is_blocked) {
-          const minutesRemaining = Math.ceil(
-            (new Date(blockStatus.blocked_until) - new Date()) / (1000 * 60),
-          );
+          const blockedUntilDate = blockStatus.blocked_until ? new Date(blockStatus.blocked_until) : null;
+          const minutesRemaining = blockedUntilDate
+            ? Math.max(1, Math.ceil((blockedUntilDate - new Date()) / (1000 * 60)))
+            : null;
+
+          const msg = minutesRemaining
+            ? `மிக அதிக தோல்வி முயற்சிகள். ${minutesRemaining} நிமிடங்களில் மீண்டும் முயற்சி செய்க.`
+            : "உங்கள் கணக்கு முடக்கப்பட்ட முறையில் உள்ளது. நிர்வாகியை தொடர்பு கொள்ளவும்.";
+
           return res.status(429).json({
             responseType: "F",
             responseValue: {
-              message: `மிக அதிக தோல்வி முயற்சிகள். ${minutesRemaining} நிமிடங்களில் மீண்டும் முயற்சி செய்க.`,
+              message: msg,
               retry_after_minutes: minutesRemaining,
               blocked_until: blockStatus.blocked_until,
               account_status: "BLOCKED",
@@ -1330,6 +1356,7 @@ exports.userController = {
         password,
         user.password_hash,
       );
+
       if (!isPasswordValid) {
         try {
           const failureStatus = await Admin.incrementFailedLoginAttempts(user.id);
@@ -1367,6 +1394,7 @@ exports.userController = {
         }
       }
 
+      // Successful password match: reset attempts and unlock status to ACTIVE
       try {
         await Admin.resetFailedLoginAttempts(user.id);
       } catch (err) {
@@ -1374,38 +1402,60 @@ exports.userController = {
       }
 
       const userID = user.id;
+
+      // Check if MFA is enabled for this admin
+      try {
+        const mfaRecord = await MFA.findByUserId(userID, 'admin');
+        if (mfaRecord && mfaRecord.is_enabled === 1) {
+          return res.status(200).json({
+            responseType: "S",
+            responseValue: {
+              mfa_required: true,
+              is_mfa_required: true,
+              user_id: userID,
+              userId: userID,
+              account_type: 'admin',
+              accountType: 'admin',
+              message: "MFA challenge required. Please enter your TOTP verification code or backup code."
+            }
+          });
+        }
+      } catch (mfaErr) {
+        logger.warn("adminLogin MFA check error:", mfaErr);
+      }
+
       tokenService.invalidatePreviousToken(userID);
       const jwtToken = tokenService.generateToken(userID);
       logger.debug(`admin login for ${userID}, token generated`);
-      const response = {
-        status: user.status,
-        id: user.id,
-        name: user.full_name,
-        mobile: user.mobile,
-        email: user.email,
-        last_login: user.last_login_at || null,
-        profile_image: user.profile_image_url || null,
-        token: jwtToken,
-      };
 
+      const now = new Date();
       if (typeof Admin.updateLastLogin === 'function') {
         try {
           await Admin.updateLastLogin(userID);
-          // overwrite response timestamp to reflect the successful login update
-          response.last_login = new Date();
         } catch (e) {
           logger.warn('admin updateLastLogin failed', e);
         }
       }
 
-      // skip creating a user session for admin accounts – table is tied to users and would
-      // cause a foreign key violation.  Logging only for historical purposes.
-      logger.debug('admin login - session creation skipped');
+      const response = {
+        id: user.id,
+        full_name: user.full_name,
+        name: user.full_name,
+        email: user.email,
+        mobile: user.mobile,
+        status: 'ACTIVE',
+        email_verified_at: user.email_verified_at || null,
+        last_login_at: now,
+        last_activity_at: now,
+        created_at: user.created_at,
+        token: jwtToken,
+      };
 
       return res
         .status(200)
         .json({ responseType: "S", responseValue: response });
     } catch (error) {
+      logger.error("Error during admin login:", error);
       return res.status(500).json({
         responseType: "F",
         responseValue: { message: error.toString() },
@@ -1415,19 +1465,21 @@ exports.userController = {
 
   /**
    * ADMIN FORGOT PASSWORD - send reset token via email
-   * Body: { email }
+   * Body: { identifier / email }
    */
   adminForgotPassword: async (req, res) => {
-    const { email } = req.body;
-    if (!email) {
+    const { identifier, email } = req.body;
+    const searchParam = identifier || email;
+
+    if (!searchParam) {
       return res.status(400).json({
         responseType: "F",
-        responseValue: { message: "மின்னஞ்சல் தேவை!" },
+        responseValue: { message: "மின்னஞ்சல் அல்லது கைபேசி எண் தேவை!" },
       });
     }
 
     try {
-      const admin = await Admin.findByEmail(email);
+      const admin = await Admin.findByIdentifier(searchParam);
       if (!admin) {
         return res.status(404).json({
           responseType: "F",
@@ -1439,11 +1491,67 @@ exports.userController = {
       const expires = new Date(Date.now() + 60 * 60 * 1000);
       await Admin.setResetToken(admin.id, token, expires);
 
-      const resetLink = `${process.env.ADMIN_RESET_URL || ''}?token=${token}`;
-      const html = `<p>Hello ${admin.full_name || ''},</p>
-        <p>You requested a password reset for your administrator account. Please use the link below to choose a new password. The link will expire in one hour.</p>
-        <p><a href="${resetLink}">Reset password</a></p>
-        <p>If you did not request this, please ignore this email.</p>`;
+      const baseUrl = process.env.ADMIN_RESET_URL || process.env.FRONTEND_URL || 'https://moi-kanakku-api.prasowlabs.in/admin/reset-password';
+      const resetLink = baseUrl.includes('?') ? `${baseUrl}&token=${token}` : `${baseUrl}?token=${token}`;
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f5f7fb;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:30px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;background:#ffffff;border:1px solid #eaeaea;border-radius:8px;overflow:hidden;">
+          <tr>
+            <td style="background:#2f3490;color:#ffffff;text-align:center;padding:20px;">
+              <h2 style="margin:0;font-size:22px;">🔐 Password Reset Request</h2>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:30px;color:#333333;">
+              <p style="margin:0 0 15px 0;font-size:16px;">
+                Hi <strong>${admin.full_name || ''}</strong>,
+              </p>
+
+              <p style="margin:0 0 20px 0;font-size:15px;color:#555;">
+                You requested a password reset for your administrator account. Please use the button below to choose a new password.
+              </p>
+
+              <div style="text-align:center;margin:30px 0;">
+                <a href="${resetLink}" style="display:inline-block;background:#2f3490;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:16px;font-weight:700;">
+                  Reset Password
+                </a>
+              </div>
+
+              <p style="text-align:center;font-size:14px;color:#666;margin:0;">
+                This link will expire in <strong>one hour</strong>.
+              </p>
+
+              <p style="margin-top:20px;font-size:14px;color:#777;">
+                If you did not request this password reset, please ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="border-top:1px solid #f1f1f1;padding:20px;font-size:14px;color:#666;">
+              Regards,<br>
+              <strong style="color:#2f3490;">Moi Kanakku Team</strong>
+            </td>
+          </tr>
+        </table>
+
+        <p style="max-width:620px;margin:20px auto 0;text-align:center;font-size:12px;color:#9ca3af;">
+          © 2026 Moi Kanakku. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
       try {
         await sendEmail({
@@ -1457,9 +1565,10 @@ exports.userController = {
 
       return res.status(200).json({
         responseType: "S",
-        responseValue: { message: "Reset instructions sent if email exists." },
+        responseValue: { message: "கடவுச்சொல் மீட்டமைப்பு விவரங்கள் உங்கள் மின்னஞ்சலுக்கு அனுப்பப்பட்டன." },
       });
     } catch (err) {
+      logger.error("Error in adminForgotPassword:", err);
       return res.status(500).json({
         responseType: "F",
         responseValue: { message: err.toString() },
@@ -1476,7 +1585,7 @@ exports.userController = {
     if (!token || !password) {
       return res.status(400).json({
         responseType: "F",
-        responseValue: { message: "token and password required" },
+        responseValue: { message: "டோக்கன் மற்றும் கடவுச்சொல் தேவை!" },
       });
     }
 
@@ -1485,13 +1594,13 @@ exports.userController = {
       if (!record) {
         return res.status(400).json({
           responseType: "F",
-          responseValue: { message: "Invalid or expired token" },
+          responseValue: { message: "தவறான அல்லது காலாவதியான டோக்கன்" },
         });
       }
       if (record.reset_token_expires_at && new Date(record.reset_token_expires_at) < new Date()) {
         return res.status(400).json({
           responseType: "F",
-          responseValue: { message: "Token has expired" },
+          responseValue: { message: "டோக்கன் காலாவதியாகிவிட்டது" },
         });
       }
       const hashed = await bcrypt.hash(password, 10);
@@ -1499,9 +1608,136 @@ exports.userController = {
       await Admin.clearResetToken(record.id);
       return res.status(200).json({
         responseType: "S",
-        responseValue: { message: "Password has been reset" },
+        responseValue: { message: "கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது" },
       });
     } catch (err) {
+      logger.error("Error in adminResetPassword:", err);
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: err.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN UPDATE PROFILE - Update logged-in admin's profile
+   * Body: { full_name / name, email, mobile }
+   */
+  adminUpdateProfile: async (req, res) => {
+    const adminId = req.admin?.userId || req.user?.userId;
+    if (!adminId) {
+      return res.status(401).json({
+        responseType: "F",
+        responseValue: { message: "நிர்வாகி கணக்கு தேவை!" },
+      });
+    }
+
+    const { full_name, name, email, mobile } = req.body;
+    const fullNameUpdate = full_name || name;
+
+    try {
+      const currentAdmin = await Admin.findById(adminId);
+      if (!currentAdmin) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "நிர்வாகி கணக்கு காணப்படவில்லை!" },
+        });
+      }
+
+      // Check if updated email or mobile exists in another active admin account
+      if (email || mobile) {
+        const isConflict = await Admin.checkEmailOrMobileExists(adminId, email, mobile);
+        if (isConflict) {
+          return res.status(400).json({
+            responseType: "F",
+            responseValue: { message: "மின்னஞ்சல் அல்லது கைபேசி எண் ஏற்கனவே பயன்படுத்தப்படுகிறது!" },
+          });
+        }
+      }
+
+      await Admin.updateProfile({
+        id: adminId,
+        full_name: fullNameUpdate,
+        email,
+        mobile,
+      });
+
+      const updatedAdmin = await Admin.findById(adminId);
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: {
+          message: "நிர்வாகி விவரங்கள் வெற்றிகரமாக புதுப்பிக்கப்பட்டன.",
+          data: {
+            id: updatedAdmin.id,
+            full_name: updatedAdmin.full_name,
+            name: updatedAdmin.full_name,
+            email: updatedAdmin.email,
+            mobile: updatedAdmin.mobile,
+            status: updatedAdmin.status,
+            updated_at: updatedAdmin.updated_at,
+          },
+        },
+      });
+    } catch (err) {
+      logger.error("Error in adminUpdateProfile:", err);
+      return res.status(500).json({
+        responseType: "F",
+        responseValue: { message: err.toString() },
+      });
+    }
+  },
+
+  /**
+   * ADMIN CHANGE PASSWORD - Change logged-in admin's password
+   * Body: { current_password / old_password, new_password / password }
+   */
+  adminChangePassword: async (req, res) => {
+    const adminId = req.admin?.userId || req.user?.userId;
+    if (!adminId) {
+      return res.status(401).json({
+        responseType: "F",
+        responseValue: { message: "நிர்வாகி கணக்கு தேவை!" },
+      });
+    }
+
+    const { current_password, old_password, new_password, password } = req.body;
+    const oldPass = current_password || old_password;
+    const newPass = new_password || password;
+
+    if (!oldPass || !newPass) {
+      return res.status(400).json({
+        responseType: "F",
+        responseValue: { message: "தற்போதைய கடவுச்சொல் மற்றும் புதிய கடவுச்சொல் தேவை!" },
+      });
+    }
+
+    try {
+      const admin = await Admin.findById(adminId);
+      if (!admin) {
+        return res.status(404).json({
+          responseType: "F",
+          responseValue: { message: "நிர்வாகி கணக்கு காணப்படவில்லை!" },
+        });
+      }
+
+      const isValid = await bcrypt.compare(oldPass, admin.password_hash);
+      if (!isValid) {
+        return res.status(400).json({
+          responseType: "F",
+          responseValue: { message: "தற்போதைய கடவுச்சொல் தவறானது!" },
+        });
+      }
+
+      const newHashed = await bcrypt.hash(newPass, 10);
+      await Admin.updatePassword({ id: adminId, password: newHashed });
+
+      return res.status(200).json({
+        responseType: "S",
+        responseValue: { message: "கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது." },
+      });
+    } catch (err) {
+      logger.error("Error in adminChangePassword:", err);
       return res.status(500).json({
         responseType: "F",
         responseValue: { message: err.toString() },

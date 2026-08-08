@@ -1,6 +1,6 @@
 const express = require('express');
 const { controller } = require('../controllers/notificationController');
-const { authenticateToken } = require('../middlewares/auth');
+const { authenticateToken, authenticateAdminToken } = require('../middlewares/auth');
 
 const router = express.Router();
 
@@ -29,35 +29,35 @@ router.get('/health', controller.checkStatus);
 
 // Send bulk notifications to multiple users
 // Body: { userIds: [], title, body, type? }
-router.post("/admin/send-bulk", controller.sendBulkNotifications);
+router.post("/admin/send-bulk", authenticateAdminToken, controller.sendBulkNotifications);
 
 // Send notification to a single user based on userId
 // Body: { userId, title, body, type? }
-router.post("/admin/send", controller.sendNotificationToUser);
+router.post("/admin/send", authenticateAdminToken, controller.sendNotificationToUser);
 
 // Get all notifications across all users without userId (Admin GET & POST)
 // Query/Body: ?limit=50&offset=0
-router.get("/admin/all", controller.getAllNotificationsAdmin);
-router.post("/admin/all", controller.getAllNotificationsAdmin);
+router.get("/admin/all", authenticateAdminToken, controller.getAllNotificationsAdmin);
+router.post("/admin/all", authenticateAdminToken, controller.getAllNotificationsAdmin);
 
 // Get notification list for a single user based on userId (Admin GET & POST)
 // Body / Query: { userId, limit?, offset? } or /admin/user-notifications/:userId
-router.get("/admin/user-notifications", controller.getNotificationsByUserId);
-router.get("/admin/user-notifications/:userId", controller.getNotificationsByUserId);
-router.post("/admin/user-notifications", controller.getNotificationsByUserId);
+router.get("/admin/user-notifications", authenticateAdminToken, controller.getNotificationsByUserId);
+router.get("/admin/user-notifications/:userId", authenticateAdminToken, controller.getNotificationsByUserId);
+router.post("/admin/user-notifications", authenticateAdminToken, controller.getNotificationsByUserId);
 
 // Delete single notification (soft delete)
 // Body/Query/Params: { notificationId } or /delete/:notificationId
-router.post('/delete', controller.delete);
-router.delete('/delete', controller.delete);
-router.delete('/delete/:notificationId', controller.delete);
-router.post('/admin/delete', controller.delete);
-router.delete('/admin/delete/:notificationId', controller.delete);
+router.post('/delete', authenticateToken, controller.delete);
+router.delete('/delete', authenticateToken, controller.delete);
+router.delete('/delete/:notificationId', authenticateToken, controller.delete);
+router.post('/admin/delete', authenticateAdminToken, controller.delete);
+router.delete('/admin/delete/:notificationId', authenticateAdminToken, controller.delete);
 
 // Delete multiple notifications (soft delete)
 // Body: { notificationIds: ["uuid1", "uuid2"] }
-router.post('/delete-multiple', controller.deleteMultiple);
-router.post('/delete-bulk', controller.deleteMultiple);
-router.post('/admin/delete-bulk', controller.deleteMultiple);
+router.post('/delete-multiple', authenticateToken, controller.deleteMultiple);
+router.post('/delete-bulk', authenticateToken, controller.deleteMultiple);
+router.post('/admin/delete-bulk', authenticateAdminToken, controller.deleteMultiple);
 
 module.exports = router;

@@ -18,18 +18,18 @@ router.put('/update', authenticateToken, controller.update);
 
 // ADMIN ROUTES
 // Get all persons (admin)
-router.get('/admin/all', controller.adminList);
+router.get('/admin/all', authenticateAdminToken, controller.adminList);
 
 // Get person details by ID (admin)
-router.get('/admin/details/:id',  controller.adminGetById);
+router.get('/admin/details/:id', authenticateAdminToken, controller.adminGetById);
 
-router.get("/admin/:id", controller.adminGetByUserId);
+router.get("/admin/:id", authenticateAdminToken, controller.adminGetByUserId);
 
 // Update person (admin)
-router.put('/admin/update',  controller.adminUpdate);
+router.put('/admin/update', authenticateAdminToken, controller.adminUpdate);
 
 // Delete person (admin)
-router.delete('/admin/:id',  controller.adminDelete);
+router.delete('/admin/:id', authenticateAdminToken, controller.adminDelete);
 
 // Get single person by ID
 router.get('/:id', authenticateToken, controller.getById);

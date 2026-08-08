@@ -119,4 +119,42 @@ function authenticateAdminToken(req, res, next) {
     });
 }
 
-module.exports = { authenticateToken, authenticateAdminToken };
+
+/**
+ * Soft authentication helper for dual user/admin routes.
+ * Resolves account type without writing a response on failure.
+ * Prefers admin when both tables could match the same id.
+ */
+async function tryResolveAccountType(token) {
+    return new Promise((resolve) => {
+        if (!token) return resolve(null);
+        jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+            if (err || !decoded) return resolve(null);
+            const userId = decoded.userId;
+            if (userId === undefined || userId === null || userId === '') {
+                return resolve(null);
+            }
+            const storedToken = tokenService.getTokenForUser(userId);
+            if (!storedToken || storedToken !== token) {
+                return resolve(null);
+            }
+            try {
+                // Prefer admin when id exists in both tables (common with seed id=1)
+                const admin = await Admin.findById(userId);
+                if (admin && !admin.is_deleted) {
+                    return resolve({ userId, accountType: 'admin', decoded });
+                }
+                const user = await User.findById(userId);
+                if (user && !user.is_deleted) {
+                    return resolve({ userId, accountType: 'user', decoded });
+                }
+            } catch (e) {
+                logger.error('tryResolveAccountType error:', e);
+            }
+            return resolve(null);
+        });
+    });
+}
+
+module.exports = { authenticateToken, authenticateAdminToken, tryResolveAccountType };
+
