@@ -43,15 +43,37 @@ process.on("uncaughtException", (err) => {
 // Secure headers
 app.use(helmet());
 
-// CORS (customizable via .env)
+// CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS
-      ? process.env.ALLOWED_ORIGINS.split(",")
-      : "*",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, cURL, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.length === 0 || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        return callback(null, origin);
+      }
+      return callback(null, origin);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+      "X-API-Key",
+      "x-api-key"
+    ],
   }),
 );
+
+// Handle preflight OPTIONS requests for all routes
+app.options("*", cors());
 
 // Request logging
 app.use(morgan("dev"));
