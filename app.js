@@ -40,23 +40,29 @@ process.on("uncaughtException", (err) => {
    MIDDLEWARE
 ========================= */
 
-// Secure headers
-app.use(helmet());
-
-// CORS Configuration
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : [];
-
+// CORS Configuration (placed first so preflight OPTIONS requests are answered before security headers)
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, cURL, Postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.length === 0 || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
-        return callback(null, origin);
+
+      const originsList = process.env.ALLOWED_ORIGINS
+        ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+        : [];
+
+      const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+
+      if (
+        originsList.length === 0 ||
+        originsList.includes("*") ||
+        originsList.includes(origin) ||
+        isLocalhost
+      ) {
+        return callback(null, true);
       }
-      return callback(null, origin);
+
+      return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -74,6 +80,9 @@ app.use(
 
 // Handle preflight OPTIONS requests for all routes
 app.options("*", cors());
+
+// Secure headers
+app.use(helmet());
 
 // Request logging
 app.use(morgan("dev"));
