@@ -102,14 +102,29 @@ exports.adminControllers = {
 
   /**
    * Delete expired OTPs (cleanup)
+   * Options via Query/Body: ?type=LOGIN&include_used=true
    */
   deleteExpiredOTPs: async (req, res) => {
     try {
-      const [result] = await db.query(
-        `DELETE FROM user_otps WHERE expires_at < NOW() AND is_used = 0`
-      );
+      const { type, include_used } = { ...req.query, ...req.body };
 
-      logger.info(`Deleted ${result.affectedRows} expired OTPs`);
+      let query = `DELETE FROM user_otps WHERE (expires_at <= NOW()`;
+      
+      // If include_used is explicitly passed as true, also clean up used OTPs
+      if (include_used === 'true' || include_used === true || include_used === '1') {
+        query += ` OR is_used = 1`;
+      }
+      query += `)`;
+
+      const params = [];
+      if (type) {
+        query += ` AND type = ?`;
+        params.push(type);
+      }
+
+      const [result] = await db.query(query, params);
+
+      logger.info(`Deleted ${result.affectedRows} expired/used OTPs`);
 
       return res.status(200).json({
         responseType: "S",

@@ -97,6 +97,20 @@ const Notification = {
     },
 
     /**
+     * Get total notifications count for a specific user
+     * @param {string} userId - The user ID (UUID)
+     * @returns {Promise<number>} Total count of notifications for user
+     */
+    async getTotalCountByUserId(userId) {
+        const [rows] = await db.query(
+            `SELECT COUNT(*) as count FROM notifications 
+             WHERE user_id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+            [toBinaryUUID(userId)]
+        );
+        return Number(rows[0]?.count) || 0;
+    },
+
+    /**
      * Get a notification by ID
      * @param {string} notificationId - The notification ID (UUID)
      * @returns {Promise} Notification object
@@ -166,6 +180,26 @@ const Notification = {
     },
 
     /**
+     * Delete multiple notifications (soft delete)
+     * @param {Array<string>} notificationIds - Array of notification UUIDs
+     * @returns {Promise} Database result
+     */
+    async deleteMultiple(notificationIds) {
+        if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+            return { affectedRows: 0 };
+        }
+        const binaryIds = notificationIds.map(id => toBinaryUUID(id));
+        const placeholders = binaryIds.map(() => '?').join(',');
+        
+        const [result] = await db.query(
+            `UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+             WHERE id IN (${placeholders})`,
+            binaryIds
+        );
+        return result;
+    },
+
+    /**
      * Check if a notification with the same title and type was sent to a user today
      * @param {string} userId - The user ID (UUID)
      * @param {string} title - The notification title
@@ -211,6 +245,52 @@ const Notification = {
             [toBinaryUUID(userId)]
         );
         return result;
+    },
+
+    /**
+     * Get all notifications across all users (with pagination) for Admin
+     * @param {number} limit - Number of notifications to return
+     * @param {number} offset - Offset for pagination
+     * @returns {Promise} Array of notifications with user details
+     */
+    async findAll(limit = 50, offset = 0) {
+        const [rows] = await db.query(
+            `SELECT n.id, n.user_id, n.title, n.body, n.type, n.is_read, n.read_at, n.created_at, n.updated_at,
+                    u.full_name, u.email, u.mobile
+             FROM notifications n
+             LEFT JOIN users u ON n.user_id = u.id
+             WHERE (n.is_deleted = 0 OR n.is_deleted IS NULL)
+             ORDER BY n.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [limit, offset]
+        );
+        
+        return rows.map(r => ({
+            id: fromBinaryUUID(r.id),
+            userId: fromBinaryUUID(r.user_id),
+            userName: r.full_name || null,
+            userEmail: r.email || null,
+            userMobile: r.mobile || null,
+            title: r.title,
+            body: r.body,
+            type: r.type,
+            isRead: r.is_read === 1,
+            readAt: r.read_at,
+            createdAt: r.created_at,
+            updatedAt: r.updated_at
+        }));
+    },
+
+    /**
+     * Get total count of notifications
+     * @returns {Promise<number>} Count of total notifications
+     */
+    async getTotalCount() {
+        const [rows] = await db.query(
+            `SELECT COUNT(*) as count FROM notifications 
+             WHERE (is_deleted = 0 OR is_deleted IS NULL)`
+        );
+        return Number(rows[0]?.count) || 0;
     },
 }
 

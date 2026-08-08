@@ -305,10 +305,12 @@ exports.controller = {
 
             const notifications = await Notification.findByUserId(userId, Math.min(parseInt(limit), 100), parseInt(offset));
             const unreadCount = await Notification.getUnreadCount(userId);
+            const totalCount = await Notification.getTotalCountByUserId(userId);
             
             return res.status(200).json({
                 responseType: "S",
                 count: notifications.length,
+                totalCount: totalCount,
                 unreadCount: unreadCount,
                 responseValue: notifications
             });
@@ -469,12 +471,12 @@ exports.controller = {
     },
 
     /**
-     * Delete a notification (soft delete)
-     * Body: { notificationId }
+     * Delete a single notification (soft delete)
+     * Body/Query/Params: { notificationId } or /delete/:notificationId
      */
     delete: async (req, res) => {
         try {
-            const { notificationId } = req.body;
+            const notificationId = req.body?.notificationId || req.body?.id || req.query?.notificationId || req.query?.id || req.params?.notificationId || req.params?.id;
 
             if (!notificationId) {
                 return res.status(400).json({
@@ -495,9 +497,9 @@ exports.controller = {
                 });
             }
 
-            // Check if notification belongs to the authenticated user
-            const userId = req.user.userId;
-            if (notification.userId !== userId) {
+            // Check if notification belongs to the authenticated user (if req.user is set)
+            const userId = req.user?.userId;
+            if (userId && notification.userId !== userId) {
                 return res.status(403).json({
                     responseType: "F",
                     responseValue: { message: 'இந்த அறிவிப்பை நீக்க உங்களுக்கு அனுமதி இல்லை.' }
@@ -520,6 +522,64 @@ exports.controller = {
             }
         } catch (error) {
             logger.error('Error deleting notification:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Delete multiple notifications (soft delete)
+     * Body: { notificationIds: [] } or { ids: [] }
+     */
+    deleteMultiple: async (req, res) => {
+        try {
+            const notificationIds = req.body?.notificationIds || req.body?.ids || req.body?.notification_ids;
+
+            if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'அறிவிப்பு ஐடிகளின் வரிசை தேவையானது.' }
+                });
+            }
+
+            const listCheck = validateUuidList(notificationIds, 'notificationIds');
+            if (!listCheck.ok) return sendUuidError(res, listCheck.message);
+
+            const userId = req.user?.userId;
+            if (userId) {
+                const db = require('../config/database');
+                const { toBinaryUUID } = require('../helpers/uuid');
+                const binaryIds = notificationIds.map(id => toBinaryUUID(id));
+                const placeholders = binaryIds.map(() => '?').join(',');
+
+                const [result] = await db.query(
+                    `UPDATE notifications SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                     WHERE id IN (${placeholders}) AND user_id = ?`,
+                    [...binaryIds, toBinaryUUID(userId)]
+                );
+
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: 'தேர்ந்தெடுக்கப்பட்ட அறிவிப்புகள் வெற்றிகரமாக நீக்கப்பட்டன.',
+                        deletedCount: result.affectedRows
+                    }
+                });
+            }
+
+            const result = await Notification.deleteMultiple(notificationIds);
+
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: {
+                    message: 'தேர்ந்தெடுக்கப்பட்ட அறிவிப்புகள் வெற்றிகரமாக நீக்கப்பட்டன.',
+                    deletedCount: result.affectedRows
+                }
+            });
+        } catch (error) {
+            logger.error('Error deleting multiple notifications:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }
@@ -773,6 +833,201 @@ exports.controller = {
 
         } catch (error) {
             logger.error('Error in sendBulkNotifications:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Send admin notification to a single user based on userId
+     * Body: { userId, title, body, type }
+     */
+    sendNotificationToUser: async (req, res) => {
+        try {
+            const { userId, title, body, type } = req.body;
+
+            if (!userId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் ஐடி தேவையானது.' }
+                });
+            }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
+            if (!title || !body) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'தலைப்பு மற்றும் பொருள் தேவையானது.' }
+                });
+            }
+
+            if (type && !isValidNotificationType(type)) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: `Invalid notification type. Allowed types: ${Object.values(NotificationType).join(', ')}` }
+                });
+            }
+
+            const db = require('../config/database');
+            const { toBinaryUUID } = require('../helpers/uuid');
+
+            // Find user and their most recent active FCM token
+            const [users] = await db.query(
+                `SELECT u.id, u.full_name, u.email,
+                        (SELECT ud.fcm_token FROM user_devices ud 
+                         WHERE ud.user_id = u.id AND ud.is_active = 1 
+                         ORDER BY ud.last_used_at DESC LIMIT 1) AS fcm_token
+                 FROM users u
+                 WHERE u.id = ? AND (u.is_deleted = 0 OR u.is_deleted IS NULL)`,
+                [toBinaryUUID(userId)]
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் கிடைக்கவில்லை.' }
+                });
+            }
+
+            const user = users[0];
+
+            if (!user.fcm_token) {
+                // Save notification to DB even if FCM token is missing
+                let notificationId = null;
+                try {
+                    const notificationResult = await Notification.create({
+                        userId: userId,
+                        title: title,
+                        body: body,
+                        type: type || NotificationType.GENERAL
+                    });
+                    notificationId = notificationResult.insertId;
+                } catch (dbError) {
+                    logger.error(`Error saving notification to DB for user ${userId}:`, dbError);
+                }
+
+                return res.status(200).json({
+                    responseType: "S",
+                    responseValue: {
+                        message: 'அறிவிப்பு தரவுத்தளத்தில் சேமிக்கப்பட்டது (FCM சாதன டோக்கன் கிடைக்கவில்லை).',
+                        fcmSent: false,
+                        dbSaved: !!notificationId,
+                        notificationId
+                    }
+                });
+            }
+
+            const result = await sendPushNotification({
+                userId,
+                title,
+                body,
+                token: user.fcm_token,
+                type
+            });
+
+            return res.status(200).json({
+                responseType: "S",
+                responseValue: {
+                    message: result.message,
+                    fcmSent: result.fcmSent,
+                    dbSaved: result.dbSaved,
+                    notificationId: result.notificationId
+                }
+            });
+        } catch (error) {
+            logger.error('Error in sendNotificationToUser:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Get all notifications for a specific user based on userId (Admin Endpoint)
+     * Supports both GET and POST requests
+     * Body/Query/Params: { userId, limit?, offset? }
+     */
+    getNotificationsByUserId: async (req, res) => {
+        try {
+            const userId = req.body?.userId || req.query?.userId || req.params?.userId;
+            const limit = req.body?.limit || req.query?.limit || 50;
+            const offset = req.body?.offset || req.query?.offset || 0;
+
+            if (!userId) {
+                return res.status(400).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் ஐடி தேவையானது.' }
+                });
+            }
+
+            const idCheck = validateUuid(userId, 'userId');
+            if (!idCheck.ok) return sendUuidError(res, idCheck.message);
+
+            const db = require('../config/database');
+            const { toBinaryUUID } = require('../helpers/uuid');
+
+            // Verify user exists
+            const [users] = await db.query(
+                `SELECT id FROM users WHERE id = ? AND (is_deleted = 0 OR is_deleted IS NULL)`,
+                [toBinaryUUID(userId)]
+            );
+
+            if (users.length === 0) {
+                return res.status(404).json({
+                    responseType: "F",
+                    responseValue: { message: 'பயனர் கிடைக்கவில்லை.' }
+                });
+            }
+
+            const notifications = await Notification.findByUserId(userId, Math.min(parseInt(limit), 100), parseInt(offset));
+            const unreadCount = await Notification.getUnreadCount(userId);
+            const totalCount = await Notification.getTotalCountByUserId(userId);
+
+            return res.status(200).json({
+                responseType: "S",
+                count: notifications.length,
+                totalCount: totalCount,
+                unreadCount: unreadCount,
+                responseValue: notifications
+            });
+        } catch (error) {
+            logger.error('Error fetching notifications by userId:', error);
+            return res.status(500).json({
+                responseType: "F",
+                responseValue: { message: error.toString() }
+            });
+        }
+    },
+
+    /**
+     * Get all notifications across all users without userId (Admin Endpoint)
+     * Method: GET / POST
+     * Query/Body: { limit?, offset? }
+     */
+    getAllNotificationsAdmin: async (req, res) => {
+        try {
+            const limit = req.query?.limit || req.body?.limit || 50;
+            const offset = req.query?.offset || req.body?.offset || 0;
+
+            const parsedLimit = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
+            const parsedOffset = Math.max(parseInt(offset) || 0, 0);
+
+            const notifications = await Notification.findAll(parsedLimit, parsedOffset);
+            const totalCount = await Notification.getTotalCount();
+
+            return res.status(200).json({
+                responseType: "S",
+                count: notifications.length,
+                totalCount: totalCount,
+                responseValue: notifications
+            });
+        } catch (error) {
+            logger.error('Error fetching all notifications for admin:', error);
             return res.status(500).json({
                 responseType: "F",
                 responseValue: { message: error.toString() }

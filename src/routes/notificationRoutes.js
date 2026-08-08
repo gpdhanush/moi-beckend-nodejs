@@ -31,8 +31,33 @@ router.get('/health', controller.checkStatus);
 // Body: { userIds: [], title, body, type? }
 router.post("/admin/send-bulk", controller.sendBulkNotifications);
 
-// Delete notification (soft delete)
-// Body: { notificationId }
+// Send notification to a single user based on userId
+// Body: { userId, title, body, type? }
+router.post("/admin/send", controller.sendNotificationToUser);
+
+// Get all notifications across all users without userId (Admin GET & POST)
+// Query/Body: ?limit=50&offset=0
+router.get("/admin/all", controller.getAllNotificationsAdmin);
+router.post("/admin/all", controller.getAllNotificationsAdmin);
+
+// Get notification list for a single user based on userId (Admin GET & POST)
+// Body / Query: { userId, limit?, offset? } or /admin/user-notifications/:userId
+router.get("/admin/user-notifications", controller.getNotificationsByUserId);
+router.get("/admin/user-notifications/:userId", controller.getNotificationsByUserId);
+router.post("/admin/user-notifications", controller.getNotificationsByUserId);
+
+// Delete single notification (soft delete)
+// Body/Query/Params: { notificationId } or /delete/:notificationId
 router.post('/delete', controller.delete);
+router.delete('/delete', controller.delete);
+router.delete('/delete/:notificationId', controller.delete);
+router.post('/admin/delete', controller.delete);
+router.delete('/admin/delete/:notificationId', controller.delete);
+
+// Delete multiple notifications (soft delete)
+// Body: { notificationIds: ["uuid1", "uuid2"] }
+router.post('/delete-multiple', controller.deleteMultiple);
+router.post('/delete-bulk', controller.deleteMultiple);
+router.post('/admin/delete-bulk', controller.deleteMultiple);
 
 module.exports = router;
