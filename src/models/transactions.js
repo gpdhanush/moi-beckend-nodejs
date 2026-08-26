@@ -2,6 +2,24 @@ const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
 const { getDbIdMode } = require('../helpers/dbIdMode');
 
+// Default functions are global and take precedence when their ID overlaps with
+// a user's transaction_functions ID (legacy numeric IDs can overlap).
+function resolveFunctionName(row) {
+    return row.default_function_name || row.user_function_name || row.transaction_function_name || null;
+}
+
+function buildFunctionDetails(row) {
+    const name = resolveFunctionName(row);
+    if (!name) return null;
+
+    const isDefaultFunction = Boolean(row.default_function_name);
+    return {
+        name,
+        date: isDefaultFunction ? null : row.function_date,
+        location: isDefaultFunction ? null : row.location
+    };
+}
+
 const Model = {
     /**
      * Create a new transaction
@@ -81,7 +99,9 @@ const Model = {
             FROM transactions t
             LEFT JOIN persons p ON t.person_id = p.id
             LEFT JOIN transaction_functions tf ON t.transaction_function_id = tf.id
-            LEFT JOIN default_functions df ON t.transaction_function_id = df.id
+                AND tf.user_id = t.user_id
+                AND (tf.is_deleted = 0 OR tf.is_deleted IS NULL)
+            LEFT JOIN default_functions df ON t.transaction_function_id = df.id AND df.is_deleted = 0
             WHERE t.user_id = ? AND (t.is_deleted = 0 OR t.is_deleted IS NULL)
         `;
 
@@ -117,34 +137,38 @@ const Model = {
 
         const [rows] = await db.query(query, params);
 
-        return rows.map(r => ({
-            id: fromBinaryUUID(r.id),
-            userId: fromBinaryUUID(r.user_id),
-            personId: fromBinaryUUID(r.person_id),
-            transactionFunctionId: r.transaction_function_id ? fromBinaryUUID(r.transaction_function_id) : null,
-            transactionFunctionName: r.user_function_name || r.default_function_name || r.transaction_function_name || null,
-            transactionDate: r.transaction_date,
-            type: r.type,
-            amount: r.amount,
-            itemName: r.item_name,
-            notes: r.notes,
-            isCustom: r.is_custom === 1,
-            customFunction: r.custom_function,
-            person: {
-                firstName: r.first_name,
-                lastName: r.last_name,
-                mobile: r.mobile,
-                city: r.city,
-                occupation: r.occupation
-            },
-            function: (r.function_name || r.transaction_function_name) ? {
-                name: r.function_name || r.transaction_function_name,
-                date: r.function_date,
-                location: r.location
-            } : null,
-            createdAt: r.created_at,
-            updatedAt: r.updated_at
-        }));
+        return rows.map(r => {
+            const functionName = r.default_function_name || r.user_function_name || r.transaction_function_name || null;
+
+            return {
+                id: fromBinaryUUID(r.id),
+                userId: fromBinaryUUID(r.user_id),
+                personId: fromBinaryUUID(r.person_id),
+                transactionFunctionId: r.transaction_function_id ? fromBinaryUUID(r.transaction_function_id) : null,
+                transactionFunctionName: functionName,
+                transactionDate: r.transaction_date,
+                type: r.type,
+                amount: r.amount,
+                itemName: r.item_name,
+                notes: r.notes,
+                isCustom: r.is_custom === 1,
+                customFunction: r.custom_function,
+                person: {
+                    firstName: r.first_name,
+                    lastName: r.last_name,
+                    mobile: r.mobile,
+                    city: r.city,
+                    occupation: r.occupation
+                },
+                function: functionName ? {
+                    name: functionName,
+                    date: r.default_function_name ? null : r.function_date,
+                    location: r.default_function_name ? null : r.location
+                } : null,
+                createdAt: r.created_at,
+                updatedAt: r.updated_at
+            };
+        });
     },
 
     /**
@@ -252,8 +276,7 @@ const Model = {
         const [rows] = await db.query(query, params);
 
         return rows.map(r => {
-            const resolvedFunctionName =
-                r.user_function_name || r.default_function_name || r.transaction_function_name || null;
+            const resolvedFunctionName = resolveFunctionName(r);
 
             return {
                 id: fromBinaryUUID(r.id),
@@ -278,11 +301,7 @@ const Model = {
                     city: r.city,
                     occupation: r.occupation
                 },
-                function: resolvedFunctionName ? {
-                    name: resolvedFunctionName,
-                    date: r.function_date,
-                    location: r.location
-                } : null,
+                function: buildFunctionDetails(r),
                 createdAt: r.created_at,
                 updatedAt: r.updated_at
             };
@@ -316,7 +335,7 @@ const Model = {
             userId: fromBinaryUUID(r.user_id),
             personId: fromBinaryUUID(r.person_id),
             transactionFunctionId: r.transaction_function_id ? fromBinaryUUID(r.transaction_function_id) : null,
-            transactionFunctionName: r.user_function_name || r.default_function_name || r.transaction_function_name || null,
+            transactionFunctionName: resolveFunctionName(r),
             transactionDate: r.transaction_date,
             type: r.type,
             amount: r.amount,
@@ -331,11 +350,7 @@ const Model = {
                 city: r.city,
                 occupation: r.occupation
             },
-            function: (r.function_name || r.transaction_function_name) ? {
-                name: r.function_name || r.transaction_function_name,
-                date: r.function_date,
-                location: r.location
-            } : null,
+            function: buildFunctionDetails(r),
             createdAt: r.created_at,
             updatedAt: r.updated_at
         };
@@ -463,7 +478,7 @@ const Model = {
         return rows.map(r => ({
             id: fromBinaryUUID(r.id),
             transactionFunctionId: r.transaction_function_id ? fromBinaryUUID(r.transaction_function_id) : null,
-            transactionFunctionName: r.user_function_name || r.default_function_name || r.transaction_function_name || null,
+            transactionFunctionName: resolveFunctionName(r),
             transactionDate: r.transaction_date,
             type: r.type,
             amount: r.amount,
@@ -471,10 +486,7 @@ const Model = {
             notes: r.notes,
             isCustom: r.is_custom === 1,
             customFunction: r.custom_function,
-            function: (r.function_name || r.transaction_function_name) ? {
-                name: r.function_name || r.transaction_function_name,
-                date: r.function_date
-            } : null,
+            function: buildFunctionDetails(r),
             createdAt: r.created_at,
             updatedAt: r.updated_at
         }));
