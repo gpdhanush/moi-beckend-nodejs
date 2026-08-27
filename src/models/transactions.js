@@ -360,12 +360,23 @@ const Model = {
      * Update a transaction
      */
     async update(transactionId, payload) {
-        const { transactionDate, type, amount, itemName, notes, transactionFunctionName, isCustom = 0, customFunction = null } = payload;
+        const {
+            transactionDate,
+            type,
+            amount,
+            itemName,
+            notes,
+            transactionFunctionId,
+            transactionFunctionName,
+            isCustom = 0,
+            customFunction = null
+        } = payload;
 
         const [result] = await db.query(
             `UPDATE transactions SET 
                 transaction_date = ?, type = ?,
-                amount = ?, item_name = ?, notes = ?, transaction_function_name = ?, is_custom = ?, custom_function = ?,
+                amount = ?, item_name = ?, notes = ?, transaction_function_id = ?, transaction_function_name = ?,
+                is_custom = ?, custom_function = ?,
                 updated_at = CURRENT_TIMESTAMP
              WHERE id = ?`,
             [
@@ -374,6 +385,7 @@ const Model = {
                 amount ?? null,
                 itemName || null,
                 notes || null,
+                transactionFunctionId ? toBinaryUUID(transactionFunctionId) : null,
                 transactionFunctionName || null,
                 isCustom ? 1 : 0,
                 customFunction || null,
