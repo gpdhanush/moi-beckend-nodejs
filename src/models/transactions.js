@@ -112,7 +112,8 @@ const Model = {
         }
 
         if (transactionFunctionId) {
-            query += ` AND t.transaction_function_id = ?`;
+            query += ` AND t.transaction_function_id = ?
+                AND (tf.id IS NULL OR t.transaction_function_name = tf.function_name)`;
             params.push(toBinaryUUID(transactionFunctionId));
         }
 
