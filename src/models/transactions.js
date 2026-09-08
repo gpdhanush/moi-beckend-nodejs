@@ -2,17 +2,16 @@ const db = require('../config/database');
 const { generateUUID, toBinaryUUID, fromBinaryUUID } = require('../helpers/uuid');
 const { getDbIdMode } = require('../helpers/dbIdMode');
 
-// Default functions are global and take precedence when their ID overlaps with
-// a user's transaction_functions ID (legacy numeric IDs can overlap).
 function resolveFunctionName(row) {
-    return row.default_function_name || row.user_function_name || row.transaction_function_name || null;
+    return row.transaction_function_name || row.user_function_name || row.default_function_name || null;
 }
 
 function buildFunctionDetails(row) {
     const name = resolveFunctionName(row);
     if (!name) return null;
 
-    const isDefaultFunction = Boolean(row.default_function_name);
+    const isDefaultFunction = !row.transaction_function_name &&
+        !row.user_function_name && Boolean(row.default_function_name);
     return {
         name,
         date: isDefaultFunction ? null : row.function_date,
@@ -138,7 +137,7 @@ const Model = {
         const [rows] = await db.query(query, params);
 
         return rows.map(r => {
-            const functionName = r.default_function_name || r.user_function_name || r.transaction_function_name || null;
+            const functionName = resolveFunctionName(r);
 
             return {
                 id: fromBinaryUUID(r.id),
@@ -162,8 +161,8 @@ const Model = {
                 },
                 function: functionName ? {
                     name: functionName,
-                    date: r.default_function_name ? null : r.function_date,
-                    location: r.default_function_name ? null : r.location
+                    date: !r.transaction_function_name && !r.user_function_name && r.default_function_name ? null : r.function_date,
+                    location: !r.transaction_function_name && !r.user_function_name && r.default_function_name ? null : r.location
                 } : null,
                 createdAt: r.created_at,
                 updatedAt: r.updated_at
