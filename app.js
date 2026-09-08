@@ -12,6 +12,9 @@ const logger = require("./src/config/logger");
 const {
   checkAndNotifyPasswordExpiration,
 } = require("./src/services/passwordExpirationService");
+const {
+  sendUpcomingFunctionReminders,
+} = require("./src/services/upcomingFunctionReminderService");
 
 const app = express();
 
@@ -155,6 +158,37 @@ cron.schedule(
 );
 
 logger.info("Daily cron scheduled at 9:00 AM (Asia/Kolkata)");
+
+/* =========================
+   UPCOMING FUNCTION REMINDERS (Daily 6 AM IST)
+========================= */
+
+let isUpcomingReminderRunning = false;
+
+cron.schedule(
+  "0 6 * * *",
+  async () => {
+    if (isUpcomingReminderRunning) {
+      logger.warn("Upcoming function reminder already running, skipping.");
+      return;
+    }
+
+    isUpcomingReminderRunning = true;
+
+    try {
+      await sendUpcomingFunctionReminders();
+    } catch (err) {
+      logger.error("Error sending upcoming function reminders:", err);
+    } finally {
+      isUpcomingReminderRunning = false;
+    }
+  },
+  {
+    timezone: "Asia/Kolkata",
+  },
+);
+
+logger.info("Upcoming function reminder scheduled at 6:00 AM (Asia/Kolkata)");
 
 /* =========================
    GLOBAL ERROR HANDLER
